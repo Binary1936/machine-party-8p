@@ -6,7 +6,9 @@ plus any **later** entry moved here since, once its conclusions were fully folde
 into that file's live sections. Each move leaves a stub in the session log naming
 the section that now owns the material.
 
-**This project is not under version control**, so this file is the only copy.
+**In git since 2026-08-08** — but the archive, not git history, is the intended
+reading surface for old reasoning: a future session can grep this file and will
+never think to excavate a commit.
 Nothing here is required reading: every durable fact from these entries is
 already folded into `MINIGAMES.md`'s numbered sections and the pitfalls list.
 It is kept because the *reasoning* — including the theories that turned out to

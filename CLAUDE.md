@@ -55,14 +55,27 @@ Two preferences that cost a correction to learn:
   presentation states, it can *substitute values* on the way past. See the
   documented traps in `UPDATING.md` (Testing).
 
+## Version control
+
+In git, pushed to GitHub (private until the developer's OK to publish
+decompiled sources). Three rules, entry-point copies — the authoritative home
+is **"Version control" in `UPDATING.md`**:
+
+- **Never commit game content.** `.gitignore` blocks it; a `git status`
+  showing any of it means the ignore rules broke — stop, never force-add.
+- **Subagents never commit or push.** The orchestrating session commits after
+  its own review, one verified change per commit.
+- **Tracked files are public-facing.** Personal or machine-local detail goes
+  to `NOTES-LOCAL.md` (untracked), never into tracked docs.
+
 ## Documentation maintenance
 
 The doc set has a standing policy — **"Documentation policy" in `UPDATING.md`**;
 read it before editing any of these files. In short: every fact lives in exactly
 one authoritative place and is referenced from everywhere else; tighten wording
 but never cut rules, measurements, or the *why* behind them; superseded
-session-log entries move to `SESSION-LOG-ARCHIVE.md`; snapshot the docs before
-any restructure (they are not under version control). The rules this file
+session-log entries move to `SESSION-LOG-ARCHIVE.md`; commit before any
+restructure (the project is in git since 2026-08-08). The rules this file
 repeats from `UPDATING.md` and memory are intentional entry-point copies —
 when one changes, update both.
 

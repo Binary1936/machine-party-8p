@@ -24,6 +24,7 @@ this file had grown past the point where one read returned all of it.
 | **"Pitfalls"** | 29 numbered failure modes. Cited from code as *pitfall N* — stable, do not renumber |
 | **"A rule to preserve"** | 1-4 stays vanilla, and the two accepted breaches |
 | **"Documentation policy"** | how this doc set stays lean — read before editing any of these files |
+| **"Version control"** | the GitHub repo, commit discipline, and the release flow |
 | **`MINIGAMES.md`** | sections 1-22, the per-minigame reference. Cited as *§N* |
 
 Two numbering schemes are load-bearing because code comments cite them:
@@ -46,11 +47,42 @@ by the maintainer, 2026-08-08):
    stripped reads as optional to a future session. Cut narration; keep causes.
 3. **Archive, don't delete.** A session-log entry whose conclusions have been
    folded into "Current status" or "Pitfalls" moves to
-   `SESSION-LOG-ARCHIVE.md`.
-4. **Snapshot before restructuring.** These docs are not under version
-   control; copy them aside (the `*_old` idiom) before any large
-   reorganisation, then check the new text still answers every question the
-   old text answered.
+   `SESSION-LOG-ARCHIVE.md`. Git history (since 2026-08-08) is a backstop, not
+   a reading surface — a future session can grep the archive but will never
+   think to excavate a commit, so the archive remains the recall path.
+4. **Commit before restructuring.** The docs are in git since 2026-08-08:
+   commit before any large reorganisation, then check the new text still
+   answers every question the old text answered. The `*_old` copy-aside idiom
+   now applies only to untracked material — decompiles, extractions, game
+   copies; everything `.gitignore` excludes.
+
+## Version control
+
+Since 2026-08-08 the project is a git repo on `main`, pushed to
+`https://github.com/Binary1936/machine-party-8p` — **private until the
+developer's OK to publish decompiled sources** (see the session log). The
+rules, each of which protects something specific:
+
+- **One verified change per commit**, made only after the review and the doc
+  updates land, with the message pointing at the session-log entry. The log
+  carries the evidence tables; a commit message never replaces it.
+- **Subagents never commit or push.** The orchestrating session commits after
+  its own review — a commit is a claim the change was verified, and only the
+  reviewer can make it.
+- **Never commit game content.** `.gitignore` blocks the decompiles, game
+  copies, `dist/` and `*.pck`. A `git status` showing any of them means the
+  ignore rules broke — stop and fix that; never force-add past it.
+- **Tracked files are public-facing.** Personal or machine-local detail goes
+  to `NOTES-LOCAL.md` (untracked), never into tracked docs. The 2026-08-08
+  scrub set the baseline; keep it clean.
+- **Commit identity is the repo-local GitHub noreply address** — set so no
+  personal email enters public history. Do not set a global identity for this.
+- **Future game updates need no `mod_vXXX/` overlay snapshot**: the old
+  overlay is `git show <tag>:mod/<file>`. (`mod_v107/` predates git and
+  stays for the v1.0.7 baseline.)
+- **Release flow**, after step 8's zip rebuild and diff check: commit, tag
+  the mod release label, `gh release create <tag>` with the zip attached.
+  The zip is a Release asset, never a tracked file.
 
 ---
 
@@ -680,6 +712,23 @@ byte-identical (`f5912732…`). Rebuilt zip: same 57 entry names, md5
 left as released** — it differs from the rebuilt zip only by the inert
 fallback lines in `install.py` and behaves identically; the next release
 picks up the new copy.
+
+#### Same day: the process docs caught up with version control
+
+Being in git invalidated assumptions written when there was none. Changed, at
+the maintainer's request: documentation-policy rule 4 is now **commit** before
+restructuring (the `*_old` idiom survives only for untracked material); rule 3
+records that git history is a backstop while the archive stays the reading
+surface; the "only copy" claims in the archive header and the "Older entries"
+intro corrected; a new **"Version control"** section (commit discipline,
+subagents-never-commit, game-content-never-committed, public-facing-docs
+scrub rule, noreply identity, `git show <tag>:mod/<file>` replacing future
+`mod_vXXX/` snapshots, and the commit→tag→Release flow now referenced from
+step 8); `CLAUDE.md` carries a three-rule entry-point copy. The two
+orchestrator prompts in `~/Documents/Claude` and the project memory gained
+matching lines. **Explicitly unchanged:** update-procedure steps 1-5 — the
+decompiles and extractions are untracked, so the `filecmp` sweep and the
+`mv project project_old` mechanics stand exactly as written.
 
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 
@@ -1329,8 +1378,10 @@ it sometimes substitutes values on the way past. See Testing.
 Everything before 2026-08-03 is in **`SESSION-LOG-ARCHIVE.md`**, verbatim, as is
 any later entry whose conclusions have since been folded completely into the live
 sections above — each of those leaves a stub here naming the section that owns
-the material. This project is not under version control, so that file is the only
-copy — it is not a summary and nothing was condensed out of it.
+the material. That file is verbatim — not a summary; nothing was condensed out
+of it. (Both files are in git since 2026-08-08, but the archive, not git
+history, is the intended reading surface; see rule 3 of the documentation
+policy.)
 
 Its durable content is already folded into `MINIGAMES.md`'s numbered sections
 and the pitfalls list, so read it only when you want the reasoning behind a
@@ -1854,7 +1905,8 @@ EOF
 ```
 
 After building, extract to a scratch directory and `diff -rq` the extracted
-`mod/` against `mod/` — it must be empty before the zip ships.
+`mod/` against `mod/` — it must be empty before the zip ships. Then commit,
+tag, and attach the zip to a GitHub Release per "Version control".
 
 ---
 
