@@ -59,9 +59,10 @@ by the maintainer, 2026-08-08):
 ## Version control
 
 Since 2026-08-08 the project is a git repo on `main`, pushed to
-`https://github.com/Binary1936/machine-party-8p` — **private until the
-developer's OK to publish decompiled sources** (see the session log). The
-rules, each of which protects something specific:
+`https://github.com/Binary1936/machine-party-8p` — **public since 2026-08-08
+at the maintainer's decision**; `NOTICE.md` carries the credit and the
+unconditional takedown promise to the developers. The rules, each of which
+protects something specific:
 
 - **No commit before verification.** A change is committed only once it is
   verified to achieve what it set out to achieve — the measurement or trace
@@ -749,6 +750,19 @@ change is verified to achieve its purpose** (where only eyes can verify, that
 means after the maintainer has looked), and **no push without a human
 check-in** — present the commits and their evidence, wait for the OK, batch
 the ask at a natural stopping point.
+
+#### Same day: NOTICE rewritten and the repo made public
+
+At the maintainer's direction, superseding the earlier hold-for-approval
+plan: `NOTICE.md` rewritten to full credit (Mike Klubnika and GDeavid,
+published by Oro Interactive), the "small modifications to seat eight
+players" framing, and an **unconditional takedown promise** — on any request
+from the developers, the repository and every file in it comes down. It
+deliberately makes no claim of granted permission. The repo was then flipped
+**public** (Release v1.0 and its zip became publicly downloadable with it).
+The permission ask to the developers (`DEV-PERMISSION-DRAFT.md`, untracked)
+remains worth sending; the takedown promise is the standing safety net either
+way.
 
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 

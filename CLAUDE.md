@@ -57,8 +57,8 @@ Two preferences that cost a correction to learn:
 
 ## Version control
 
-In git, pushed to GitHub (private until the developer's OK to publish
-decompiled sources). Three rules, entry-point copies — the authoritative home
+In git, pushed to GitHub — **public**; `NOTICE.md` carries the credit and
+takedown terms. Three rules, entry-point copies — the authoritative home
 is **"Version control" in `UPDATING.md`**:
 
 - **Never commit game content.** `.gitignore` blocks it; a `git status`
