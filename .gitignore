@@ -1,0 +1,28 @@
+# --- Game content: the developer's copyrighted assets. NEVER publish. ---
+# Full decompiled projects and raw pck extractions
+project/
+project_old/
+extracted/
+extracted_old/
+# Complete game copies used by the test harness
+testgame/
+testgame_new/
+# Historical overlay against game v1.0.7
+mod_v107/
+# Build output: the patched .pck is a full copy of the game.
+# The release zip is published as a GitHub Release asset, not committed.
+dist/
+*.pck
+
+# --- Personal / machine-local ---
+userdata_backup/
+NOTES-LOCAL.md
+DEV-PERMISSION-DRAFT.md
+docs_old*/
+
+# --- Toolchain binaries: downloadable, see UPDATING.md (Toolchain) ---
+tools/bin/
+
+# --- Python ---
+__pycache__/
+*.pyc

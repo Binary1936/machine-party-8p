@@ -1,0 +1,55 @@
+# Player-spawn containers to expand from 4 to 8 markers.
+# Format:  <scene path relative to project/>::<parent node path of the markers>
+# Used by: python3 tools/spawn_expand.py $(...)   -- see UPDATING.md
+#
+# Re-derive this list after a game update with the scan in UPDATING.md; node
+# paths move when levels are re-authored.
+#
+# TWO MINIGAMES ARE EXCLUDED ON PURPOSE - duck_hunt and forklift_certified.
+# They build their extra markers at RUNTIME, host-only, gated on roster > 4
+# (see MINIGAMES.md sections 19 and 20). Do not add them here even though the
+# rescan will list them and neither is capped any more. Baking markers into
+# those two scenes does NOT just duplicate work - it breaks the 1-4 player
+# path. Details at each entry below.
+minigames/cutscene_game_02/cutscene_game_02.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+minigames/cutscene_test/cutscene_test.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+minigames/disco_dodge/disco_dodge.tscn::Networked/PlayerSpawnPositions
+# duck_hunt: EXCLUDED - markers are built at RUNTIME, same as forklift below.
+# The scene ships THREE (not four) duck markers, so the rescan lists it and it
+# looks like an oversight. It is not. Building them at runtime above four
+# players is what keeps 1-4 seating on the shipped three only, which is why
+# Duck Hunt sidesteps the deviation under "Spawn markers are visible to 1-4
+# player games too". See MINIGAMES.md section 19.
+# minigames/duck_hunt/duck_hunt.tscn::Networked/DuckPlayerSpawner/DuckPlayerSpawnPositions
+minigames/dvd_roomba/dvd_roomba.tscn::Networked/PlayerSpawner/PlayerSpawnParent
+minigames/escalator_pit/escalator_pit.tscn::PlayerSpawnPositions
+minigames/exploding_collar_race/exploding_collar_race.tscn::player spawn positions
+# forklift_certified: EXCLUDED - markers are built at RUNTIME. NOT because it is
+# capped; it was uncapped on 2026-08-04. The old reason recorded here ("four
+# DropAreas ... tiling the whole yard ... no room for more") was measured and
+# found wrong - the zones cover 24% of the floor and four more fit at the
+# mid-edges.
+#
+# DO NOT UNCOMMENT THE LINE BELOW. It black-screens the minigame at 1-4 players
+# roughly 99% of the time. spawn_players() builds `shuffled_indicies` from the
+# marker count, so baking 8 markers makes it span 0-7 - but at a roster <= 4
+# `_mod_expand_yard()` returns early and `delivery_areas` still holds only 4.
+# Any drawn index >= 4 is an out-of-bounds read that aborts the host's spawn
+# loop. Drawing four of eight, the chance at least one is >= 4 is 98.6%.
+# minigames/forklift_certified/forklift_certified.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+minigames/green_pea/green_pea.tscn::Networked/MultiplayerSpawner/PlayerSpawnPositions
+minigames/junk_platform/junk_platform.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+minigames/knife_at_the_office/knife_at_the_office.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+minigames/memorize_path/memorize_path.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+minigames/shape_cutter/shape_cutter.tscn::Positions/PlayerSpawnPositions
+minigames/smoke_break/smoke_break.tscn::PlayerSpawner/PlayerPositions
+minigames/spine_breaker/spine_breaker.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
+# train_race: INWARD mode (third field). The default ranking ties +offset against
+# -offset and the stable sort always picks +, so both right-hand clones landed
+# outboard at x=4.62 and x=5.31 - inside the right wall, with the far-right player
+# visibly clipped into both the wall and its neighbour. The left-hand clones were
+# fine only by luck: the same +1.2 happens to point into the corridor there.
+# `inward` breaks that tie toward the centroid of the shipped markers, giving
+# x=2.22 and x=2.91. Do NOT drop this flag on a future update - the audit trace
+# reports 8/8 OK either way, so nothing will tell you it regressed.
+minigames/train_race/train_race.tscn::Networked/PlayerSpawner/PlayerSpawnPositions::inward

@@ -1,0 +1,275 @@
+[gd_scene load_steps=23 format=3 uid="uid://bafl1jhjj6e2l"]
+
+[ext_resource type="Script" uid="uid://clrsi6i6g7yur" path="res://minigames/memorize_path/scripts/memorize_path.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://d2ue0rn4bfoes" path="res://modules/minigame/components/overlay/minigame_overlay.tscn" id="2"]
+[ext_resource type="Script" uid="uid://ff50cxtbdt1p" path="res://modules/state_machine/StateMachine.gd" id="3"]
+[ext_resource type="Script" uid="uid://drwvxnp5jvl5" path="res://minigames/shared/states/empty_state.gd" id="4"]
+[ext_resource type="Script" uid="uid://s4vkamdtyhmq" path="res://minigames/shared/states/brief_state.gd" id="5"]
+[ext_resource type="Script" uid="uid://bjw08wi7fiptq" path="res://minigames/shared/states/round_state.gd" id="6"]
+[ext_resource type="Script" uid="uid://bvah0i2u6fq87" path="res://minigames/shared/states/player_marker_state.gd" id="7"]
+[ext_resource type="Script" uid="uid://b06wwcfotpgbj" path="res://minigames/shared/states/countdown_state.gd" id="8"]
+[ext_resource type="Script" uid="uid://cdw20300f15kh" path="res://minigames/memorize_path/states/play_state.gd" id="9"]
+[ext_resource type="Script" uid="uid://csh3tiwwipp11" path="res://minigames/memorize_path/states/finished_state.gd" id="10"]
+[ext_resource type="Script" uid="uid://dmxc06gvverqw" path="res://minigames/memorize_path/scripts/build_handler.gd" id="11"]
+[ext_resource type="Script" uid="uid://c32dal38vkypd" path="res://minigames/memorize_path/components/parts/scripts/memorize_path_safe_platform.gd" id="12"]
+[ext_resource type="Script" uid="uid://bh5x6oc3ul1xv" path="res://addons/shaker/src/Vector3/shaker_component3D.gd" id="13"]
+[ext_resource type="Script" uid="uid://bd762ogkx1sjj" path="res://addons/shaker/data/Vector3/ShakerTypeRandom3D.gd" id="14"]
+[ext_resource type="Script" uid="uid://b32ximuhrdnon" path="res://addons/shaker/data/Vector3/ShakerPreset3D.gd" id="15"]
+[ext_resource type="FontFile" uid="uid://xfjjjluffjgk" path="res://fonts/Terminal F4.ttf" id="16"]
+
+[sub_resource type="Environment" id="Environment_fwsni"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_2aai2"]
+size = Vector2(56, 10)
+orientation = 1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l7m00"]
+size = Vector3(56, 1, 10)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2aai2"]
+size = Vector3(54, 2, 6)
+
+[sub_resource type="Resource" id="Resource_2sywh"]
+script = ExtResource("14")
+metadata/_custom_type_script = "uid://bd762ogkx1sjj"
+
+[sub_resource type="Resource" id="Resource_j8y8h"]
+script = ExtResource("15")
+PositionShake = [SubResource("Resource_2sywh")]
+metadata/_custom_type_script = "uid://b32ximuhrdnon"
+
+[node name="memorize_path" type="Node" node_paths=PackedStringArray("players_node", "player_spawn_positions_node", "camera_base", "camera_position", "camera_shaker", "game_countdown_timer", "game_countdown_label", "build_handler", "countdown_state", "minigame_overlay")]
+script = ExtResource("1")
+starting_rows = 2
+players_node = NodePath("Networked/PlayerSpawner/Players")
+player_spawn_positions_node = NodePath("Networked/PlayerSpawner/PlayerSpawnPositions")
+camera_base = NodePath("CameraBase")
+camera_position = NodePath("CameraBase/CameraHeight/CameraPivot/CameraPosition")
+camera_shaker = NodePath("CameraBase/CameraHeight/CameraPivot/CameraPosition/Camera3D/ShakerComponent3D")
+game_countdown_timer = NodePath("Components/CountdownTimer")
+game_countdown_label = NodePath("UILayer/Control/MarginContainer/countdown label")
+build_handler = NodePath("Components/BuildHandler")
+countdown_state = NodePath("StateMachine/Countdown")
+minigame_overlay = NodePath("MinigameOverlay")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_fwsni")
+
+[node name="MinigameOverlay" parent="." instance=ExtResource("2")]
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("3")
+debug_print = true
+initial_state = NodePath("Empty")
+metadata/_custom_type_script = "uid://ff50cxtbdt1p"
+
+[node name="Empty" type="Node" parent="StateMachine"]
+script = ExtResource("4")
+
+[node name="Brief" type="Node" parent="StateMachine"]
+script = ExtResource("5")
+
+[node name="Round" type="Node" parent="StateMachine"]
+script = ExtResource("6")
+
+[node name="PlayerMarker" type="Node" parent="StateMachine" node_paths=PackedStringArray("players_node")]
+script = ExtResource("7")
+players_node = NodePath("../../Networked/PlayerSpawner/Players")
+
+[node name="Countdown" type="Node" parent="StateMachine"]
+script = ExtResource("8")
+
+[node name="Play" type="Node" parent="StateMachine"]
+script = ExtResource("9")
+
+[node name="Finished" type="Node" parent="StateMachine"]
+script = ExtResource("10")
+
+[node name="Components" type="Node" parent="."]
+
+[node name="BuildHandler" type="Node" parent="Components" node_paths=PackedStringArray("safe_platforms", "parts_node", "doorways_node", "camera_base")]
+script = ExtResource("11")
+safe_platforms = [NodePath("../../Networked/PartSpawner/Parts/SafePlatform1"), NodePath("../../Networked/PartSpawner/Parts/SafePlatform2")]
+parts_node = NodePath("../../Placeholder/Parts")
+doorways_node = NodePath("../../Placeholder/Doorways")
+camera_base = NodePath("../../CameraBase")
+
+[node name="CountdownTimer" type="Timer" parent="Components"]
+one_shot = true
+
+[node name="Networked" type="Node3D" parent="."]
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="Networked"]
+_spawnable_scenes = PackedStringArray("uid://jnaf4vyl80rv")
+spawn_path = NodePath("Players")
+
+[node name="Players" type="Node3D" parent="Networked/PlayerSpawner"]
+
+[node name="PlayerSpawnPositions" type="Node3D" parent="Networked/PlayerSpawner"]
+
+[node name="Marker3D" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 0)
+
+[node name="Marker3D2" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 0)
+
+[node name="Marker3D3" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0)
+
+[node name="Marker3D4" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 0)
+
+
+[node name="Marker3D_MOD5" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.8, 0, 0)
+
+[node name="Marker3D2_MOD6" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, 0)
+
+[node name="Marker3D3_MOD7" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 0, 0)
+
+[node name="Marker3D4_MOD8" type="Marker3D" parent="Networked/PlayerSpawner/PlayerSpawnPositions"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.2, 0, 0)
+[node name="PartSpawner" type="MultiplayerSpawner" parent="Networked"]
+_spawnable_scenes = PackedStringArray("uid://et5ik5nre4vv", "uid://cp30fmfsl5pos", "uid://dxjjpen7u18em", "uid://08jmrjjftk1q")
+spawn_path = NodePath("Parts")
+
+[node name="Parts" type="Node3D" parent="Networked/PartSpawner"]
+
+[node name="SafePlatform1" type="Node3D" parent="Networked/PartSpawner/Parts" node_paths=PackedStringArray("area", "block_box", "light")]
+script = ExtResource("12")
+area = NodePath("SafeArea")
+block_box = NodePath("BlockBox")
+light = NodePath("OmniLight3D")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Networked/PartSpawner/Parts/SafePlatform1"]
+mesh = SubResource("QuadMesh_2aai2")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Networked/PartSpawner/Parts/SafePlatform1/MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Networked/PartSpawner/Parts/SafePlatform1/MeshInstance3D/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_l7m00")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Networked/PartSpawner/Parts/SafePlatform1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+light_color = Color(0.9920456, 0.96489865, 0.9275334, 1)
+omni_range = 30.0
+
+[node name="SafeArea" type="Area3D" parent="Networked/PartSpawner/Parts/SafePlatform1"]
+collision_layer = 16777216
+collision_mask = 16777216
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Networked/PartSpawner/Parts/SafePlatform1/SafeArea"]
+shape = SubResource("BoxShape3D_2aai2")
+
+[node name="BlockBox" type="CSGBox3D" parent="Networked/PartSpawner/Parts/SafePlatform1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
+visible = false
+use_collision = true
+collision_layer = 0
+collision_mask = 0
+flip_faces = true
+size = Vector3(56, 16, 10)
+
+[node name="SafePlatform2" type="Node3D" parent="Networked/PartSpawner/Parts" node_paths=PackedStringArray("area", "block_box", "light")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -100, 0)
+script = ExtResource("12")
+area = NodePath("SafeArea")
+block_box = NodePath("BlockBox")
+light = NodePath("OmniLight3D")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Networked/PartSpawner/Parts/SafePlatform2"]
+mesh = SubResource("QuadMesh_2aai2")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Networked/PartSpawner/Parts/SafePlatform2/MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Networked/PartSpawner/Parts/SafePlatform2/MeshInstance3D/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_l7m00")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Networked/PartSpawner/Parts/SafePlatform2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+light_color = Color(0.99215686, 0.9647059, 0.92941177, 1)
+omni_range = 30.0
+
+[node name="SafeArea" type="Area3D" parent="Networked/PartSpawner/Parts/SafePlatform2"]
+collision_layer = 16777216
+collision_mask = 16777216
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Networked/PartSpawner/Parts/SafePlatform2/SafeArea"]
+shape = SubResource("BoxShape3D_2aai2")
+
+[node name="BlockBox" type="CSGBox3D" parent="Networked/PartSpawner/Parts/SafePlatform2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
+visible = false
+use_collision = true
+collision_layer = 0
+collision_mask = 0
+flip_faces = true
+size = Vector3(56, 16, 10)
+
+[node name="Placeholder" type="Node3D" parent="."]
+
+[node name="Doorways" type="Node3D" parent="Placeholder"]
+
+[node name="Parts" type="Node3D" parent="Placeholder"]
+
+[node name="CameraBase" type="Node3D" parent="."]
+
+[node name="CameraHeight" type="Node3D" parent="CameraBase"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+
+[node name="CameraPivot" type="Node3D" parent="CameraBase/CameraHeight"]
+transform = Transform3D(1, 0, 0, 0, 0.70710677, -0.7071068, 0, 0.7071068, 0.70710677, 0, 0, 0)
+
+[node name="CameraPosition" type="Node3D" parent="CameraBase/CameraHeight/CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraBase/CameraHeight/CameraPivot/CameraPosition"]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 5.9232116e-07, -4.917383e-07, -6.072223e-07)
+current = true
+
+[node name="ShakerComponent3D" type="Node3D" parent="CameraBase/CameraHeight/CameraPivot/CameraPosition/Camera3D" node_paths=PackedStringArray("Targets")]
+transform = Transform3D(1, 0, 0, 0, -8.940697e-08, -1, 0, 1, -8.940697e-08, 0, 0, 0)
+script = ExtResource("13")
+custom_target = true
+Targets = [NodePath("..")]
+AutoPlay = true
+intensity = 0.0
+shakerPreset = SubResource("Resource_j8y8h")
+metadata/_custom_type_script = "uid://bh5x6oc3ul1xv"
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="UILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="UILayer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="countdown label" type="Label" parent="UILayer/Control/MarginContainer"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_colors/font_color = Color(0.5294118, 1, 0.49803922, 1)
+theme_override_fonts/font = ExtResource("16")
+theme_override_font_sizes/font_size = 51
+text = "00:30"
+horizontal_alignment = 1
+vertical_alignment = 2
