@@ -63,9 +63,17 @@ Since 2026-08-08 the project is a git repo on `main`, pushed to
 developer's OK to publish decompiled sources** (see the session log). The
 rules, each of which protects something specific:
 
-- **One verified change per commit**, made only after the review and the doc
-  updates land, with the message pointing at the session-log entry. The log
-  carries the evidence tables; a commit message never replaces it.
+- **No commit before verification.** A change is committed only once it is
+  verified to achieve what it set out to achieve — the measurement or trace
+  evidence in hand, and where only eyes can verify (placement, facing,
+  readability), only after the maintainer has looked. One verified change per
+  commit, made after the review and the doc updates land, with the message
+  pointing at the session-log entry; the log carries the evidence tables and
+  a commit message never replaces it.
+- **No push without a human check-in.** Pushing is never autonomous: present
+  the commits that would go up — what each changed and the evidence behind it
+  — and wait for the maintainer's OK. Batch at natural stopping points rather
+  than asking per commit.
 - **Subagents never commit or push.** The orchestrating session commits after
   its own review — a commit is a claim the change was verified, and only the
   reviewer can make it.
@@ -729,6 +737,13 @@ orchestrator prompts in `~/Documents/Claude` and the project memory gained
 matching lines. **Explicitly unchanged:** update-procedure steps 1-5 — the
 decompiles and extractions are untracked, so the `filecmp` sweep and the
 `mv project project_old` mechanics stand exactly as written.
+
+Two conditions added the same day at the maintainer's request, now in the
+Version-control rules and every entry-point copy: **no commit before the
+change is verified to achieve its purpose** (where only eyes can verify, that
+means after the maintainer has looked), and **no push without a human
+check-in** — present the commits and their evidence, wait for the OK, batch
+the ask at a natural stopping point.
 
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 

@@ -64,7 +64,10 @@ is **"Version control" in `UPDATING.md`**:
 - **Never commit game content.** `.gitignore` blocks it; a `git status`
   showing any of it means the ignore rules broke — stop, never force-add.
 - **Subagents never commit or push.** The orchestrating session commits after
-  its own review, one verified change per commit.
+  its own review, one verified change per commit — and **never before the
+  change is verified to do what it was meant to do**.
+- **Never push without a human check-in.** Present the commits and their
+  evidence, then wait for the maintainer's OK.
 - **Tracked files are public-facing.** Personal or machine-local detail goes
   to `NOTES-LOCAL.md` (untracked), never into tracked docs.
 
