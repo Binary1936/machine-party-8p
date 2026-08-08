@@ -113,6 +113,11 @@ rules, each of which protects something specific:
 >    screenshot — see "How to verify anything".
 > 5. Never take a blind full-screen screenshot — see "Working environment".
 
+This block is the generic entry point and ships with the repo. A maintainer
+may layer their own workflow prompt on top of it (orchestration, delegation,
+review habits); the rules above and the rest of this document remain the
+binding minimum either way.
+
 The mod currently targets **v1.5.0**. Read "Working environment" before
 running anything, and "Session log" for what changed most recently.
 
