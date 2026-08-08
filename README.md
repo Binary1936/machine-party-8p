@@ -1,5 +1,18 @@
 # Machine Party — 8 Player Mod
 
+*Human Written Section* 
+
+This mod was made almost entirely by Claude Code with heavy human supervision. There may be some issues or quirks that I havn't caught.
+The documentation has also been entirely written by Claude. I made this with the intention of keeping it very vibe coding friendly. There are 
+prompts in the Updating.md and a defined workflow you can use to continue work and modifcation with your own LLM Agents. This mod isn't perfect,
+but it's something I made to experiment with vibe coding, and so my friend group can play 8 player machine party. All credit goes to the original 
+developers. I plan to continue development on the mod and to continue working on the rough edges when I have some free time, but I'm considering
+this V1.0 good enough to ship for now. Please feel free to fork this project for yourself or submit Pull requests with changes. I'm still figuring
+GitHub out so if I made any dumb mistakes, please feel free to let me know and I'll do my best to fix them. 
+
+*End Human Section* 
+
+
 Raises the online (Steam/ENet) player cap from 4 to 8 for **Machine Party
 v1.5.0** (Godot 4.5.2). All fifteen minigames in the rotation seat eight
 players, and the lobby, briefing screen and score screen grow to match. The mod
