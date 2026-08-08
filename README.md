@@ -43,8 +43,9 @@ replaced; the executable and the native libraries beside it are untouched. Every
 install rebuilds from the `.vanilla` backup, so re-running is idempotent.
 
 A clone or source download of the repository installs the same way, with no
-build step: `install.py`, `install.sh`, `install.bat` and `mod/` all sit at the
-root, in the same arrangement the zip unpacks to.
+build step: run `python3 installer/install.py` (or the wrappers in
+`installer/`). The installer contains no copy of the mod — it reads the
+repo's `mod/` directly.
 
 It requires Python 3, preinstalled on most macOS/Linux systems but not on
 Windows.
@@ -72,7 +73,7 @@ the main menu's version label, so the corner of the menu is the fastest check.
 Without launching:
 
 ```bash
-python3 install.py --game-dir "<game folder>" --verify
+python3 installer/install.py --game-dir "<game folder>" --verify
 ```
 
 Reports `PATCHED` / `NOT PATCHED` / `PARTIALLY PATCHED` (exit 0 / 1 / 1) by

@@ -65,7 +65,7 @@ by the maintainer, 2026-08-08):
 >
 > Five hard rules:
 > 1. Never modify anything inside the Steam install directory — copy it out.
-> 2. Never pass a shell-expanded path like `$PWD/...` to `install.py`;
+> 2. Never pass a shell-expanded path like `$PWD/...` to `installer/install.py`;
 >    always type literal absolute paths.
 > 3. A 1-4 player lobby must stay pixel-identical to vanilla — with two
 >    documented exceptions; see "A rule to preserve".
@@ -661,6 +661,25 @@ verified by re-download; the zip never goes in git, and the patched `.pck`
 never leaves this machine), so when the OK lands only two steps remain: fill
 `NOTICE.md`'s two placeholders and flip the repo public — the Release goes
 public with it.
+
+#### Same day, after the push: installer moved into `installer/` (no mod copy)
+
+Requested by the maintainer to clean up the repo root: `install.py`,
+`install.sh`, `install.bat` and `README.txt` moved from the root into
+`installer/`, and `install.py` gained a three-line fallback — if no `mod/`
+sits beside it, it uses `../mod`, so a repo clone installs via
+`installer/install.py` against the root overlay with **no duplicate copy of
+`mod/` anywhere**. The zip build (step 8) now pulls the four files out of
+`installer/` but still places them at the **zip root**, so the shipped
+bundle's structure is unchanged and the fallback is inert there. Verified by
+full installer round-trips from **both** layouts — the repo clone (fallback
+path) and a freshly extracted zip (primary path) — each reading
+`NOT PATCHED` → 4177/53/88 → `PATCHED v1.5.0-8P-v1.0` → uninstall
+byte-identical (`f5912732…`). Rebuilt zip: same 57 entry names, md5
+`0776a4c2ca7988d0948ec4f6a30f4ec8`. **The v1.0 Release asset was deliberately
+left as released** — it differs from the rebuilt zip only by the inert
+fallback lines in `install.py` and behaves identically; the next release
+picks up the new copy.
 
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 
@@ -1336,9 +1355,10 @@ extracted/   pristine unpack of the shipped .pck (reference; regenerate on updat
 project/     full decompile via GDRE Tools — readable .gd / .tscn source
 mod/         the overlay: ONLY the 53 files that differ (see the manifest)
 dist/        built "Machine Party.pck" + machine-party-8p-mod.zip (release zip)
-install.py, install.sh, install.bat   root-level installer scripts; the release
-              zip is built directly from these plus README.txt and mod/, with
-              no separate installer/ copy
+installer/   install.py, install.sh, install.bat, README.txt - the installer
+              scripts, no mod copy inside; install.py falls back to the
+              repo-root mod/ when run from here. The release zip is built
+              from these four files plus mod/
 testgame/    throwaway copy of the game install, for test runs
 testgame_new/ clean UNMODIFIED v1.5.0 copy - installer round-trip target
 project_old/ v1.0.7 decompile, kept as the diff baseline for step 4
@@ -1397,7 +1417,7 @@ userdata_backup/  a backup of the game's user data (saves, settings, shader
   "scene supplies the nodes; script owns the layout".
 - **`tools/gdc.py`** — pulls identifier/constant pools straight out of compiled
   `.gdc` files. Useful for grepping a shipped build *before* decompiling.
-- **`install.py`** (project root) — standalone patcher for end users. Carries its own
+- **`installer/install.py`** — standalone patcher for end users. Carries its own
   PCK reader/writer; depends on nothing in `tools/`. Patches the **user's own**
   pck (unlike `build.py`, which builds from our `extracted/` snapshot), so it
   only swaps the overlay files. `ADDED_FILES` exempts files the mod *adds*
@@ -1776,11 +1796,11 @@ In code — these change behaviour, so they are the ones that break things:
   scheme is **game version + `-8P` + the mod's own release label**; currently
   `v1.5.0-8P-v1.0`. A game update bumps only the first part — **carry the mod
   release label across unchanged** unless the mod itself is being released anew.
-- `install.py` (project root) → `SUPPORTED_VERSION = "v<new>"`
-- `install.py` (project root, ~line 329) → the `--verify` message **hardcodes the
+- `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
+- `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
   same display string**. It is the second place the label lives and it does not
   derive it, so it silently goes stale; keep the two in sync.
-- `README.txt` (project root, ships inside the zip) → the "DID IT WORK?" example
+- `installer/README.txt` (ships inside the zip at its root) → the "DID IT WORK?" example
   strings and the "Built for Machine Party v<old>" line. **The third place the
   label lives**, and the one that went three minigames stale before the
   2026-08-08 release prep caught it — it is player-facing prose, so nothing
@@ -1813,10 +1833,11 @@ MP_DEPLOY=~/Documents/Claude/machine-party-8p/testgame python3 tools/build.py
 Then run the validation recipe below.
 
 ### 8. Repackage the release zip
-`install.py`, `install.sh`, `install.bat`, `README.txt` and `mod/` all live at
-the project root now — there is no separate `installer/` copy to re-sync.
-`dist/machine-party-8p-mod.zip` is built directly from those five root
-files/folders; its internal structure is unchanged from before. There is no
+`install.py`, `install.sh`, `install.bat` and `README.txt` live in `installer/`
+(no mod copy inside it — `install.py` falls back to the repo-root `mod/` when
+run from there). `dist/machine-party-8p-mod.zip` is built from those four
+`installer/` files plus `mod/`; the zip's internal structure is unchanged —
+the four files still land at the zip root, alongside `mod/`. There is no
 `zip` binary on this machine, so build it with Python from the project root:
 
 ```bash
@@ -1824,7 +1845,7 @@ python3 - <<'EOF'
 import os, zipfile
 with zipfile.ZipFile("dist/machine-party-8p-mod.zip", "w", zipfile.ZIP_DEFLATED) as z:
     for f in ("install.sh", "README.txt", "install.py", "install.bat"):
-        z.write(f)
+        z.write(os.path.join("installer", f), arcname=f)
     for root, dirs, files in os.walk("mod"):
         dirs.sort()
         for f in sorted(files):
@@ -2200,7 +2221,7 @@ rendering remains unverifiable locally.
 
 Installer round-trip, on a **copy**, with literal absolute paths:
 ```bash
-python3 ~/Documents/Claude/machine-party-8p/install.py --game-dir ~/Documents/Claude/machine-party-8p/testgame_new --verify
+python3 ~/Documents/Claude/machine-party-8p/installer/install.py --game-dir ~/Documents/Claude/machine-party-8p/testgame_new --verify
 ```
 Expect `NOT PATCHED` → install → `PATCHED` → `--uninstall` → MD5 matches the
 original recorded in step 1. Verified 2026-08-08 against a clean v1.5.0 copy:
@@ -2220,8 +2241,8 @@ Note `install.py` prompts for confirmation, so a non-interactive run needs
 
 1. **`res://` prefix.** The *shipped* pck stores paths **without** it; `tools/pck.py`
    writes them **with** it. Normalise before comparing, or lookups silently miss
-   and the compiled `.gdc` keeps shadowing your `.gd`. `install.py` (project
-   root) has a `norm()` helper for exactly this.
+   and the compiled `.gdc` keeps shadowing your `.gd`. `installer/install.py`
+   has a `norm()` helper for exactly this.
 2. **GDRE `--headless` silently drops scenes.** Run it with a display.
 3. **`.scn` files under `.godot/` are engine caches, not content.** In v1.0.6:
    140 under `exported/` (these correspond to the authored `.tscn`) and 167 under

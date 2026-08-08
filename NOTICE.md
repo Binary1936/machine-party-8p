@@ -14,7 +14,7 @@ use, and nothing here works without it.
 The following files are original to this mod and are not derived from game
 code. They are released under the MIT License (see `LICENSE-MIT`):
 
-- `install.py`, `install.sh`, `install.bat` — the installer
+- `installer/` — the installer (`install.py`, `install.sh`, `install.bat`)
 - `mod/modules/multiplayer_lobby/mod_player_name_list.gd` — the lobby roster
 - `tools/` — the build, extraction and test-harness scripts
 

@@ -45,6 +45,9 @@ SUPERSEDES = {
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OVERLAY = os.path.join(HERE, "mod")
+if not os.path.isdir(OVERLAY):
+    # running from the source repo, where the overlay is at the repo root
+    OVERLAY = os.path.normpath(os.path.join(HERE, "..", "mod"))
 
 
 # --------------------------------------------------------------------------

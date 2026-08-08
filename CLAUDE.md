@@ -22,7 +22,7 @@ Five rules, each of which cost real time to learn:
    `/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux/`.
    Copy it out. `testgame/` is the throwaway copy for test runs.
 2. **Never pass a shell-expanded path** like `$PWD/...` to
-   `install.py`; type literal absolute paths.
+   `installer/install.py`; type literal absolute paths.
 3. **1-4 player lobbies must stay pixel-identical to vanilla.** Apply layout
    changes at runtime, gated on roster size — never bake them into a `.tscn`.
 4. **Verify on a client window, not the host.** `initialize()` and
