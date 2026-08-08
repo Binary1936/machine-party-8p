@@ -655,10 +655,12 @@ line. A remote-side tree audit confirmed zero game-content or personal files
 made it up. **One gate before the repo goes public, the maintainer's call per
 this session's explicit decision:** the developer's written OK to publish
 modified *decompiled sources* — a bigger ask than modding
-(`DEV-PERMISSION-DRAFT.md`, untracked, is the ask). When it lands: fill
-`NOTICE.md`'s two placeholders, flip visibility, and attach
-`dist/machine-party-8p-mod.zip` to a GitHub Release — the zip never goes in
-git.
+(`DEV-PERMISSION-DRAFT.md`, untracked, is the ask). The zip is already
+attached to Release `v1.0` (asset md5 `94f53df456eb11d0b587f257066b3b39`,
+verified by re-download; the zip never goes in git, and the patched `.pck`
+never leaves this machine), so when the OK lands only two steps remain: fill
+`NOTICE.md`'s two placeholders and flip the repo public — the Release goes
+public with it.
 
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 
