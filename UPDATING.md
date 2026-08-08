@@ -646,14 +646,19 @@ moved to `NOTES-LOCAL.md` (untracked). Pre-edit docs snapshotted to
 **placeholders unfilled**), `LICENSE-MIT` (mod-original files only),
 `DEV-PERMISSION-DRAFT.md` (untracked draft message to the developer).
 
-**Repo initialized and staged, not committed, not pushed.** `git init` on
-`main`; 73 files / 47M staged; audit confirmed zero game-content or personal
-files in the staged set. **Two gates before anything goes public, both the
-user's:** (1) the developer's written OK to publish modified *decompiled
-sources* — a bigger ask than modding — per the user's explicit decision this
-session; (2) the GitHub username, for the noreply commit identity
-(`<username>@users.noreply.github.com`), chosen so the personal email never
-enters commit history.
+**Pushed to a PRIVATE GitHub repo the same day:**
+`https://github.com/Binary1936/machine-party-8p`, commit `e6e03d0` on `main`,
+73 files / 47M. Commit identity is the GitHub noreply address
+(`56046426+Binary1936@users.noreply.github.com`) so the personal email never
+enters commit history; the maintainer approved keeping the Claude co-author
+line. A remote-side tree audit confirmed zero game-content or personal files
+made it up. **One gate before the repo goes public, the maintainer's call per
+this session's explicit decision:** the developer's written OK to publish
+modified *decompiled sources* — a bigger ask than modding
+(`DEV-PERMISSION-DRAFT.md`, untracked, is the ask). When it lands: fill
+`NOTICE.md`'s two placeholders, flip visibility, and attach
+`dist/machine-party-8p-mod.zip` to a GitHub Release — the zip never goes in
+git.
 
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 
