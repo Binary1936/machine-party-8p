@@ -776,6 +776,18 @@ The permission ask to the developers (`DEV-PERMISSION-DRAFT.md`, untracked)
 remains worth sending; the takedown promise is the standing safety net either
 way.
 
+#### 2026-08-09: issue tracker seeded
+
+Per the new issue convention, the documented public-worthy known issues became
+GitHub issues: **#2** the spawn-pair shove (the open `OFFSET` decision under
+open item 0 — that item remains the engineering record), **#3** Smoke Break's
+accepted seat clipping (§14), **#4** Arcade never run (testers wanted), **#5**
+the Steam lobby's 8 previews never seen live (testers wanted — open item 3).
+The maintainer had already filed **#1** (first-load parse cost of shipping
+plain `.gd`, backburner). Chisel Gauntlet was also re-playtested at 8 this day
+on the freshly patched throwaway — three rounds, all traces at documented
+values, no new error classes; a re-confirmation, not a change.
+
 ### 2026-08-08 — v1 release audit: docs reconciled, release integrity re-verified, `OFFSET` analysis prepared
 
 A documentation and release-readiness pass. **No mod code changed in it** — the
