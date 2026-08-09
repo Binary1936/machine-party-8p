@@ -89,6 +89,18 @@ protects something specific:
 - **Future game updates need no `mod_vXXX/` overlay snapshot**: the old
   overlay is `git show <tag>:mod/<file>`. (`mod_v107/` predates git and
   stays for the v1.0.7 baseline.)
+- **History on origin is append-only.** Never amend, rebase, or force-push
+  anything already pushed; amending a commit that has never left this machine
+  is fine. Expect non-Claude commits in the history — the maintainer commits
+  directly, both locally and through the GitHub web editor, which is also why
+  every session starts with `git pull`.
+- **User-visible bugs get GitHub issues.** A confirmed bug or limitation that
+  affects players is tracked as a public issue (`gh issue create`): symptom,
+  scope, workaround if any — written for the public, so no personal info or
+  machine paths, and check `gh issue list` for duplicates first. The issue and
+  the session-log entry that owns the evidence cross-link each other; the
+  session log remains the engineering record and the issue is the public
+  tracker.
 - **Release flow**, after step 8's zip rebuild and diff check: commit, tag
   the mod release label, `gh release create <tag>` with the zip attached.
   The zip is a Release asset, never a tracked file.

@@ -67,7 +67,8 @@ is **"Version control" in `UPDATING.md`**:
   its own review, one verified change per commit — and **never before the
   change is verified to do what it was meant to do**.
 - **Never push without a human check-in.** Present the commits and their
-  evidence, then wait for the maintainer's OK.
+  evidence, then wait for the maintainer's OK. History on origin is
+  append-only: never amend, rebase, or force-push anything already pushed.
 - **Tracked files are public-facing.** Personal or machine-local detail goes
   to `NOTES-LOCAL.md` (untracked), never into tracked docs.
 
