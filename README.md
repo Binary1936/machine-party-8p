@@ -19,8 +19,9 @@ players, and the lobby, briefing screen and score screen grow to match. The mod
 is an overlay of 56 files (40 `.gd`, 16 `.tscn`) applied to the shipped
 `Machine Party.pck`: one file is new, the rest replace shipped ones.
 
-This is mod release **v1.0**; in game it identifies itself as
-**`v1.5.0-8P-v1.0`** — game version, mod suffix, mod release.
+This is mod release **v1.1** (an **Experimental** prerelease); in game it
+identifies itself as **`v1.5.0-8P-v1.1`** — game version, mod suffix, mod
+release. v1.0 remains on the Releases page as the last non-experimental build.
 
 ## Status
 
@@ -39,12 +40,14 @@ mod's largest gap; see [Known limitations](#known-limitations).
 Lobbies of 1-4 play as vanilla, with two deliberate exceptions — see
 [Behaviour at 1-4 players](#behaviour-at-1-4-players).
 
-> **Every player in the lobby needs this mod.** Both network backends compare
-> `game_version` during the join handshake, and beyond that a client with four
-> spawn points cannot agree with a host that has eight. The `-8P` version suffix
-> exists so a mixed lobby fails as a clean `VersionMismatch` refusal at join time
-> — which `lobby_scene.gd` already has UI for — rather than desyncing partway
-> into a session.
+> **Since v1.1 you can play with unmodded friends** (experimental): a lobby may
+> mix modded and vanilla v1.5.0 players, and the mod detects this automatically.
+> A mixed lobby caps at **4** players — a vanilla client cannot handle more —
+> and plays the exact vanilla rotation; a 5th join attempt is refused with the
+> game's version-mismatch message rather than breaking mid-session. **Lobbies of
+> 5-8 still need every player on this same mod release**, and two different mod
+> releases always refuse each other (v1.0 and v1.1 are network-incompatible, so
+> modded groups should update together).
 
 ## Install
 
@@ -80,7 +83,7 @@ game update silently reverts the mod, so re-run the installer after one.
 
 ### Verify
 
-`Globals.game_version` becomes `v1.5.0-8P-v1.0`, and that string is already wired to
+`Globals.game_version` becomes `v1.5.0-8P-v1.1`, and that string is already wired to
 the main menu's version label, so the corner of the menu is the fastest check.
 
 Without launching:
@@ -113,7 +116,9 @@ reviewable as a normal diff. The build is byte-reproducible;
 
 | Area | Change |
 |---|---|
-| `modules/multiplayer/network_manager.gd` | `MAX_PLAYERS` 4 → 8. This alone drives the Steam lobby size, since `steam_backend.gd` passes `NetworkManager.max_player_count` straight into `Steam.createLobby`, and both backends gate joins on it. |
+| `modules/multiplayer/network_manager.gd` | `MAX_PLAYERS` 4 → 8. This alone drives the Steam lobby size, since `steam_backend.gd` passes `NetworkManager.max_player_count` straight into `Steam.createLobby`. Also `mod_all_peers_modded()`, which the playlist and capacity logic consult. |
+| `modules/multiplayer/backends/steam_backend.gd` + `enet_backend.gd` | **Vanilla-compat (v1.1).** The wire reports vanilla's exact version string plus a `mod8p` tag vanilla ignores; unmodded peers are accepted, differing mod releases are refused, and the effective lobby cap drops to 4 whenever a vanilla peer is present (a vanilla joiner that would exceed it is refused outright). No `@rpc` is added — the handshake stays wire-identical to vanilla. |
+| `scenes/local_game/script/local_game.gd` | Couch mode's own playlist generator gets the unconditional wheat-field-cutscene filter (a local session has no vanilla peers by definition). |
 | `autoloads/globals.gd` | Three added suit colours (orange, cyan, pink); per-minigame player caps and `supports_player_count()`; `game_version` tagged `-8P` for display while the wire reports vanilla's version string (vanilla-compat); `default_playlist` byte-identical to vanilla — the wheat-field cutscene is filtered at playlist generation instead, only when every peer runs the mod. |
 | `scripts/scenes/game/game.gd` | Playlist generation skips minigames that cannot seat the current lobby, with a fallback if that empties the list. Applied to **Arcade mode** too (new in v1.5.0), which vanilla builds without consulting the caps. |
 | `scenes/lobby/lobby_scene.tscn` + `lobby_scene.gd` | Seat map derived from `MAX_PLAYERS` instead of four hardcoded entries, and four more character preview slots (`Player5`-`Player8`) appended to the handler's exported arrays. Without the first, players 5-8 join and are never assigned a seat; without the second, `customization_assigners[seat]` was an out-of-bounds crash rather than a layout problem. |
@@ -199,6 +204,12 @@ There are exactly two sanctioned breaches, both signed off deliberately:
 
 Ranked by how much they would actually bite.
 
+- **Vanilla-compat (v1.1) is experimental.** Mixed lobbies are verified
+  extensively with local test clients — both host directions, the 4-cap, the
+  refusal path, the restored cutscene — but never yet in a real Steam session
+  with unmodded players, which exercises the Steam backend's lobby callbacks.
+  Unmodded players' logs also show harmless `rpc node checksum failed` lines in
+  mixed sessions (engine noise, verified print-only). Reports welcome.
 - **Nobody has played an 8-human session.** The harness runs eight unattended
   instances, so scoring, elimination order and win conditions at 8 are unproven
   everywhere — the weakest claim in this file. It also skews coverage: a minigame

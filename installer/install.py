@@ -306,7 +306,8 @@ def install(game_dir, force=False):
     os.replace(tmp, pck)
 
     print(f"\n  Done. 8-player mod installed to:\n    {game_dir}")
-    print("\n  Everyone in your lobby needs this same mod installed.")
+    print("\n  Lobbies of 5-8 need everyone on this same mod release."
+          "\n  Playing with unmodded friends works in lobbies up to 4 (experimental).")
     print("  To undo: python3 install.py --uninstall  (or verify the game "
           "files in Steam)")
 
