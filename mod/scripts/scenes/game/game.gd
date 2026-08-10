@@ -320,6 +320,23 @@ func generate_session_playlist():
 			minigames_shuffled.append(mlr.game_identifier)
 			session_minigame_rounds[mlr.game_identifier] = max(mlr.total_rounds, 1)
 
+	# 8-PLAYER MOD: the user-sanctioned removal of the wheat-field cutscene. It
+	# used to be a static deletion from Globals.default_playlist; vanilla-compat
+	# moved it here so it can be conditional. A lobby containing an unmodded peer
+	# must play the exact vanilla rotation, cutscene and all, so the entry is
+	# back in default_playlist and is dropped only when every peer is modded -
+	# which is every session the user actually plays.
+	#
+	# Placed after all three branches (default, custom and the empty-list
+	# fallback) have filled minigames_shuffled, so it closes every path the old
+	# static deletion closed, including the fallback that skips the
+	# CustomMinigamesWhitelist. Host-authoritative like the rest of this
+	# function: clients never generate a playlist, they receive the finished
+	# identifier array over update_playlist_state_rpc.
+	if NetworkManager.mod_all_peers_modded():
+		minigames_shuffled.erase(Globals.MinigameIdentifier.CutsceneTest)
+		session_minigame_rounds.erase(Globals.MinigameIdentifier.CutsceneTest)
+
 	# 8-PLAYER MOD (testing): `-minigame <Identifier>` pins the session to a
 	# single minigame, e.g. `-minigame GreenPea`, so a specific one can be
 	# playtested without reshuffling until it comes up. Host-authoritative like

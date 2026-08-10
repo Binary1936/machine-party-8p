@@ -7,6 +7,7 @@ extracted_old/
 # Complete game copies used by the test harness
 testgame/
 testgame_new/
+testgame2/
 # Historical overlay against game v1.0.7
 mod_v107/
 # Build output: the patched .pck is a full copy of the game.

@@ -2,12 +2,29 @@ extends Node
 
 const Epsilon: float = 0.001
 
-# 8-PLAYER MOD: the suffix does double duty. It shows up on the main menu
-# (main_menu.gd points version_label at this), so you can confirm at a glance
-# that the mod is live; and both network backends compare game_version during
-# the join handshake, so a modded and an unmodded player now get a clean
-# "version mismatch" refusal instead of desyncing partway into a session.
-var game_version: String = "v1.5.0-8P-v1.0"
+# 8-PLAYER MOD: the DISPLAY version. It shows up on the main menu (main_menu.gd
+# points version_label at this) and the installer tells you to read it back off
+# that label to confirm the overlay took, so it keeps the mod suffix.
+#
+# It is deliberately NOT the version put on the wire any more. Vanilla-compat
+# mode splits the two: the handshake reports MOD_NETWORK_GAME_VERSION, which is
+# vanilla's string verbatim, so an unmodded v1.5.0 peer's exact-equality check
+# in receive_client_data_rpc passes and modded and vanilla players can share an
+# ordinary <=4-player lobby. Mod-to-mod strictness did not disappear, it moved:
+# the backends also put MOD_SUFFIX on the wire under the "mod8p" key, refuse a
+# peer whose mod8p disagrees, and treat a peer with no mod8p key at all as
+# vanilla (accepted, and counted against the vanilla 4-player cap). See
+# mod/modules/multiplayer/backends/{steam,enet}_backend.gd.
+#
+# On every game or mod version bump, re-derive ALL THREE of these together:
+# MOD_NETWORK_GAME_VERSION must become the new vanilla string EXACTLY (a stale
+# value here silently refuses every vanilla peer), MOD_SUFFIX the new mod tag,
+# and game_version their concatenation. That extends the existing three-places
+# rule for the version label - globals.gd, installer/install.py and
+# installer/README.txt still all have to agree on game_version.
+var game_version: String = "v1.5.0-8P-v1.1"
+const MOD_NETWORK_GAME_VERSION := "v1.5.0"
+const MOD_SUFFIX := "8P-v1.1"
 
 
 const GROUP_UI: StringName = "GROUP_UI"
@@ -67,21 +84,24 @@ var default_playlist: Array = [
 	MinigameListResource.create(MinigameIdentifier.EscalatorPit, 2), 
 	MinigameListResource.create(MinigameIdentifier.DuckHunt, 2), 
 	MinigameListResource.create(MinigameIdentifier.DiscoDodge, 3), 
-	MinigameListResource.create(MinigameIdentifier.GreenPea, 2),
-	# 8-PLAYER MOD: the wheat-field cutscene (`CutsceneTest`) was HERE, between
-	# GreenPea and TrainRace, as `create(MinigameIdentifier.CutsceneTest, 1)`.
-	# Removed at the user's request - it scores nothing and interrupts the
-	# session's pace. This is the one place it needed to go: all three branches
-	# of generate_session_playlist() (default, custom, and the empty-list
-	# fallback) read `default_playlist`, so deleting the entry closes every
-	# path, including the fallback, which skips the CustomMinigamesWhitelist.
+	MinigameListResource.create(MinigameIdentifier.GreenPea, 2), 
+	# 8-PLAYER MOD: the wheat-field cutscene (`CutsceneTest`) is PRESENT here, in
+	# its vanilla position and with its vanilla round count, even though the user
+	# asked for it gone. It has to be: this list is what a session containing an
+	# unmodded peer plays, and that session must get the exact vanilla rotation,
+	# cutscene included, or the two sides disagree about the playlist.
 	#
-	# DELIBERATE EXCEPTION to "1-4 player games must stay vanilla" - this list
-	# is otherwise byte-identical to vanilla and the update procedure re-derives
-	# it from fresh source, so do NOT restore this line as a bad-merge fix.
-	# The scene, `Globals.MinigamePaths` and `CutsceneMinigameIdentifiers` are
-	# all left intact, so `-debug-tools` can still launch it directly.
-	MinigameListResource.create(MinigameIdentifier.TrainRace, 3),
+	# The user-sanctioned removal did not go away, it MOVED and became dynamic.
+	# generate_session_playlist() in game.gd drops CutsceneTest from the shuffled
+	# list when NetworkManager.mod_all_peers_modded() is true - i.e. only when
+	# every peer is running the mod, which is every session the user actually
+	# plays. It is applied after all three branches (default, custom and the
+	# empty-list fallback) have filled the list, so it closes every path the old
+	# static deletion closed, including the fallback that skips the
+	# CustomMinigamesWhitelist. Do NOT delete this line again to "restore" the
+	# removal - that would break vanilla-compat and change nothing else.
+	MinigameListResource.create(MinigameIdentifier.CutsceneTest, 1), 
+	MinigameListResource.create(MinigameIdentifier.TrainRace, 3), 
 	MinigameListResource.create(MinigameIdentifier.KnifeAtTheOffice, 3), 
 	MinigameListResource.create(MinigameIdentifier.SmokeBreak, 2), 
 	MinigameListResource.create(MinigameIdentifier.JunkPlatform, 3), 

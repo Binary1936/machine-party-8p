@@ -58,6 +58,30 @@ func _ready() -> void :
 		active_backend_type = NetworkBackendType.Steam
 		create_backend()
 
+# 8-PLAYER MOD: true when nobody in the lobby is running unmodded v1.5.0.
+# Every peer's self_data reaches the host through the join handshake and is
+# rebroadcast verbatim to everyone, so active_backend.connected_players holds
+# the dicts as sent - including the host's own, which both backends insert
+# locally before any client connects. A modded peer stamps "mod8p" into that
+# dict; a vanilla peer has no such key. So "all modded" is just "every dict has
+# the key", and no dict at all (no backend yet, or an empty roster in a solo or
+# lobbyless context) counts as all-modded, which keeps the current single-player
+# and pre-lobby behaviour exactly as it is.
+#
+# Used by generate_session_playlist() in game.gd to decide whether the wheat-
+# field cutscene is filtered out: a session with a vanilla peer in it has to
+# play the exact vanilla rotation, cutscene included.
+func mod_all_peers_modded() -> bool:
+
+	if not active_backend:
+		return true
+
+	for peer_data in active_backend.connected_players.values():
+		if not peer_data.has("mod8p"):
+			return false
+
+	return true
+
 func is_active() -> bool:
 
 	if not multiplayer:

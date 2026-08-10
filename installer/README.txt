@@ -38,7 +38,7 @@ DID IT WORK?
 ------------
 Launch the game and look at the version in the corner of the main menu:
 
-  v1.5.0-8P-v1.0    <- mod is active
+  v1.5.0-8P-v1.1    <- mod is active
   v1.5.0            <- still the original
 
 Or check without launching:
