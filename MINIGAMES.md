@@ -17,7 +17,7 @@ Cross-file conventions: **rule N** and **pitfall N** always refer to
 
 ## What the mod changes
 
-Thirty-seven scripts and sixteen scenes (53 files). Re-apply all of these to
+Forty scripts and sixteen scenes (56 files). Re-apply all of these to
 the new version.
 
 ### 1. `modules/multiplayer/network_manager.gd`
@@ -31,20 +31,23 @@ into `Steam.createLobby`, and both backends gate joins on `MAX_PLAYERS`.
 free-fly observer camera, which joins once the real seats are full.
 
 ### 2. `autoloads/globals.gd`
-- `game_version` → `"v1.5.0-8P-v1.0"`, i.e. game version + `-8P` + the mod's
+- `game_version` → `"v1.5.0-8P-v1.1"`, i.e. game version + `-8P` + the mod's
   release label (**bump the base version on update; keep the mod release
-  label**). Shown on
-  the main menu via `main_menu.gd`, and compared in the join handshake — so
-  modded and unmodded players get a clean `VersionMismatch` refusal.
+  label**). Shown on the main menu via `main_menu.gd`. Since vanilla-compat it is
+  the **display** string only: `MOD_NETWORK_GAME_VERSION` (vanilla's exact
+  version) and `MOD_SUFFIX` are what the handshake puts on the wire. See
+  `UPDATING.md` step 6 — all three have to be bumped, and a stale
+  `MOD_NETWORK_GAME_VERSION` silently refuses every vanilla peer.
 - `CustomizationColors` enum + `suit_colors` array gain `Orange, Cyan, Pink`.
 - New `modded_suit_tints` — maps each new colour to a shipped base texture plus
   an `albedo_color` tint. There are only five suit *textures*; the three added
   colours are tints, not new art.
 - New `modded_minigame_player_cap` + `supports_player_count()`.
-- **`default_playlist` drops `MinigameIdentifier.CutsceneTest`** (the wheat-field
-  cutscene), at every roster size. This is the mod's one sanctioned break from
-  "1-4 stays vanilla" — see that rule's section, and the comment at the deletion
-  site. On update, re-apply it deliberately; the list is otherwise vanilla.
+- **`default_playlist` is byte-identical to vanilla** since 2026-08-09, including
+  `MinigameIdentifier.CutsceneTest` in its vanilla slot — so there is nothing to
+  re-apply here on update. The wheat-field cutscene is still dropped at every
+  roster size, but dynamically, in `game.gd` and only when every peer is modded;
+  see "The first sanctioned exception" in `UPDATING.md` for why.
 
 ### 3. `scripts/scenes/game/game.gd`
 - `for p in 4:` → `for p in NetworkManager.MAX_PLAYERS:` (player label array).
@@ -213,7 +216,7 @@ code, and each is described in the pitfalls list below.
   layout. Do not "clean up" those hidden nodes.
 - `minigames/chisel_gauntlet_multiplayer/scripts/chisel_gauntlet.gd` -
   8 distinct `player_rotations`, conditional `shotgun_check_order`, and
-  `mod_add_stations_rpc()` which clones the console/desk/ring geometry for the
+  `zz_mod_add_stations_rpc()` which clones the console/desk/ring geometry for the
   added slots.
 - `minigames/chisel_gauntlet_multiplayer/states/round_eliminate.gd` - `[SHOTGUN]`
   trace of the execution sweep under `-localtest`.
@@ -849,7 +852,7 @@ absence-of-errors — the proxy this file warns against everywhere else.
 online caller of `set_can_aim_rpc(true)`, and `can_aim` defaults to `false` — so
 the hunter could never fire, no duck could die, and the minigame hung.
 `_mod_apply_skipped_reveal()` in `duck_hunt.gd` re-does what the skipped state
-did: `set_can_aim_rpc.rpc(true)` plus `mod_clear_role_overlay_rpc()`, which
+did: `set_can_aim_rpc.rpc(true)` plus `zz_mod_clear_role_overlay_rpc()`, which
 clears the role overlay on every peer. It is gated on `Globals.debug_skip_brief`
 and called from the end of `spawn_players()`, which `reset_state.gd` re-runs per
 hunter turn, so every hunter is covered rather than only the first. Verified
@@ -888,13 +891,13 @@ the minigame loads to a black screen with the ambience looping.
 Zones and markers must therefore grow **together and in the same order**, and
 they are built differently on purpose:
 
-- **Zones go out as `mod_add_delivery_areas_rpc()`** (`authority`, `call_local`,
+- **Zones go out as `zz_mod_add_delivery_areas_rpc()`** (`authority`, `call_local`,
   `reliable`). They sit outside any `MultiplayerSpawner` and the game drives them
   with `set_owner_rpc` / `update_counter_rpc` / `set_indicator_light_rpc`, all of
   which resolve **by node path** - a host-local clone is an RPC into thin air on
   seven clients. Reliable RPCs are ordered, so the `set_owner_rpc` calls
   `spawn_players()` sends immediately afterwards land with the nodes already
-  built. Same guarantee `mod_add_stations_rpc()` leans on in Chisel.
+  built. Same guarantee `zz_mod_add_stations_rpc()` leans on in Chisel.
 - **Markers are host-only.** `setup_rpc()` carries the resolved position and
   rotation, so clients never need one — and keeping them off clients keeps them
   out of the shuffled marker list a 1-4 game walks. Forklift sidesteps the
@@ -1260,6 +1263,18 @@ at 5-8 any more; last place takes 1.
 outlasts three, and both score seven. Signed off deliberately rather than
 overlooked.
 
+#### Roster-gated dispatches, for vanilla-compat (2026-08-09)
+
+All three mod RPC dispatches here are gated to **roster > 4**, so no mod RPC
+crosses the wire in a lobby that may contain an unmodded peer. Two were provable
+no-ops at ≤4. The third, `zz_mod_place_item_rpc`, also carries vanilla's
+incinerator spark-ramp tail — at >4 that tail has to reach every peer so each one
+ramps *its* room's incinerator — so its gate branches: >4 dispatches as before,
+≤4 runs vanilla's original tail verbatim, host-side. That second branch **closes
+an undocumented 1-4 parity deviation**: the pre-gate code ramped `spark_ratio` on
+every peer where vanilla ramps host-only. See the 2026-08-09 session-log entry in
+`UPDATING.md`, and pitfall 30 for why the RPCs are named `zz_`.
+
 #### Three traps this minigame produced
 
 1. **`player spawn parent` holds four instances of the PLAYER SCENE** as editor
@@ -1271,7 +1286,7 @@ overlooked.
    grep **cannot see inside instanced sub-scenes**. Controls settled it —
    DiscoDodge@8, ExplodingCollarRace@8 and BurnRecycle@4 all gave 0/0 while
    BurnRecycle@8 gave 128/128.
-2. **`mod_set_room_rpc` as `@rpc("authority")` was rejected silently.**
+2. **`zz_mod_set_room_rpc` as `@rpc("authority")` was rejected silently.**
    `set_player_presence()` hands each player node's authority to that player's
    own peer, so the host is not the authority for anyone else's node. The offset
    never applied and all eight stood stacked two-per-station. Vanilla's
@@ -1299,7 +1314,7 @@ update can be checked off rather than reconstructed from the prose below:
 | `_mod_nearest_shipped()` | copies rotation from the nearest shipped marker rather than inventing one |
 | `_mod_expand_for_roster()` | host-only entry point; also raises `spawn_limit` on the three spawners by property write |
 | `_mod_subtree_mesh_y_extent()` | measures the projection's own height without `get_transformed_aabb()` (pitfall 18) |
-| `_mod_raise_item_preview()` / `_mod_preview_mover()` / `mod_raise_item_preview_rpc()` | raise the ingredient projection clear of `MOD8`'s desk, on every peer |
+| `_mod_raise_item_preview()` / `_mod_preview_mover()` / `zz_mod_raise_item_preview_rpc()` | raise the ingredient projection clear of `MOD8`'s desk, on every peer |
 | plus | the `remove_empty_workstation_rpc` bounds guard, and the roster-scaled item count in `spawn_items()` |
 
 **`manufacture_gun.tscn` is deliberately NOT in the overlay** — every change here is
@@ -1511,7 +1526,7 @@ Three things about how that is done:
   AnimationPlayer whose tracks are `.:position` and `.:rotation` on itself, so
   anything at or below `Visual` would be fought over every frame. Nothing animates
   `ItemSequencePreview`.
-- **It is an RPC** (`mod_raise_item_preview_rpc`, `authority`/`call_local`),
+- **It is an RPC** (`zz_mod_raise_item_preview_rpc`, `authority`/`call_local`),
   because `initialize()` runs host-only and this alters the shipped scene. The
   trace lives *inside* the RPC for the same reason: verified `1.8741` on the host
   **and all seven clients**, exactly one `is_server=true`.

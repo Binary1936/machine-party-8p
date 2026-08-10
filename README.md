@@ -16,7 +16,7 @@ or submit Pull requests with changes. I'm still figuring GitHub out, so if I mad
 Raises the online (Steam/ENet) player cap from 4 to 8 for **Machine Party
 v1.5.0** (Godot 4.5.2). All fifteen minigames in the rotation seat eight
 players, and the lobby, briefing screen and score screen grow to match. The mod
-is an overlay of 53 files (37 `.gd`, 16 `.tscn`) applied to the shipped
+is an overlay of 56 files (40 `.gd`, 16 `.tscn`) applied to the shipped
 `Machine Party.pck`: one file is new, the rest replace shipped ones.
 
 This is mod release **v1.0**; in game it identifies itself as
@@ -114,7 +114,7 @@ reviewable as a normal diff. The build is byte-reproducible;
 | Area | Change |
 |---|---|
 | `modules/multiplayer/network_manager.gd` | `MAX_PLAYERS` 4 → 8. This alone drives the Steam lobby size, since `steam_backend.gd` passes `NetworkManager.max_player_count` straight into `Steam.createLobby`, and both backends gate joins on it. |
-| `autoloads/globals.gd` | Three added suit colours (orange, cyan, pink); per-minigame player caps and `supports_player_count()`; `game_version` tagged `-8P`; the wheat-field cutscene removed from `default_playlist`. |
+| `autoloads/globals.gd` | Three added suit colours (orange, cyan, pink); per-minigame player caps and `supports_player_count()`; `game_version` tagged `-8P` for display while the wire reports vanilla's version string (vanilla-compat); `default_playlist` byte-identical to vanilla — the wheat-field cutscene is filtered at playlist generation instead, only when every peer runs the mod. |
 | `scripts/scenes/game/game.gd` | Playlist generation skips minigames that cannot seat the current lobby, with a fallback if that empties the list. Applied to **Arcade mode** too (new in v1.5.0), which vanilla builds without consulting the caps. |
 | `scenes/lobby/lobby_scene.tscn` + `lobby_scene.gd` | Seat map derived from `MAX_PLAYERS` instead of four hardcoded entries, and four more character preview slots (`Player5`-`Player8`) appended to the handler's exported arrays. Without the first, players 5-8 join and are never assigned a seat; without the second, `customization_assigners[seat]` was an out-of-bounds crash rather than a layout problem. |
 | `modules/multiplayer_lobby/mod_player_name_list.gd` | **The mod's one new file.** A plain text roster of Steam names in the lobby corner. At eight players the seated characters are packed close enough that the floating nametags stop being readable. |
@@ -181,11 +181,13 @@ restores the shipped preview positions whenever it holds four or fewer.
 
 There are exactly two sanctioned breaches, both signed off deliberately:
 
-- **The wheat-field cutscene (`CutsceneTest`) is gone** from `default_playlist`
-  at every roster size. It scored nothing and broke the session's pace, so it was
-  removed at the maintainer's request in full knowledge that it breaks the rule.
-  The scene and its supporting code are intact, so `-debug-tools` can still launch
-  it.
+- **The wheat-field cutscene (`CutsceneTest`) is gone from the rotation when
+  every player runs the mod.** It scored nothing and broke the session's pace,
+  so it was removed at the maintainer's request in full knowledge that it breaks
+  the rule. Since v1.1 the removal is dynamic: a lobby containing an unmodded
+  player gets the exact vanilla rotation, cutscene included (vanilla-compat).
+  The scene and its supporting code are intact, so `-debug-tools` can still
+  launch it.
 - **Spawn-marker *selection* at 1-4.** Nine expanded scenes (six in the rotation,
   three debug-only) shuffle the marker list before indexing it, so a 1-4 game
   draws from all eight markers and can seat someone 1.2u sideways of a vanilla

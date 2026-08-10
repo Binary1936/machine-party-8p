@@ -21,7 +21,7 @@ this file had grown past the point where one read returned all of it.
 | **"Overlay manifest"** | every file in `mod/`, mapped to the `MINIGAMES.md` section explaining it |
 | **"Update procedure"** | the eight steps for rebuilding against a new game version |
 | **"Testing — the validation recipe"** | the 8-client harness and the traps in it. Cited everywhere as *Testing* |
-| **"Pitfalls"** | 29 numbered failure modes. Cited from code as *pitfall N* — stable, do not renumber |
+| **"Pitfalls"** | 30 numbered failure modes. Cited from code as *pitfall N* — stable, do not renumber |
 | **"A rule to preserve"** | 1-4 stays vanilla, and the two accepted breaches |
 | **"Documentation policy"** | how this doc set stays lean — read before editing any of these files |
 | **"Version control"** | the GitHub repo, commit discipline, and the release flow |
@@ -140,7 +140,7 @@ one instruction that decides whether the rebuild takes an hour or a day:
 > The game updated to v&lt;new&gt;. Rebuild the mod against it following "Update
 > procedure" in `UPDATING.md` — but do **step 4 before touching the overlay**:
 > diff the old and new decompiles, then run the `filecmp` sweep to prove which
-> of the 53 overlay files have byte-identical upstream source. Re-derive only
+> of the 56 overlay files have byte-identical upstream source. Re-derive only
 > the files that actually changed; carrying the rest forward is **provable, not
 > a shortcut**. Then run the `.tscn` audit in step 5 — that is the check that
 > caught `disco_dodge`'s missing `spawn_limit`.
@@ -309,6 +309,16 @@ upstream restructure you must account for, or a misapplied hunk.
   cell and a reachable target, and the four-decal blood pool made to refill.
   See `MINIGAMES.md` §20.
 
+**Vanilla-compat mode works and is verified locally (2026-08-09).** A player who
+keeps the mod installed can host or join an ordinary lobby containing unmodded
+v1.5.0 clients: the mod's RPCs were renamed to sort after vanilla's (pitfall 30)
+and are kept off the wire at ≤4. **A mixed lobby caps at 4** — a vanilla joiner
+that would push it past 4 is refused, because an unmodded build cannot render or
+spectate a 5-8 player session — and **plays the exact vanilla rotation, cutscene
+included**. The one open gate is a real Steam session: the Steam backend's lobby
+callbacks cannot run locally, so the tree carries `v1.5.0-8P-v1.1` **unreleased**
+until that confirms. Full evidence in the 2026-08-09 session-log entry.
+
 **Every minigame in the rotation has now been played at 8** - all fifteen, since
 The Filter and Firearm Factory were uncapped on 2026-08-07. The
 "playable but never actually played" list is empty.
@@ -342,9 +352,12 @@ vanilla. **It has never been run** — no local harness can reach it, because
 `-localtest` always enters through the debug lobby. Treat it as unproven.
 
 **Removed from the rotation on purpose:** the wheat-field cutscene
-(`CutsceneTest`) is no longer in `default_playlist` at any roster size - the
-mod's one sanctioned break from the 1-4-stays-vanilla rule. It is still
-launchable via `-debug-tools`.
+(`CutsceneTest`) is dropped from the session playlist at any roster size - the
+mod's one sanctioned break from the 1-4-stays-vanilla rule. Since 2026-08-09 the
+removal is **dynamic**: the entry sits in `default_playlist` in its vanilla slot
+and `generate_session_playlist()` erases it only when every peer is modded, so a
+mixed lobby plays it. It is still launchable via `-debug-tools`. See "The first
+sanctioned exception".
 
 **Always write the identifier next to the display name.** They overlap almost
 nowhere, and `MinigameReadableNames` (globals.gd:178) is the only authoritative
@@ -364,9 +377,10 @@ while both had in fact been worked on and verified - **Wrong Way is
 | INSIDE JOB | `KnifeAtTheOffice` | | | |
 
 `ShapeCutter`, `ScavangerChairs`, `MemorizePath` and `CutsceneGame02` map to
-`LOC_EMPTY` and are in neither playlist. `CutsceneTest` is in *vanilla's*
-`default_playlist` but is a cutscene, not a competitive game — the mod removes it
-at every roster size (see "The first sanctioned exception").
+`LOC_EMPTY` and are in neither playlist. `CutsceneTest` is in vanilla's
+`default_playlist` — and, since 2026-08-09, in the mod's too — but is a cutscene,
+not a competitive game, so the mod filters it out of every all-modded session's
+playlist at every roster size (see "The first sanctioned exception").
 
 **"Verified" above means 8 players spawn correctly, the layout is right on
 clients, and runs are error-free.** The instances idle - nobody plays - so
@@ -419,7 +433,8 @@ for mod breakage when reading logs.
 **A 1-4 player game is meant to be pixel-identical to vanilla** - see the rule
 below, and re-check it after any change. There are exactly **two accepted
 breaches**, both signed off by the user and both written up under that rule: the
-wheat-field cutscene is gone from the playlist at every roster size, and nine
+wheat-field cutscene is filtered out of every all-modded session's playlist at
+every roster size (a mixed lobby keeps it), and nine
 expanded scenes can seat a 1-4 player 1.2u sideways of a vanilla spawn. Neither
 is a bug to fix; anything *else* that differs at 1-4 is.
 
@@ -581,6 +596,16 @@ closed.** What remains:
    unverifiable locally — `lobby_scene.gd` has 12 `Steam.` call sites and its
    join path is built on Steam lobby callbacks, so the real lobby cannot run
    over ENet. Needs a real 8-player Steam session.
+
+3a. **Vanilla-compat's Steam backend path is unconfirmed, and it is the one gate
+   on releasing v1.1.** Same structural reason as item 3: `steam_backend.gd`'s
+   logic is identical to the verified ENet one and was kept symmetric with it and
+   reviewed, but its lobby callbacks cannot run locally. **One real Steam session
+   with an unmodded player closes it** — check joining in *both* directions
+   (modded host + vanilla joiner, vanilla host + modded joiner), that a vanilla
+   5th join is refused with the refusal message rather than admitted, and that the
+   wheat-field cutscene appears in the mixed rotation. Everything else is verified
+   locally; see the 2026-08-09 session-log entry for what was measured and how.
 4. ~~**Spawn-marker *selection* at 1-4 deviates from vanilla.**~~ **Closed
    2026-08-04 — decided, not fixed.** Nine scenes (six live) can seat a 1-4
    player 1.2u sideways of a vanilla spawn, same rotation, same floor. Judged
@@ -656,7 +681,113 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-08 (latest) — GitHub release prep: root-installable restructure, personal-info scrub, repo staged but not published
+### 2026-08-09 (latest) — Vanilla-compat mode: mixed lobbies with unmodded clients, verified locally; label bumped to v1.1 (unreleased)
+
+Players who keep the mod installed can now host or join ordinary ≤4-player
+lobbies containing UNMODDED v1.5.0 clients. Requested by the maintainer, built
+and verified this day against a "quasi-vanilla" test peer (see Testing). The
+shipped release is still v1.0; this tree carries `v1.5.0-8P-v1.1` and ships as
+v1.1 only after a real-Steam mixed session confirms the Steam backend path.
+
+**The engine fact the whole feature rests on** (verified against Godot 4.5
+source, `scene_rpc_interface.cpp`): RPC wire ids are assigned from the
+script chain's @rpc method names sorted alphabetically. The mod's 8 added
+RPCs were named `mod_*`, which sorts before most vanilla names and silently
+renumbered vanilla's RPCs relative to an unmodded build — misrouted RPCs in
+any mixed lobby, at any roster size. Now pitfall 30.
+
+**Changes** (all uncommitted until this entry lands with them):
+
+- The 8 mod RPCs renamed with a `zz_` prefix so they sort after every vanilla
+  RPC in their inheritance chains (`zz_mod_set_room_rpc`, `zz_mod_build_rooms_rpc`,
+  `zz_mod_place_item_rpc`, `zz_mod_add_stations_rpc`, `zz_mod_clear_role_overlay_rpc`,
+  `zz_mod_add_delivery_areas_rpc`, `zz_mod_apply_eight_seat_layout_rpc`,
+  `zz_mod_raise_item_preview_rpc`). Nothing in vanilla begins with "zz"; the
+  latest-sorting vanilla name in any affected chain is `update_timers_rpc`.
+- Burn & Recycle's three formerly-unconditional mod RPC dispatches gated to
+  roster > 4 so no mod RPC ever crosses the wire at ≤4. Two were provable
+  no-ops at ≤4; the third (`zz_mod_place_item_rpc`) carries vanilla's
+  incinerator spark-ramp tail for >4 rosters, so its gate branches: >4
+  dispatches unchanged, ≤4 runs vanilla's original tail verbatim host-side —
+  which also closes an undocumented ≤4 parity deviation (the old code ramped
+  spark_ratio on every peer where vanilla ramps host-only). See §21.
+- NEW overlays `modules/multiplayer/backends/steam_backend.gd` and
+  `enet_backend.gd` (wire-identical @rpc sets, bodies only): self_data now
+  reports `MOD_NETWORK_GAME_VERSION` ("v1.5.0", vanilla's exact string) plus a
+  `mod8p` capability key vanilla provably ignores and rebroadcasts; the host
+  accepts vanilla peers, refuses a differing `mod8p` (and old mod v1.0, which
+  still reports the concatenated string), REFUSES a vanilla joiner that would
+  push the roster past 4 (an unmodded build cannot render or spectate a 5-8
+  player session), and demotes an over-cap modded joiner through vanilla's own
+  debug-spectator path with the cap dropping to 4 whenever any vanilla peer is
+  present.
+- `network_manager.gd`: `mod_all_peers_modded()` helper (host's own self_data
+  is in `connected_players` in both backends, so the scan needs no local-peer
+  special case).
+- `globals.gd`: the version split (`game_version` stays the display string;
+  `MOD_NETWORK_GAME_VERSION` and `MOD_SUFFIX` are the wire fields — step 6 now
+  covers all of them), and `CutsceneTest` RESTORED to `default_playlist` in its
+  vanilla slot. The user-sanctioned cutscene removal moved to
+  `generate_session_playlist()` in `game.gd`, applied only when
+  `mod_all_peers_modded()` — a lobby containing a vanilla peer gets the exact
+  vanilla rotation, cutscene included. The first sanctioned exception is
+  rewritten accordingly. Couch mode has its own generator, so
+  `scenes/local_game/script/local_game.gd` is now overlaid with the
+  unconditional filter (a local session has no vanilla peers by definition).
+- Test infrastructure: `tools/quasivanilla/` (a 4-file vanilla-plus-harness-
+  hooks overlay, build script, and `qv.pck`; wire-identical to vanilla —
+  reports "v1.5.0", no mod8p), `testgame2/` (gitignored) carrying it, and
+  `tools/localtest.sh` gained `VANILLA_DIR`/`VANILLA_SLOTS` for mixed launches.
+  See Testing for the mixed-run recipe and its traps.
+
+**Verification** (all runs START=1 on the v1.1 build, md5 `3fbdbe03…`):
+
+| Check | Result |
+|---|---|
+| All-modded regression baseline | 10/10 runs: BurnRecycle 8p+4p, Chisel, GreenPea, ManufactureGun 8p+4p, Forklift, DuckHunt start, full rotation 8p+4p — every documented trace on host and clients, zero new error classes, zero `zz_mod` wire errors |
+| Mixed gameplay, modded host | BurnRecycle at 4 (2 modded + 2 quasi-vanilla): 2 full rounds with eliminations, no `[FILTER8] rooms` (mod RPCs off the wire), zero RPC errors |
+| Mixed gameplay, vanilla host | quasi-vanilla host + 3 modded: 240s across two minigames, zero crashes |
+| Vanilla joiner over cap | Controlled-order test (4 modded seated first): quasi 5th refused, `_on_join_refused with reason: 1` client-side, roster pinned at 4 |
+| Modded joiner over mixed cap | Demoted silently via vanilla's spectator path — sessions ran `connected=5`, `players=4` |
+| Cutscene filter, all-modded | `-original` at 8 and at 4: 15-entry playlist, CutsceneTest absent |
+| Cutscene filter, mixed | `-original` mixed: 16-entry playlist, CutsceneTest present in its vanilla slot; the scene loaded and synchronized on all four peers |
+| Handshake versions | quasi peers boot `v1.5.0`, modded boot `v1.5.0-8P-v1.1`, zero VersionMismatch in any accepted-join run |
+
+**Findings, each measured rather than assumed:**
+
+- `The rpc node checksum failed` appears once per mod-scripted node per vanilla
+  peer in mixed sessions. Verified print-only in engine source
+  (`scene_cache_interface.cpp`: the cache entry is stored and confirmed
+  regardless), and gameplay was clean in every mixed run. Accepted as a
+  documented mixed-session artifact rather than refactoring seven verified
+  minigames onto RPC-hub nodes; see Testing.
+- Two early "cap failed" results were a JOIN-ORDER RACE in the harness, not a
+  code defect: launch order does not control handshake arrival order, so the
+  quasi peer slipped in 4th (correctly admitted) and the modded last-arriver
+  took the silent demotion. Cap tests need controlled ordering — idle lobby
+  first, overflow joiner launched after `connected=4`; recipe in Testing.
+- The wheat-field cutscene CANNOT complete unattended, by construction: its
+  fallback Timer is dead code (`wait_time = 100000`, handler begins with
+  `return`) and reaching `Finished` requires a player walking to the house
+  (`Input.get_axis` drives movement). 3/3 unattended mixed runs stalled at
+  `PlayerMarker → Play` on all peers identically; the two runs that completed
+  coincided with the maintainer actively using the desktop (focused window
+  catching input). Real sessions complete it by playing. Same unattended-
+  harness class as Duck Hunt.
+- The Minefield `curve.cpp` out-of-bounds error (24× per peer) reproduces in a
+  PURE quasi-vanilla session with zero modded peers — a vanilla-under-localtest
+  artifact never observable before (vanilla clients could not localtest), not a
+  compat defect.
+- A `Node not found: Game/Minigame/<scene>` burst on clients at each round
+  load appears in mixed runs before successful and stalled rounds alike —
+  same replication-churn family as the documented teardown noise.
+
+**Open:** the Steam backend path (identical logic, kept symmetric with ENet,
+reviewed — but its lobby callbacks cannot run locally). One real Steam session
+with an unmodded player closes it: join both directions, the 5th-join refusal
+message, and the cutscene in rotation. Until then v1.1 stays unreleased.
+
+### 2026-08-08 — GitHub release prep: root-installable restructure, personal-info scrub, repo staged but not published
 
 Prepared the project for a public GitHub release. **No gameplay code changed**
 — the overlay's 53 files are byte-identical to the morning's; only packaging,
@@ -818,7 +949,7 @@ authoritative. Pre-restructure copies in `docs_old_2026-08-08/`.
 |---|---|
 | Reproducible build | `tools/build.py` output **byte-identical** to the shipped `dist` pck (`156f99e3…`) |
 | Installer round-trip | `NOT PATCHED` → 4177 files (53 mod, 88 replaced) → `PATCHED` + `v1.5.0-8P` → uninstall **byte-identical** (`f5912732…`) |
-| Patched pck carries the source | `MOD_WALL_DESK_PUSH` and `mod_raise_item_preview_rpc` grep out of it |
+| Patched pck carries the source | `MOD_WALL_DESK_PUSH` and `zz_mod_raise_item_preview_rpc` grep out of it |
 | Headless boot | `v1.5.0-8P`, zero script errors |
 
 **Harness spot-checks on the freshly built pck.** Firearm Factory at 8 matched
@@ -1023,7 +1154,7 @@ session, since the overlay is what the installer carries:
 | `ADDED_FILES` | unchanged — still exactly `mod_player_name_list.gd`, the only file the mod adds |
 | `dist/machine-party-8p-mod.zip` | rebuilt, 127 entries, 53 mod files, carries today's `manufacture_gun.gd` |
 | Round-trip on the clean v1.5.0 copy | `NOT PATCHED` → 4177 files (53 mod, **88** originals replaced) → `PATCHED` + `v1.5.0-8P` → `--uninstall` → **`f5912732…`, 635,333,716 bytes, byte-identical** |
-| Today's changes present in the installed pck | `MOD_WALL_DESK_PUSH`, `mod_raise_item_preview_rpc` and `MOD_ITEM_SPREAD: float = 1.10` all grep out of the patched `.pck` — the mod ships plain `.gd`, so this is a direct check that the artifact carries the source, not just that the installer ran |
+| Today's changes present in the installed pck | `MOD_WALL_DESK_PUSH`, `zz_mod_raise_item_preview_rpc` and `MOD_ITEM_SPREAD: float = 1.10` all grep out of the patched `.pck` — the mod ships plain `.gd`, so this is a direct check that the artifact carries the source, not just that the installer ran |
 
 **88 originals replaced, where the 2026-08-05 entry recorded 82.** That is not a
 regression: the overlay grew 50 → 53 files when The Filter and Firearm Factory were
@@ -1108,7 +1239,7 @@ one MinigameOverlay, one MultiplayerSpawner.
 **Three silent bugs, none of which a log would have shown**, all in
 `MINIGAMES.md` §21: duplicating `player spawn parent` (which holds four
 instances of the *player scene*) put four ghost rigs in room B and cost 256
-errors a run; `mod_set_room_rpc` declared `@rpc("authority")` was rejected
+errors a run; `zz_mod_set_room_rpc` declared `@rpc("authority")` was rejected
 quietly, leaving all eight players stacked two-per-station; and `launch_rpc`
 never sets position, so room B's tossed pictures spawned in room A.
 
@@ -1462,7 +1593,7 @@ CLAUDE.md     auto-loaded pointer for sessions started inside this folder
 ```
 extracted/   pristine unpack of the shipped .pck (reference; regenerate on update)
 project/     full decompile via GDRE Tools — readable .gd / .tscn source
-mod/         the overlay: ONLY the 53 files that differ (see the manifest)
+mod/         the overlay: ONLY the 56 files that differ (see the manifest)
 dist/        built "Machine Party.pck" + machine-party-8p-mod.zip (release zip)
 installer/   install.py, install.sh, install.bat, README.txt - the installer
               scripts, no mod copy inside; install.py falls back to the
@@ -1550,15 +1681,18 @@ mod needs **no Godot export templates and no editor round-trip**.
 
 ## Overlay manifest — every file in `mod/`, and what documents it
 
-**53 files: 37 `.gd`, 16 `.tscn`.** Regenerate with `find mod -type f | sort`.
+**56 files: 40 `.gd`, 16 `.tscn`** (was 53 before vanilla-compat added three
+`.gd` on 2026-08-09). Regenerate with `find mod -type f | sort`.
 On a game update, every one of these must be re-derived from the *new* source —
 see step 5 of the update procedure. The "§" column is the section of **`MINIGAMES.md`** that explains the change.
 
 | File | § | Change |
 |---|---|---|
-| `autoloads/globals.gd` | 2 | version string, 3 suit colours + tints, player caps, `supports_player_count()`, round counts, cutscene removed from `default_playlist` |
-| `modules/multiplayer/network_manager.gd` | 1 | `MAX_PLAYERS` 4→8; `-localtest` backend |
-| `scripts/scenes/game/game.gd` | 3, 19 | playlist filtering + fallback, **Arcade-branch cap filter + clamp (v1.5.0)**, `-minigame` pin, round-count resolution, `[ROUNDS8] load` |
+| `autoloads/globals.gd` | 2 | version strings (display + the two wire fields), 3 suit colours + tints, player caps, `supports_player_count()`, round counts. `default_playlist` is byte-identical to vanilla again since 2026-08-09 |
+| `modules/multiplayer/network_manager.gd` | 1 | `MAX_PLAYERS` 4→8; `-localtest` backend; `mod_all_peers_modded()` |
+| `modules/multiplayer/backends/steam_backend.gd`, `backends/enet_backend.gd` | — | **vanilla-compat handshake**: wire version + `mod8p` capability key, vanilla-peer accept, over-cap refusal and spectator demotion. See the 2026-08-09 session-log entry |
+| `scenes/local_game/script/local_game.gd` | — | couch mode's own playlist generator — the **unconditional** cutscene filter (no vanilla peers by definition); see "The first sanctioned exception" |
+| `scripts/scenes/game/game.gd` | 3, 19 | playlist filtering + fallback, **Arcade-branch cap filter + clamp (v1.5.0)**, **all-modded-only cutscene filter**, `-minigame` pin, round-count resolution, `[ROUNDS8] load` |
 | `scripts/scenes/game/states/minigame_playing_state.gd` | 19 | the **replay gate** — second round-count site |
 | `scripts/components/character customization/customization_assigner.gd` | 4 | suit tinting |
 | `scenes/bootstrap/scripts/bootstrap.gd` | 8 | `-localtest`, `-fullflow` |
@@ -1687,8 +1821,8 @@ players see the stock level, and nothing in the logs says so.
 
 Mark such work `@rpc("authority", "call_local", "reliable")` and invoke it with
 `.rpc()`, matching how the game already does `teleport_rpc` and
-`set_spectate_position_rpc`. See `mod_add_stations_rpc()` in chisel_gauntlet.gd
-and `mod_apply_eight_seat_layout_rpc()` in green_pea.gd.
+`set_spectate_position_rpc`. See `zz_mod_add_stations_rpc()` in chisel_gauntlet.gd
+and `zz_mod_apply_eight_seat_layout_rpc()` in green_pea.gd.
 
 **This also invalidates host-only screenshots as verification.** A capture of the
 host window will happily show a fix that no client has. Confirm on a client
@@ -1717,13 +1851,26 @@ changes what four players see. Verify both paths after any such change with
 **Requested by the user on 2026-08-02, after being told it breaks this rule.
 Do not "fix" it back.**
 
-`MinigameIdentifier.CutsceneTest` - the wheat-field cutscene - has been deleted
-from `default_playlist` in `mod/autoloads/globals.gd`. It no longer appears at
-**any** roster size, so a 1-4 player modded lobby differs from vanilla by that
-one entry. The list is byte-identical to vanilla otherwise, and step 5 of the
-update procedure re-derives it from fresh source, so on the next game update
-the deletion must be **re-applied deliberately** - there is a comment at the
-deletion site saying exactly what was removed and where it sat.
+`MinigameIdentifier.CutsceneTest` - the wheat-field cutscene - is dropped from
+the session playlist at **every** roster size, because it scored nothing and
+broke the session's pace. So a 1-4 player modded lobby differs from vanilla by
+that one entry.
+
+**The removal is dynamic since 2026-08-09, not a deletion.** The entry is back
+in `default_playlist` in `mod/autoloads/globals.gd`, in its vanilla slot with
+its vanilla round count, so that list is now byte-identical to vanilla and step
+5 re-derives it with nothing to re-apply. The filtering moved to
+`generate_session_playlist()` in `game.gd`, gated on
+`NetworkManager.mod_all_peers_modded()` and applied after all three branches
+(default, custom, empty-list fallback) have filled the list — so it closes every
+path the old static deletion closed. Vanilla-compat is why: **a lobby containing
+an unmodded peer plays the exact vanilla rotation, cutscene included**, or the
+two sides disagree about the playlist. Every session the maintainer actually
+plays is all-modded, so the sanctioned behaviour is unchanged for them.
+
+Couch mode has its own generator, so `scenes/local_game/script/local_game.gd`
+is overlaid with the **unconditional** filter — a local session has no vanilla
+peers by definition. See the 2026-08-09 session-log entry.
 
 The alternative was `modded_minigame_player_cap: {CutsceneTest: 4}`, which
 would have kept 1-4 vanilla and dropped it only at 5-8. That was offered and
@@ -1901,10 +2048,20 @@ EOF
 ### 6. Bump version strings
 
 In code — these change behaviour, so they are the ones that break things:
-- `mod/autoloads/globals.gd` → `game_version = "v<new>-8P-v<modrelease>"`. The
-  scheme is **game version + `-8P` + the mod's own release label**; currently
-  `v1.5.0-8P-v1.0`. A game update bumps only the first part — **carry the mod
-  release label across unchanged** unless the mod itself is being released anew.
+- `mod/autoloads/globals.gd` holds **three** strings since vanilla-compat
+  (2026-08-09), and only one of them is cosmetic:
+  - `MOD_NETWORK_GAME_VERSION` → **exactly** the new game's own version string,
+    e.g. `"v<new>"`. This is what goes on the wire, and the handshake compares it
+    for equality against what an unmodded build reports. **A stale value silently
+    refuses every vanilla peer** — the mod still works all-modded, so nothing
+    else tells you. Copy it out of the *new* decompile's `globals.gd`, do not
+    retype it.
+  - `MOD_SUFFIX` → the mod's own release tag, `"8P-v<modrelease>"`. The backends
+    put it on the wire under the `mod8p` key, so it is also what distinguishes a
+    modded peer from a vanilla one and from an older mod build.
+  - `game_version` → their concatenation, the display string; currently
+    `v1.5.0-8P-v1.1`. A game update bumps only the game part — **carry the mod
+    release label across unchanged** unless the mod itself is being released anew.
 - `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
 - `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
   same display string**. It is the second place the label lives and it does not
@@ -1914,6 +2071,12 @@ In code — these change behaviour, so they are the ones that break things:
   label lives**, and the one that went three minigames stale before the
   2026-08-08 release prep caught it — it is player-facing prose, so nothing
   breaks when it lies.
+
+The **display** label therefore still lives in three places that must agree —
+`globals.gd`'s `game_version`, `install.py --verify`, `README.txt` — and the two
+**wire** constants above are a separate, fourth thing that only `globals.gd`
+holds. Getting a display string wrong misinforms; getting
+`MOD_NETWORK_GAME_VERSION` wrong breaks vanilla-compat outright.
 
 **And in the prose, which is easy to skip and leaves the next session reading a
 handoff document that lies about which version it targets.** You are updating
@@ -2027,7 +2190,7 @@ cd ~/Documents/Claude/machine-party-8p/testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
-`v1.5.0-8P-v1.0`.
+`v1.5.0-8P-v1.1` (the tree's unreleased label; the shipped release is v1.0).
 
 ### Eight local clients
 
@@ -2095,6 +2258,63 @@ grep -h "\[FLOW\] auto-ready" /tmp/mp-localtest/p*.log | sort -u
 Expect one line per peer, exactly one with `is_server=true`. Verified
 2026-08-01 at 8 players: all 8 readied, briefing and score screens ran at
 `rows=8`, and the session reached four distinct minigames with zero errors.
+
+### Mixed-lobby runs (vanilla-compat)
+
+**The quasi-vanilla build** is how a vanilla peer is tested without Steam or a
+second machine. `tools/quasivanilla/` holds a 4-file overlay, `build_qv.py` and
+the built `qv.pck`; `testgame2/` (gitignored) is the game copy carrying it. The
+overlay adds **only** the harness entry points (`-localtest`, `-startgame`,
+window titling) — `globals.gd` is deliberately not overlaid, so the build is
+**wire-identical to stock v1.5.0**: it reports `v1.5.0`, stamps no `mod8p` key,
+and every `@rpc` set is exactly as shipped. Rebuild it with
+`python3 tools/quasivanilla/build_qv.py` after any game update.
+
+`VANILLA_SLOTS` (space-separated slot numbers) launches those slots from
+`VANILLA_DIR` instead of the mod build:
+
+```bash
+VANILLA_DIR=~/Documents/Claude/machine-party-8p/testgame2 VANILLA_SLOTS="3 4" \
+  START=1 MINIGAME=BurnRecycle tools/localtest.sh 4 ~/Documents/Claude/machine-party-8p/testgame 120
+```
+
+Three constraints, each of which will otherwise waste a run:
+
+- **`START=1` only.** `FLOW=1` hangs a mixed run at the first briefing — the
+  auto-ready lives in the mod's `intermission_briefing_screen.gd`, so quasi peers
+  never ready and `check_all_ready()` never passes.
+- **Any vanilla peer caps the session at 4**, so use N≤4 (N=5 only to test the
+  over-cap refusal).
+- **`ARGS="-original"` for anything about the playlist or the cutscene**, for the
+  usual reason — see "The debug lobby is a *custom* game" above. A mixed
+  `-original` run is how the 16-entry cutscene-bearing playlist was confirmed.
+
+**The join-order trap.** Launch order does not control handshake arrival order,
+so a run that simply starts 5 instances proves nothing about *which* peer is the
+5th — two early "cap failed" results were this race, not a code defect. Cap tests
+need controlled ordering: bring up the idle lobby first (the default `START=0`
+path), wait for `connected=4` in `/tmp/mp-localtest/p1.log`, then launch the
+overflow joiner by hand from the other directory. A refused vanilla joiner logs
+`_on_join_refused with reason: 1` client-side; an over-cap *modded* joiner is
+demoted to vanilla's debug spectator instead, which reads as `connected=5`
+with `players=4`.
+
+**Benign in mixed runs only** (all measured 2026-08-09; add to the normal
+noise list, do not chase):
+
+- `The rpc node checksum failed`, once per mod-scripted node per vanilla peer.
+  Godot exchanges an md5 of each node's `@rpc` name set, and the mod's added
+  names change it — but `scene_cache_interface.cpp` stores and confirms the cache
+  entry regardless, so it is **print-only** (pitfall 30).
+- Minefield's `curve.cpp` out-of-bounds burst (24× per peer) — reproduces in a
+  **pure** quasi-vanilla session with no modded peers at all, so it is a
+  vanilla-under-localtest artifact, not a compat defect.
+- A `Node not found: Game/Minigame/<scene>` burst on clients at each round load,
+  the same replication-churn family as the documented teardown noise.
+- **The wheat-field cutscene never completes unattended**, by construction: its
+  fallback Timer is dead code and reaching `Finished` needs a player to walk to
+  the house. Unattended mixed runs stall at `PlayerMarker → Play` identically on
+  every peer. Same class as Duck Hunt below — drive a window or pin past it.
 
 ### `localtest.sh`'s cleanup is a GLOBAL pkill — never run two sessions
 
@@ -2366,11 +2586,15 @@ Note `install.py` prompts for confirmation, so a non-interactive run needs
    literal absolute paths regardless.
 6. **A game update reverts the mod** (and so does Steam's "Verify integrity of
    game files"). That is also the safest uninstall.
-7. **Everyone in a lobby needs the identical mod.** The `-8P` version suffix
-   makes a mismatch fail cleanly instead of desyncing mid-session — and since
-   release v1.0 it also carries the **mod release label** (`v1.5.0-8P-v1.0`), so
-   two players on the same game version but different mod releases are refused
-   just as cleanly.
+7. **Everyone in a lobby needs the identical mod — or none of it.** Mod releases
+   must match: the wire carries `MOD_SUFFIX` under the `mod8p` key, so two
+   players on the same game version but different mod releases are refused
+   cleanly instead of desyncing mid-session (before v1.1 the same job was done by
+   the `-8P` label inside the version string itself, which is why old v1.0 builds
+   are still recognised and refused). **The one sanctioned mismatch is a peer
+   with no mod at all**: since v1.1 an unmodded v1.5.0 client can share a lobby,
+   which caps it at 4 — see "Current status" and the 2026-08-09 session-log
+   entry.
 8. `-trailer` on the command line makes the game use `MAX_DEBUG_PLAYERS`.
 9. For `gdc.py`: Godot's binary Variant int/float encoding uses the
    `ENCODE_FLAG_64` bit (`0x10000`) in the type word. Ignore it and every
@@ -2580,7 +2804,7 @@ Note `install.py` prompts for confirmation, so a non-interactive run needs
     host is refused on all seven of them:
 
     ```
-    ERROR: RPC 'mod_set_room_rpc' is not allowed on node .../BurnRecyclePlayerN
+    ERROR: RPC 'zz_mod_set_room_rpc' is not allowed on node .../BurnRecyclePlayerN
     ```
 
     The effect simply never applies. In The Filter that left all eight players
@@ -2626,6 +2850,25 @@ Note `install.py` prompts for confirmation, so a non-interactive run needs
     When writing a rule about geometry, name the property you are actually
     encoding and check that the data supports it - a rule that sounds principled
     and correlates with the right answer is not the same as one that computes it.
+30. **Adding an `@rpc` RENUMBERS the vanilla ones. Name every mod RPC `zz_`.**
+    Godot assigns RPC wire ids from the **sorted** set of `@rpc` method names in
+    a node's whole script chain (`scene_rpc_interface.cpp`), and separately
+    exchanges an **md5 of that name set** per node. The two failure modes are not
+    equally loud:
+    - **The id mismatch misroutes silently.** A mod RPC named `mod_*` sorts
+      before most vanilla names, shifting every vanilla id after it by one — so a
+      modded peer and an unmodded one disagree about what each id means, at any
+      roster size, with no error. This is why the 8 mod RPCs are prefixed `zz_`:
+      nothing in vanilla begins with "zz", so they sort **after** every vanilla
+      name in their chains and vanilla's ids stay identical to an unmodded build.
+      **Any new mod `@rpc` must keep that property**, and it is the whole basis of
+      vanilla-compat.
+    - **The checksum mismatch is print-only.** Any added `@rpc` changes the
+      node's name-set md5, so a vanilla peer in a mixed session prints
+      `The rpc node checksum failed` once per mod-scripted node.
+      `scene_cache_interface.cpp` stores and confirms the cache entry regardless;
+      verified in engine source and clean in every mixed run. **Expect it, do not
+      chase it** — see the 2026-08-09 session-log entry and Testing.
 
 ---
 
@@ -2738,8 +2981,9 @@ floor, in frame.
    carry the four extra markers** (`dvd_roomba`, `spine_breaker`, `train_race`,
    `knife_at_the_office`, `cutscene_test`, `cutscene_game_02`, `memorize_path`
    - every other differing line is whitespace). Convert those and they leave the
-   overlay entirely: 16 scenes drop to 9, and the manifest falls from 53 files
-   to 46. Only `disco_dodge` (`spawn_limit`, itself documented as inert) and
+   overlay entirely: 16 scenes drop to 9, and the manifest falls by seven files
+   (56 → 49 at the current count). Only `disco_dodge` (`spawn_limit`, itself
+   documented as inert) and
    `exploding_collar_race` (an exported spawn array) carry a second change and
    would have to stay.
 
