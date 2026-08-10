@@ -42,9 +42,29 @@ EXTRA=""
 # test aids (e.g. ARGS="-kato-target=2" to shorten Inside Job's search phase).
 [ -n "${ARGS:-}" ] && EXTRA="$EXTRA $ARGS"
 
+# Mixed-lobby testing: slots listed in VANILLA_SLOTS (space-separated numbers)
+# launch from VANILLA_DIR - a quasi-vanilla build (see tools/quasivanilla/) that
+# is wire-identical to unmodded v1.5.0. Any vanilla peer caps the session at 4,
+# so mixed runs use N<=5 (5 only to test the over-cap refusal). FLOW=1 would
+# hang a mixed run at the first briefing (quasi-vanilla never auto-readies);
+# use the default START path. The cleanup pkill above matches the binary NAME,
+# so it already covers instances from both directories.
+VANILLA_DIR="${VANILLA_DIR:-}"
+VANILLA_SLOTS="${VANILLA_SLOTS:-}"
+if [ -n "$VANILLA_SLOTS" ] && [ ! -x "$VANILLA_DIR/Machine Party.x86_64" ]; then
+	echo "VANILLA_SLOTS set but no game at $VANILLA_DIR"; exit 1
+fi
+exe_for_slot() {
+	case " $VANILLA_SLOTS " in
+		*" $1 "*) printf '%s' "$VANILLA_DIR/Machine Party.x86_64" ;;
+		*) printf '%s' "$EXE" ;;
+	esac
+}
+
 echo "host  -> slot 1${EXTRA:+ ($EXTRA)}"
+[ -n "$VANILLA_SLOTS" ] && echo "mixed -> quasi-vanilla slots: $VANILLA_SLOTS"
 [ "$FLOW" = "1" ] && echo "mode  -> full session flow (briefing/intermission NOT skipped)"
-stdbuf -o0 -e0 "$EXE" -localtest 1 host $EXTRA --resolution 640x360 \
+stdbuf -o0 -e0 "$(exe_for_slot 1)" -localtest 1 host $EXTRA --resolution 640x360 \
 	>"$LOGS/p1.log" 2>&1 &
 
 # Wait for the host to actually bind before starting clients.
@@ -61,7 +81,7 @@ done
 n=2
 while [ "$n" -le "$N" ]; do
 	echo "join  -> slot $n"
-	stdbuf -o0 -e0 "$EXE" -localtest "$n" join $EXTRA --resolution 640x360 \
+	stdbuf -o0 -e0 "$(exe_for_slot "$n")" -localtest "$n" join $EXTRA --resolution 640x360 \
 		>"$LOGS/p$n.log" 2>&1 &
 	n=$((n + 1))
 	sleep 1
