@@ -315,9 +315,10 @@ v1.5.0 clients: the mod's RPCs were renamed to sort after vanilla's (pitfall 30)
 and are kept off the wire at ≤4. **A mixed lobby caps at 4** — a vanilla joiner
 that would push it past 4 is refused, because an unmodded build cannot render or
 spectate a 5-8 player session — and **plays the exact vanilla rotation, cutscene
-included**. The one open gate is a real Steam session: the Steam backend's lobby
-callbacks cannot run locally, so the tree carries `v1.5.0-8P-v1.1` **unreleased**
-until that confirms. Full evidence in the 2026-08-09 session-log entry.
+included**. The Steam backend's lobby callbacks cannot run locally, so v1.1 shipped as an
+**Experimental prerelease** (maintainer's decision, 2026-08-09) and open item
+3a — one real Steam mixed session — is what de-flags it. Full evidence in the
+2026-08-09 session-log entry.
 
 **Every minigame in the rotation has now been played at 8** - all fifteen, since
 The Filter and Firearm Factory were uncapped on 2026-08-07. The
@@ -597,8 +598,9 @@ closed.** What remains:
    join path is built on Steam lobby callbacks, so the real lobby cannot run
    over ENet. Needs a real 8-player Steam session.
 
-3a. **Vanilla-compat's Steam backend path is unconfirmed, and it is the one gate
-   on releasing v1.1.** Same structural reason as item 3: `steam_backend.gd`'s
+3a. **Vanilla-compat's Steam backend path is unconfirmed; v1.1 shipped anyway
+   as an Experimental prerelease (maintainer's decision, 2026-08-09), and this
+   item is what de-flags it.** Same structural reason as item 3: `steam_backend.gd`'s
    logic is identical to the verified ENet one and was kept symmetric with it and
    reviewed, but its lobby callbacks cannot run locally. **One real Steam session
    with an unmodded player closes it** — check joining in *both* directions
@@ -681,7 +683,7 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-09 (latest) — Vanilla-compat mode: mixed lobbies with unmodded clients, verified locally; label bumped to v1.1 (unreleased)
+### 2026-08-09 (latest) — Vanilla-compat mode: mixed lobbies with unmodded clients, verified locally; shipped as v1.1 (Experimental)
 
 Players who keep the mod installed can now host or join ordinary ≤4-player
 lobbies containing UNMODDED v1.5.0 clients. Requested by the maintainer, built
@@ -786,6 +788,27 @@ any mixed lobby, at any roster size. Now pitfall 30.
 reviewed — but its lobby callbacks cannot run locally). One real Steam session
 with an unmodded player closes it: join both directions, the 5th-join refusal
 message, and the cutscene in rotation. Until then v1.1 stays unreleased.
+
+#### Same day: shipped as mod release v1.1, marked Experimental
+
+At the maintainer's direction, superseding the hold-for-Steam plan one
+paragraph up: v1.1 ships **now**, as a GitHub **prerelease** flagged
+Experimental, with the release notes warning it may be broken and pointing at
+the vanilla-compat feature. The Steam-session check (open item 3a) stays open;
+it is what de-flags the release rather than what gates it.
+
+Release integrity, re-measured this day on `testgame/` refreshed from the
+clean copy:
+
+| | |
+|---|---|
+| Installer round-trip | `NOT PATCHED` → install (4174 files, **56 mod, 94 replaced**) → `PATCHED - all 56 mod files present` + `v1.5.0-8P-v1.1` → `--uninstall` → **`f5912732…`, byte-identical** |
+| Headless boot on the patched copy | `Running version: v1.5.0-8P-v1.1`, zero script errors |
+| Zip | rebuilt per step 8: **60 entries** (57 → 60 with the three new overlay files), extracted `mod/` `diff -rq` clean against source, all four root files byte-identical; md5 `a5e693b2861fe39ce23068921eff5c69` |
+| Non-interactive installs | `install.py --force` exists and works — supersedes the `echo y \|` workaround noted on 2026-08-08 |
+
+Tagged `v1.1`, `gh release create --prerelease` with the zip attached. The
+patched `.pck` never leaves this machine; the zip is the only asset.
 
 ### 2026-08-08 — GitHub release prep: root-installable restructure, personal-info scrub, repo staged but not published
 
@@ -2190,7 +2213,7 @@ cd ~/Documents/Claude/machine-party-8p/testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
-`v1.5.0-8P-v1.1` (the tree's unreleased label; the shipped release is v1.0).
+`v1.5.0-8P-v1.1` (shipped as the v1.1 Experimental prerelease, 2026-08-09).
 
 ### Eight local clients
 

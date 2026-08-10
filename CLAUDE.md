@@ -11,10 +11,10 @@ diagnostic traces and the caps — is in **`MINIGAMES.md`**, cited as *§N*. Rea
 when you are touching a specific minigame, not before. `UPDATING.md`'s overlay
 manifest maps each file to its section.
 
-Currently targets game **v1.5.0** (Godot 4.5.2). The **shipped release is v1.0**;
-this tree carries **v1.1** — vanilla-compat mode (mixed lobbies with unmodded
-clients), **unreleased** pending a real-Steam mixed-session check — so the
-in-game version string is `v1.5.0-8P-v1.1`. Before running anything, read
+Currently targets game **v1.5.0** (Godot 4.5.2), shipped as mod release
+**v1.1** — an **Experimental prerelease** adding vanilla-compat mode (mixed
+lobbies with unmodded clients), still awaiting its real-Steam mixed-session
+check (open item 3a) — with in-game version string `v1.5.0-8P-v1.1`. Before running anything, read
 **"Working environment"** in `UPDATING.md` (screenshots, missing tools, the
 build pre-flight) and **"Session log"** for what changed most recently.
 
