@@ -804,7 +804,7 @@ clean copy:
 |---|---|
 | Installer round-trip | `NOT PATCHED` → install (4174 files, **56 mod, 94 replaced**) → `PATCHED - all 56 mod files present` + `v1.5.0-8P-v1.1` → `--uninstall` → **`f5912732…`, byte-identical** |
 | Headless boot on the patched copy | `Running version: v1.5.0-8P-v1.1`, zero script errors |
-| Zip | rebuilt per step 8: **60 entries** (57 → 60 with the three new overlay files), extracted `mod/` `diff -rq` clean against source, all four root files byte-identical; md5 `a5e693b2861fe39ce23068921eff5c69` |
+| Zip | rebuilt per step 8: **60 entries** (57 → 60 with the three new overlay files), extracted `mod/` `diff -rq` clean against source, all four root files byte-identical. First build md5 `a5e693b2…`; rebuilt the same day with corrected user-facing text (README.md still claimed v1.0 and "every player needs the mod" — caught by the maintainer; `installer/README.txt` and `install.py`'s post-install message carried the same claim into the zip), final md5 **`fdd679cedce61306a2ac209ee98d927b`**, Release asset replaced to match |
 | Non-interactive installs | `install.py --force` exists and works — supersedes the `echo y \|` workaround noted on 2026-08-08 |
 
 Tagged `v1.1`, `gh release create --prerelease` with the zip attached. The
@@ -2577,16 +2577,16 @@ Installer round-trip, on a **copy**, with literal absolute paths:
 python3 ~/Documents/Claude/machine-party-8p/installer/install.py --game-dir ~/Documents/Claude/machine-party-8p/testgame_new --verify
 ```
 Expect `NOT PATCHED` → install → `PATCHED` → `--uninstall` → MD5 matches the
-original recorded in step 1. Verified 2026-08-08 against a clean v1.5.0 copy:
-install wrote 4177 files (53 from the mod, 88 originals replaced), `--verify`
-reported `PATCHED` and `v1.5.0-8P-v1.0`, and uninstall restored the pck
+original recorded in step 1. Verified 2026-08-09 against a clean v1.5.0 copy:
+install wrote 4174 files (56 from the mod, 94 originals replaced), `--verify`
+reported `PATCHED` and `v1.5.0-8P-v1.1`, and uninstall restored the pck
 **byte-identically** (`f5912732…`, 635,333,716 bytes). **Both counts track the
 overlay size** — each added `.gd` also displaces its `.remap` and `.gdc`
 siblings — so re-derive them from the run rather than treating them as
-constants; the 2026-08-08 wall-desk entry explains the 82 → 88 shift.
+constants; the 2026-08-08 wall-desk entry explains an earlier 82 → 88 shift.
 
-Note `install.py` prompts for confirmation, so a non-interactive run needs
-`echo y | python3 …` — without it it dies on `EOFError` before touching anything.
+`install.py --force` answers every prompt yes for non-interactive runs;
+without it a scripted run dies on `EOFError` before touching anything.
 
 ---
 
