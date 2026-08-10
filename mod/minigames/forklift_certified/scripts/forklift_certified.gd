@@ -366,8 +366,12 @@ func _mod_rebind_zone_exports(template: Node3D, copy: Node3D) -> int:
 		rebound += 1
 	return rebound
 
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build. Any future
+# mod RPC needs the same prefix.
 @rpc("authority", "call_local", "reliable")
-func mod_add_delivery_areas_rpc() -> void:
+func zz_mod_add_delivery_areas_rpc() -> void:
 	"""Build the four mid-edge zones on every peer.
 
 	This CANNOT be a host-local clone. The zones sit outside any
@@ -376,7 +380,7 @@ func mod_add_delivery_areas_rpc() -> void:
 	a zone that exists only on the host is an RPC into thin air on all seven
 	clients. Reliable RPCs are ordered, so the set_owner_rpc calls that
 	spawn_players() sends straight afterwards arrive with the nodes already
-	built - the same guarantee mod_add_stations_rpc() relies on in Chisel.
+	built - the same guarantee zz_mod_add_stations_rpc() relies on in Chisel.
 	"""
 	if delivery_area_parent.get_child_count() > MOD_VANILLA_AREAS:
 		return
@@ -519,7 +523,7 @@ func _mod_expand_yard() -> void:
 				" added=0 (vanilla)")
 		return
 
-	mod_add_delivery_areas_rpc.rpc()
+	zz_mod_add_delivery_areas_rpc.rpc()
 
 	# _ready() built delivery_areas and wired crate_number_changed from the
 	# children that existed then. The clones are neither, and _on_crate_numbers_changed

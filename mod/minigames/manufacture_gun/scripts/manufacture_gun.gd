@@ -248,7 +248,7 @@ func _mod_raise_item_preview() -> void :
 		push_warning("[GUN8] could not measure the item preview height")
 		return
 
-	mod_raise_item_preview_rpc.rpc(height)
+	zz_mod_raise_item_preview_rpc.rpc(height)
 
 func _mod_preview_mover() -> Node3D:
 	"""The node that actually moves is the PARENT of the exported one. Each of the
@@ -260,8 +260,12 @@ func _mod_preview_mover() -> Node3D:
 		return null
 	return item_sequence_preview_node_parent.get_parent() as Node3D
 
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build. Any future
+# mod RPC needs the same prefix.
 @rpc("authority", "call_local", "reliable")
-func mod_raise_item_preview_rpc(amount: float) -> void :
+func zz_mod_raise_item_preview_rpc(amount: float) -> void :
 	var mover: Node3D = _mod_preview_mover()
 	if mover == null:
 		push_warning("[GUN8] item preview has no Node3D parent to raise")

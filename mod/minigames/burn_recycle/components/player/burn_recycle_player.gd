@@ -167,12 +167,17 @@ var mod_room: int = 0
 # "any_peer", NOT "authority": set_player_presence() hands each player node's
 # multiplayer authority to that player's own peer, so the HOST is not the
 # authority for anybody else's node and an "authority" RPC from the host is
-# rejected on all seven of them - `RPC 'mod_set_room_rpc' is not allowed`, once
-# per player per peer, with the offset silently never applied and all eight
+# rejected on all seven of them - `RPC 'zz_mod_set_room_rpc' is not allowed`,
+# once per player per peer, with the offset silently never applied and all eight
 # players left stacked two-per-station at the origin. Vanilla's setup_rpc and
 # set_player_presence are "any_peer" for exactly this reason; match them.
+#
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build. Any future
+# mod RPC needs the same prefix.
 @rpc("any_peer", "call_local", "reliable")
-func mod_set_room_rpc(_room: int) -> void :
+func zz_mod_set_room_rpc(_room: int) -> void :
 	mod_room = _room
 	# setup_rpc() only ever sets rotation_degrees - vanilla has no need to move a
 	# player, because there is only one room to be in. Room B is the same four

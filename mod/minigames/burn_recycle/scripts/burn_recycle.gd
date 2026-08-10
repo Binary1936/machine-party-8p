@@ -98,8 +98,12 @@ var mod_extra_timer_labels: Array[Label3D] = []
 # no roster check needed for rule 3, it falls out of the batching.
 var mod_death_score: Dictionary[int, int] = {}
 
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build. Any future
+# mod RPC needs the same prefix.
 @rpc("authority", "call_local", "reliable")
-func mod_build_rooms_rpc() -> void :
+func zz_mod_build_rooms_rpc() -> void :
 	"""Build room B on EVERY peer. spawn_players() is host-only, so doing this
 	locally would give the host two rooms and everyone else one - the trap under
 	'Runtime scene changes must be RPCs, not local calls'."""
@@ -335,7 +339,14 @@ func spawn_players():
 	# 8P MOD: build room B before any seat is handed out - the loop below
 	# immediately indexes belts[] and matches press_id, and an eight-player
 	# roster against four stations is a silent null (pitfall 23), not an error.
-	mod_build_rooms_rpc.rpc()
+	#
+	# Gated on the roster rather than sent every time: the body's own early
+	# return already made this a no-op at 1-4, but for vanilla-compat the mod
+	# RPC must not go over the wire at all when an unmodded peer could be
+	# listening. `player_count` is PlayerManager.player_presences.size(), set
+	# just above.
+	if player_count > MOD_SEATS_PER_ROOM:
+		zz_mod_build_rooms_rpc.rpc()
 
 	# 8P MOD: BALANCED rooms. Filling room A to four before starting room B put a
 	# LONE player in room B at five, and with per-room elimination a room of one
@@ -376,7 +387,13 @@ func spawn_players():
 		# angles - why nothing clips, and why the four authored camera clips
 		# still land exactly. At 1-4 this is vanilla's `90.0 * counter`.
 		player_character.set_player_presence.rpc(player_presence.network_id, mod_station)
-		player_character.mod_set_room_rpc.rpc(mod_room)
+		# Same vanilla-compat gate as the room build above: at 1-4 every
+		# `mod_room` is 0, so the RPC would only assign `mod_room` its declared
+		# default and set `position` to the zero vector the player scene already
+		# has - skipping it leaves identical state and keeps a mod RPC off the
+		# wire in front of a possible unmodded peer.
+		if player_count > MOD_SEATS_PER_ROOM:
+			player_character.zz_mod_set_room_rpc.rpc(mod_room)
 		player_character.setup_rpc.rpc(
 			Vector3(0.0, 90.0 * mod_seat_in_room, 0.0),
 			random_type_byte_array
@@ -664,7 +681,15 @@ func _on_item_launched(_rotation: Vector3, _type: BurnRecycleMinigame.ItemTypes,
 	# arrives first and the picture is already in the right room when it starts
 	# its animation. Items are pooled and reused across both rooms, which is why
 	# this is set on every launch rather than once.
-	mod_place_item_rpc.rpc(launch_item.name, mod_room)
+	#
+	# 8P MOD: at 1-4 the wire must stay silent - an unmodded peer must never
+	# receive a mod RPC - so the dispatch is gated and the trailing branch below
+	# runs vanilla's own tail instead. That tail lives inside
+	# `zz_mod_place_item_rpc` for rosters over four, where it has to reach every
+	# peer so each one ramps ITS room's incinerator; the two are the same lines.
+	# `player_count` is a local of spawn_players(), hence the size call here.
+	if PlayerManager.player_presences.size() > MOD_SEATS_PER_ROOM:
+		zz_mod_place_item_rpc.rpc(launch_item.name, mod_room)
 
 	launch_item.launch_rpc.rpc(
 		_rotation,
@@ -672,8 +697,17 @@ func _on_item_launched(_rotation: Vector3, _type: BurnRecycleMinigame.ItemTypes,
 		randf() * 10.0
 	)
 
+	# 8P MOD: vanilla's tail, verbatim and in vanilla's position - after
+	# `launch_rpc`, because the await would otherwise delay the launch itself.
+	if PlayerManager.player_presences.size() <= MOD_SEATS_PER_ROOM:
+		await get_tree().create_timer(0.2).timeout
+		spark_ratio = min(spark_ratio + 0.3, 1.0)
+
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build.
 @rpc("authority", "call_local", "reliable")
-func mod_place_item_rpc(_item_name: StringName, _room: int) -> void :
+func zz_mod_place_item_rpc(_item_name: StringName, _room: int) -> void :
 	var it: Node = item_parent_node.get_node_or_null(NodePath(String(_item_name)))
 	if it != null:
 		(it as Node3D).position = MOD_ROOM_OFFSET * float(_room)

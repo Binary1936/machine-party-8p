@@ -433,15 +433,19 @@ func _mod_apply_skipped_reveal() -> void :
 	if hunter_player:
 		hunter_player.set_can_aim_rpc.rpc(true)
 
-	mod_clear_role_overlay_rpc.rpc()
+	zz_mod_clear_role_overlay_rpc.rpc()
 
 # The role overlay is a per-peer node and reset_state.gd re-shows it on every
 # peer at the start of each turn, so clearing it has to be an RPC. A local call
 # would clear the host's and leave the other seven staring at a black screen -
 # which is the same host-only trap documented under "Runtime scene changes must
 # be RPCs, not local calls".
+#
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build.
 @rpc("authority", "call_local", "reliable")
-func mod_clear_role_overlay_rpc() -> void :
+func zz_mod_clear_role_overlay_rpc() -> void :
 
 	if ui_role_label:
 		ui_role_label.visible = false

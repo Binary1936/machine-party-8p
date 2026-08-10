@@ -235,8 +235,12 @@ func _mod_clone_rotated(node: Node) -> void:
 	node.get_parent().add_child(copy)
 	copy.rotate_y(deg_to_rad(45.0))
 
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build. Any future
+# mod RPC needs the same prefix.
 @rpc("authority", "call_local", "reliable")
-func mod_add_stations_rpc() -> void:
+func zz_mod_add_stations_rpc() -> void:
 	"""Give the four added slots a full station of their own.
 
 	A station is not a placed object - it is one piece of geometry at the origin
@@ -281,7 +285,7 @@ func spawn_players():
 		shotgun_check_order = MOD_CHECK_ORDER_8
 		# spawn_players() runs on the host only, so the geometry has to be
 		# built through an RPC or every client sees the stock four stations.
-		mod_add_stations_rpc.rpc()
+		zz_mod_add_stations_rpc.rpc()
 
 	var counter: int = 0
 	for key in PlayerManager.player_presences.keys():

@@ -105,8 +105,12 @@ func _mod_chairs() -> Array:
 			out.append(c)
 	return out
 
+# The `zz_` prefix is load-bearing: Godot assigns RPC wire ids by sorting each
+# script chain's @rpc names alphabetically, so every mod RPC must sort AFTER the
+# vanilla ones to leave vanilla's ids identical to an unmodded build. Any future
+# mod RPC needs the same prefix.
 @rpc("authority", "call_local", "reliable")
-func mod_apply_eight_seat_layout_rpc() -> void:
+func zz_mod_apply_eight_seat_layout_rpc() -> void:
 
 	var _dbg := Array(OS.get_cmdline_args()).has("-localtest")
 	var markers := player_spawn_positions.get_children()
@@ -179,7 +183,7 @@ func initialize(_round_number: int, _total_rounds: int, _scores: Dictionary = {}
 	# otherwise clients keep the vanilla four chairs and camera while the host
 	# alone sees the eight-seat layout.
 	if PlayerManager.player_presences.size() > MOD_VANILLA_SEATS:
-		mod_apply_eight_seat_layout_rpc.rpc()
+		zz_mod_apply_eight_seat_layout_rpc.rpc()
 
 	spawn_players()
 	coach_handler.start_reading_rpc.rpc()
