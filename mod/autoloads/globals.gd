@@ -22,9 +22,9 @@ const Epsilon: float = 0.001
 # and game_version their concatenation. That extends the existing three-places
 # rule for the version label - globals.gd, installer/install.py and
 # installer/README.txt still all have to agree on game_version.
-var game_version: String = "v1.5.0-8P-v1.1"
+var game_version: String = "v1.5.0-8P-v1.2"
 const MOD_NETWORK_GAME_VERSION := "v1.5.0"
-const MOD_SUFFIX := "8P-v1.1"
+const MOD_SUFFIX := "8P-v1.2"
 
 
 const GROUP_UI: StringName = "GROUP_UI"

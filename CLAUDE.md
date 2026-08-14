@@ -12,9 +12,9 @@ when you are touching a specific minigame, not before. `UPDATING.md`'s overlay
 manifest maps each file to its section.
 
 Currently targets game **v1.5.0** (Godot 4.5.2), shipped as mod release
-**v1.1** — an **Experimental prerelease** adding vanilla-compat mode (mixed
-lobbies with unmodded clients), still awaiting its real-Steam mixed-session
-check (open item 3a) — with in-game version string `v1.5.0-8P-v1.1`. Before running anything, read
+**v1.2** — vanilla-compat mode (added in v1.1) was confirmed in a real Steam
+mixed session on 2026-08-13, closing open item 3a — with in-game version
+string `v1.5.0-8P-v1.2`. Before running anything, read
 **"Working environment"** in `UPDATING.md` (screenshots, missing tools, the
 build pre-flight) and **"Session log"** for what changed most recently.
 

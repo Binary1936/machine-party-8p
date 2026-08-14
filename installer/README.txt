@@ -10,12 +10,12 @@ whichever copy of the game you already own.
 IMPORTANT
 ---------
 Lobbies of 5-8 players need EVERYONE on this same mod release. Since v1.1
-(experimental) you can also play with unmodded friends: a lobby mixing modded
+you can also play with unmodded friends: a lobby mixing modded
 and unmodded players works automatically, caps at 4 players, and plays the
 plain vanilla rotation. A 5th player trying to join a mixed lobby is refused
 with the game's version-mismatch message rather than the game breaking halfway
 through a session. Two different mod releases always refuse each other, so
-modded friends should update together (v1.0 and v1.1 cannot connect).
+modded friends should update together (e.g. v1.1 and v1.2 cannot connect).
 
 
 INSTALL
@@ -41,7 +41,7 @@ DID IT WORK?
 ------------
 Launch the game and look at the version in the corner of the main menu:
 
-  v1.5.0-8P-v1.1    <- mod is active
+  v1.5.0-8P-v1.2    <- mod is active
   v1.5.0            <- still the original
 
 Or check without launching:

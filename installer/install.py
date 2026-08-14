@@ -330,7 +330,7 @@ def verify(game_dir):
     if len(applied) == len(overlay) and not leftover:
         print(f"\n  PATCHED - all {len(overlay)} mod files present, "
               f"originals correctly removed.")
-        print(f"  In game, the main menu should read {SUPPORTED_VERSION}-8P-v1.1")
+        print(f"  In game, the main menu should read {SUPPORTED_VERSION}-8P-v1.2")
         return 0
     if not applied:
         print("\n  NOT PATCHED - this is the original game.")

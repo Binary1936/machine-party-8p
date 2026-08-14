@@ -19,9 +19,8 @@ players, and the lobby, briefing screen and score screen grow to match. The mod
 is an overlay of 56 files (40 `.gd`, 16 `.tscn`) applied to the shipped
 `Machine Party.pck`: one file is new, the rest replace shipped ones.
 
-This is mod release **v1.1** (an **Experimental** prerelease); in game it
-identifies itself as **`v1.5.0-8P-v1.1`** — game version, mod suffix, mod
-release. v1.0 remains on the Releases page as the last non-experimental build.
+This is mod release **v1.2**; in game it identifies itself as
+**`v1.5.0-8P-v1.2`** — game version, mod suffix, mod release.
 
 ## Status
 
@@ -40,7 +39,7 @@ mod's largest gap; see [Known limitations](#known-limitations).
 Lobbies of 1-4 play as vanilla, with two deliberate exceptions — see
 [Behaviour at 1-4 players](#behaviour-at-1-4-players).
 
-> **Since v1.1 you can play with unmodded friends** (experimental): a lobby may
+> **Since v1.1 you can play with unmodded friends**: a lobby may
 > mix modded and vanilla v1.5.0 players, and the mod detects this automatically.
 > A mixed lobby caps at **4** players — a vanilla client cannot handle more —
 > and plays the exact vanilla rotation; a 5th join attempt is refused with the
@@ -83,7 +82,7 @@ game update silently reverts the mod, so re-run the installer after one.
 
 ### Verify
 
-`Globals.game_version` becomes `v1.5.0-8P-v1.1`, and that string is already wired to
+`Globals.game_version` becomes `v1.5.0-8P-v1.2`, and that string is already wired to
 the main menu's version label, so the corner of the menu is the fastest check.
 
 Without launching:
@@ -204,12 +203,13 @@ There are exactly two sanctioned breaches, both signed off deliberately:
 
 Ranked by how much they would actually bite.
 
-- **Vanilla-compat (v1.1) is experimental.** Mixed lobbies are verified
-  extensively with local test clients — both host directions, the 4-cap, the
-  refusal path, the restored cutscene — but never yet in a real Steam session
-  with unmodded players, which exercises the Steam backend's lobby callbacks.
-  Unmodded players' logs also show harmless `rpc node checksum failed` lines in
-  mixed sessions (engine noise, verified print-only). Reports welcome.
+- **Vanilla-compat mixed lobbies** are verified extensively with local test
+  clients — both host directions, the 4-cap, the refusal path, the restored
+  cutscene — and both join directions have been confirmed in a real Steam
+  session with unmodded players. The over-cap refusal and the cutscene have
+  not yet been seen over real Steam specifically. Unmodded players' logs show
+  harmless `rpc node checksum failed` lines in mixed sessions (engine noise,
+  verified print-only). Reports welcome.
 - **Nobody has played an 8-human session.** The harness runs eight unattended
   instances, so scoring, elimination order and win conditions at 8 are unproven
   everywhere — the weakest claim in this file. It also skews coverage: a minigame

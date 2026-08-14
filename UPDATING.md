@@ -316,9 +316,14 @@ and are kept off the wire at ≤4. **A mixed lobby caps at 4** — a vanilla joi
 that would push it past 4 is refused, because an unmodded build cannot render or
 spectate a 5-8 player session — and **plays the exact vanilla rotation, cutscene
 included**. The Steam backend's lobby callbacks cannot run locally, so v1.1 shipped as an
-**Experimental prerelease** (maintainer's decision, 2026-08-09) and open item
-3a — one real Steam mixed session — is what de-flags it. Full evidence in the
-2026-08-09 session-log entry.
+**Experimental prerelease** (maintainer's decision, 2026-08-09). **De-flagged
+2026-08-13:** a real Steam mixed session confirmed both join directions
+(modded host + vanilla joiner, vanilla host + modded joiner) — open item 3a is
+closed, with the 5th-join refusal and the mixed-rotation cutscene still
+resting on the local ENet evidence. **v1.2 (2026-08-13) is the current
+release, a full release**, carrying the four fixes since v1.1 (issues #6, #7,
+#8 and the station clone-list cleanup). Full local evidence in the 2026-08-09
+session-log entry.
 
 **Every minigame in the rotation has now been played at 8** - all fifteen, since
 The Filter and Firearm Factory were uncapped on 2026-08-07. The
@@ -598,16 +603,16 @@ closed.** What remains:
    join path is built on Steam lobby callbacks, so the real lobby cannot run
    over ENet. Needs a real 8-player Steam session.
 
-3a. **Vanilla-compat's Steam backend path is unconfirmed; v1.1 shipped anyway
-   as an Experimental prerelease (maintainer's decision, 2026-08-09), and this
-   item is what de-flags it.** Same structural reason as item 3: `steam_backend.gd`'s
-   logic is identical to the verified ENet one and was kept symmetric with it and
-   reviewed, but its lobby callbacks cannot run locally. **One real Steam session
-   with an unmodded player closes it** — check joining in *both* directions
-   (modded host + vanilla joiner, vanilla host + modded joiner), that a vanilla
-   5th join is refused with the refusal message rather than admitted, and that the
-   wheat-field cutscene appears in the mixed rotation. Everything else is verified
-   locally; see the 2026-08-09 session-log entry for what was measured and how.
+3a. ~~**Vanilla-compat's Steam backend path is unconfirmed.**~~ **Closed
+   2026-08-13 — a real Steam mixed session, reported by the maintainer.** Both
+   join directions were exercised and worked: modded host + vanilla joiner and
+   vanilla host + modded joiner — the half only real Steam lobby callbacks
+   could prove. Two of the enumerated sub-checks were **not** exercised in that
+   session and rest on the 2026-08-09 local ENet evidence plus the backends'
+   symmetry: the vanilla 5th-join refusal, and the wheat-field cutscene
+   appearing in the mixed rotation. On this basis the maintainer de-flagged
+   Experimental; **v1.2 ships as a full release**. Item 3 (the Steam lobby's
+   8 previews) is untouched by this — a mixed session caps at 4.
 4. ~~**Spawn-marker *selection* at 1-4 deviates from vanilla.**~~ **Closed
    2026-08-04 — decided, not fixed.** Nine scenes (six live) can seat a 1-4
    player 1.2u sideways of a vanilla spawn, same rotation, same floor. Judged
@@ -683,7 +688,41 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-13 (latest) — Chisel: the 135° slot's player stood inside the corner barrel stack; two props now hidden at 5-8
+### 2026-08-13 (latest) — Shipped as mod release v1.2, a FULL release: open item 3a closed by a real Steam mixed session
+
+**What ships:** the four fixes since v1.1 — the playlist 9-connection
+dead-end (issue #6), the spectate markers (issue #7), the corner barrels
+(issue #8), and the station clone-list cleanup (plus the expander parse fix,
+pitfall 31). `MOD_SUFFIX` bumped to `8P-v1.2`, so v1.1 and v1.2 peers refuse
+each other cleanly per pitfall 7; `MOD_NETWORK_GAME_VERSION` stays `v1.5.0`
+(no game update).
+
+**Experimental de-flagged — maintainer's decision, on new evidence:** a real
+Steam mixed session with unmodded players confirmed **both join directions**
+(modded host + vanilla joiner, vanilla host + modded joiner) — the half of
+open item 3a only real Steam lobby callbacks could prove. The two other
+enumerated sub-checks (vanilla 5th-join refusal, cutscene in the mixed
+rotation) were not exercised in that session and rest on the 2026-08-09
+local ENet evidence plus backend symmetry. 3a is **closed**; item 3 (the
+Steam lobby's 8 previews at 8 players) is untouched — a mixed session caps
+at 4.
+
+Release integrity, all measured this day on the v1.2 strings:
+
+| | |
+|---|---|
+| `%` pre-flight | 0 findings across all 40 overlay scripts |
+| Reproducible build | `dist` and deployed `testgame` pck both md5 `ed9bbfb0f4f01cb574845fdad474851b` |
+| Handshake at 8 | all 8 peers boot `v1.5.0-8P-v1.2`, zero `VersionMismatch`, `[SEATS]` walks to 8 distinct ids, zero parse/script errors |
+| Installer round-trip (clean copy) | `NOT PATCHED` → install (**4174 files, 56 mod, 94 replaced**) → `PATCHED - all 56 mod files present` + `v1.5.0-8P-v1.2` → headless boot clean → `--uninstall` → **`f5912732…`, byte-identical** |
+| Zip | rebuilt per step 8: **60 entries**, extracted `mod/` `diff -rq` clean, all four root files byte-identical; md5 **`fa4fa55a560fe1f3292c7f37866bb962`** |
+
+Tagged `v1.2`, `gh release create` (no prerelease flag) with the zip
+attached; issues #6, #7, #8 closed as shipped. The Experimental caveats
+came out of `CLAUDE.md`, `README.md` and `installer/README.txt`; the
+version-label sites (step 6's list) all moved together.
+
+### 2026-08-13 — Chisel: the 135° slot's player stood inside the corner barrel stack; two props now hidden at 5-8
 
 Reported by the maintainer from an 8-player session — one player clipping
 into barrel props — and pinned down by computing the geometry rather than
@@ -2263,7 +2302,7 @@ In code — these change behaviour, so they are the ones that break things:
     put it on the wire under the `mod8p` key, so it is also what distinguishes a
     modded peer from a vanilla one and from an older mod build.
   - `game_version` → their concatenation, the display string; currently
-    `v1.5.0-8P-v1.1`. A game update bumps only the game part — **carry the mod
+    `v1.5.0-8P-v1.2`. A game update bumps only the game part — **carry the mod
     release label across unchanged** unless the mod itself is being released anew.
 - `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
 - `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
@@ -2393,7 +2432,7 @@ cd ~/Documents/Claude/machine-party-8p/testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
-`v1.5.0-8P-v1.1` (shipped as the v1.1 Experimental prerelease, 2026-08-09).
+`v1.5.0-8P-v1.2` (shipped as mod release v1.2, 2026-08-13).
 
 ### Eight local clients
 
