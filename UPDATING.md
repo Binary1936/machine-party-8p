@@ -723,7 +723,7 @@ class the entry below just removed. Trace summary is now
 | 8-player pinned run (`START=1`, 130s) | `cloned 10 single nodes, hid 2 props` ×3 rounds on host and all 7 clients; zero `MISSING` (either kind); `[SHOTGUN]` slots 0,4,2,6,1,5,3,7 ×2; zero parse/script errors; `v1.5.0-8P-v1.1` on all peers |
 | 4-player parity | `player_count=4`, no found/cloned/hid lines on any peer |
 | Error classes (pitfall-12 filter) | documented families only across both sizes; the classes that drift run-to-run (`data.tree` null, `ERR_UNAUTHORIZED`) drifted exactly as documented |
-| Eyes | **pending** — the barrels' absence and the clean 135° slot are visual; the maintainer confirms in game |
+| Eyes | **confirmed by the maintainer, 2026-08-13: "The barrels are gone and the player looks clean now."** The pallet_002 near-miss at the 45° slot was judged by eye the same day — **"The pallet looked fine"** — so its 1.01u clearance stands as accepted; nothing else on this is open |
 
 Public tracker: **issue #8** (shipped v1.0/v1.1 carry the bug).
 `MINIGAMES.md` §10's chisel bullet carries the hide.
