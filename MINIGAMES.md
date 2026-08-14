@@ -227,7 +227,10 @@ code, and each is described in the pitfalls list below.
   concave collision mesh + WorldBoundary, and the centre CSG pillar) must never
   be cloned: until 2026-08-13 a clone-the-whole-container loop duplicated the
   room's collider rotated 45° every 5-8 player round (see that session-log
-  entry).
+  entry). The same RPC hides `MOD_HIDE_PROPS` — the two corner barrels the
+  135° slot's character stood inside (0.44u/0.89u) — and disables their own
+  `StaticBody3D`s; 1-4 keeps the shipped dressing. Trace summary:
+  `cloned 10 single nodes, hid 2 props`.
 - `minigames/chisel_gauntlet_multiplayer/chisel_gauntlet.tscn` - four spectate
   markers (`Marker3D_MOD5`..`Marker3D4_MOD8`) added under
   `DeadLobby/SpectatePositions`, **transformless like the shipped four** -

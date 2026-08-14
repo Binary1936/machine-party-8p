@@ -683,7 +683,52 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-13 (latest) — Chisel's station clone list duplicated the room's collision environment; invisible base-mesh clone dropped
+### 2026-08-13 (latest) — Chisel: the 135° slot's player stood inside the corner barrel stack; two props now hidden at 5-8
+
+Reported by the maintainer from an 8-player session — one player clipping
+into barrel props — and pinned down by computing the geometry rather than
+running anything: the character rig stands **6.74u** from the room centre
+along its facing (`Visuals` at local z=−8 plus the character offset), the
+four added slots face the diagonals (45°, −135°, 135°, −45°), and the
+**135° slot's** character lands at (−4.77, +4.77) — **0.44u** from
+`barrel_001` and **0.89u** from `barrel_002`, the barrel stacked at chest
+height on it. The character capsule alone is 0.7u, so that is deep visual
+interpenetration. The player root is a plain `Node3D` — no physics — so the
+defect was purely visual, which is also why no trace could see it.
+
+**A mapping trap worth keeping** (pitfall 28's family): the barrels live
+under `chisel gauntlet art2/walls`, and `walls` carries a **+90° Y
+rotation** — so the props' local coordinates point at the *wrong corner*.
+`barrel_001` reads (−5.08, −5.10) in the file and sits at world
+(−5.09, **+5.07**). Any next prop-vs-slot check must go through the parent
+chain. Cross-check that validated the model: the same math puts each
+cardinal desk exactly where its vanilla character faces it.
+
+Other diagonals, measured while at it: `pallet_002` is **1.01u** from the
+45° slot (borderline — **maintainer will look**, and it stays untouched
+until then); `pallet_001` 1.50u from −135°; nothing near −45°.
+
+**Fix** (maintainer's choice from the measured options): hide `barrel_001`
+and `barrel_002` in `zz_mod_add_stations_rpc()` — already roster-gated > 4
+and running on every peer — leaving the third barrel (1.54u clear) as
+dressing; 1-4 keeps the shipped set exactly. The barrels carry their own
+`StaticBody3D`, so the hide also sets `PROCESS_MODE_DISABLED` on their
+collision bodies (default `disable_mode` removes them from the physics
+space) — hiding the mesh alone would have left the same phantom-collider
+class the entry below just removed. Trace summary is now
+`cloned 10 single nodes, hid 2 props`; a miss prints `MISSING prop`.
+
+| Check | Result |
+|---|---|
+| 8-player pinned run (`START=1`, 130s) | `cloned 10 single nodes, hid 2 props` ×3 rounds on host and all 7 clients; zero `MISSING` (either kind); `[SHOTGUN]` slots 0,4,2,6,1,5,3,7 ×2; zero parse/script errors; `v1.5.0-8P-v1.1` on all peers |
+| 4-player parity | `player_count=4`, no found/cloned/hid lines on any peer |
+| Error classes (pitfall-12 filter) | documented families only across both sizes; the classes that drift run-to-run (`data.tree` null, `ERR_UNAUTHORIZED`) drifted exactly as documented |
+| Eyes | **pending** — the barrels' absence and the clean 135° slot are visual; the maintainer confirms in game |
+
+Public tracker: **issue #8** (shipped v1.0/v1.1 carry the bug).
+`MINIGAMES.md` §10's chisel bullet carries the hide.
+
+### 2026-08-13 — Chisel's station clone list duplicated the room's collision environment; invisible base-mesh clone dropped
 
 Third finding from the same external audit, confirmed in full against the
 scene and the code. `MOD_STATION_CONTAINERS` cloned **every** child of

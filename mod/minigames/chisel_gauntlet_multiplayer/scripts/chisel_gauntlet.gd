@@ -227,6 +227,15 @@ const MOD_STATION_NODES: Array[String] = [
 	"chisel gauntlet art2/control panel hole wires",
 ]
 
+# The 135-degree slot's character stands 0.44u from barrel_001 and 0.89u from
+# the chest-height barrel_002 stacked on it - visual clipping at any roster
+# that seats that slot. Hidden here rather than in the .tscn so 1-4 players
+# keep the shipped dressing.
+const MOD_HIDE_PROPS: Array[String] = [
+	"chisel gauntlet art2/walls/barrel_001",
+	"chisel gauntlet art2/walls/barrel_002",
+]
+
 func _mod_clone_rotated(node: Node) -> void:
 	if not node is Node3D:
 		return
@@ -261,8 +270,21 @@ func zz_mod_add_stations_rpc() -> void:
 			_mod_clone_rotated(node)
 			_made += 1
 
+	var _hid := 0
+	for path in MOD_HIDE_PROPS:
+		var node := get_node_or_null(path)
+		if node:
+			node.visible = false
+			# The barrels carry their own StaticBody3D - hiding the mesh alone
+			# would leave invisible collision in the slot.
+			for body in node.find_children("*", "CollisionObject3D", true, false):
+				body.process_mode = Node.PROCESS_MODE_DISABLED
+			_hid += 1
+		elif _dbg:
+			print("[STATIONS] MISSING prop ", path)
+
 	if _dbg:
-		print("[STATIONS] cloned ", _made, " single nodes")
+		print("[STATIONS] cloned ", _made, " single nodes, hid ", _hid, " props")
 
 func spawn_players():
 
