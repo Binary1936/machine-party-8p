@@ -1,4 +1,4 @@
-# Session log archive — entries compressed out of `UPDATING.md`
+# Session log archive — entries compressed out of the session log
 
 Verbatim text of the session-log entries that were condensed into the digest
 table in `UPDATING.md` on 2026-08-04, when that file was split and trimmed —

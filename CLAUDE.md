@@ -2,9 +2,10 @@
 
 **Read `UPDATING.md` in this folder before doing anything.** It is the handoff
 document and the entry point: current verified state, toolchain, the 8-client
-local test harness, the update procedure and the failure modes already hit. It
-has a paste-in prompt at the top, including a variant for "the game just
-updated".
+local test harness and the update procedure. It has a paste-in prompt at the
+top, including a variant for "the game just updated". The failure modes
+already hit are in **`PITFALLS.md`** (cited as *pitfall N*) — read it before
+changing code or running the tools.
 
 Per-minigame detail — every change the mod makes, minigame by minigame, plus the
 diagnostic traces and the caps — is in **`MINIGAMES.md`**, cited as *§N*. Read it
@@ -16,7 +17,7 @@ Currently targets game **v1.5.0** (Godot 4.5.2), shipped as mod release
 mixed session on 2026-08-13, closing open item 3a — with in-game version
 string `v1.5.0-8P-v1.2`. Before running anything, read
 **"Working environment"** in `UPDATING.md` (screenshots, missing tools, the
-build pre-flight) and **"Session log"** for what changed most recently.
+build pre-flight) and **`SESSION-LOG.md`** for what changed most recently.
 
 Five rules, each of which cost real time to learn:
 

@@ -1,7 +1,8 @@
 # Machine Party 8-Player Mod — per-minigame reference
 
 Companion to `UPDATING.md`, which is the entry point: current state, the rules,
-the update procedure, the test harness and the pitfalls all live there. **Read
+the update procedure and the test harness live there; the numbered
+pitfalls live in `PITFALLS.md`, and the session log in `SESSION-LOG.md`. **Read
 that first.** This file is the detail you only need once you are touching a
 specific minigame — every change the mod makes, minigame by minigame, plus the
 diagnostic traces and the caps.
@@ -10,7 +11,8 @@ Numbered sections here are stable identifiers. `UPDATING.md`'s overlay manifest
 maps each overlay file to the section that explains it, so start from the
 manifest and come here for the "why".
 
-Cross-file conventions: **rule N** and **pitfall N** always refer to
+Cross-file conventions: **pitfall N** always means `PITFALLS.md`;
+**rule N** always refers to
 `UPDATING.md`; **section N** always refers to this file.
 
 ---
