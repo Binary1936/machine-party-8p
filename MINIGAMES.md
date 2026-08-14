@@ -51,10 +51,15 @@ free-fly observer camera, which joins once the real seats are full.
 
 ### 3. `scripts/scenes/game/game.gd`
 - `for p in 4:` → `for p in NetworkManager.MAX_PLAYERS:` (player label array).
-- In `generate_session_playlist()`: derive `lobby_size` from
-  `NetworkManager.active_backend.connected_players.size()`, then skip any
-  minigame failing `Globals.supports_player_count()` — **in all three branches**
-  (custom-game, default rotation, and Arcade).
+- In `generate_session_playlist()`: derive `lobby_size` by counting the
+  **non-debug** entries of `NetworkManager.active_backend.connected_players`,
+  then skip any minigame failing `Globals.supports_player_count()` — **in all
+  three branches** (custom-game, default rotation, and Arcade). The count must
+  exclude demoted debug spectators, which do sit in `connected_players`: until
+  2026-08-13 it was a plain `.size()`, so a 9th connection (8 players plus a
+  demoted spectator) pushed `lobby_size` past every cap and emptied the
+  playlist, fallback included — a silent session dead-end (issue #6; see the
+  session-log entry for the reproduction).
 - Fallback: if filtering empties the playlist, rebuild from `default_playlist`
   with the same rule, so a custom playlist of only-capped games cannot dead-end.
 

@@ -683,7 +683,47 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-09 (latest) — Vanilla-compat mode: mixed lobbies with unmodded clients, verified locally; shipped as v1.1 (Experimental)
+### 2026-08-13 (latest) — Playlist cap filter counted demoted spectators; a 9th connection dead-ended the session
+
+An external audit finding, confirmed by reproduction and fixed the same day.
+`generate_session_playlist()` sized its cap filter from
+`connected_players.size()`, which **includes demoted debug spectators** — a
+joiner past the cap re-enters through `set_as_debug_rpc` and is stored (the
+backends' own comments assert it, and today's run confirmed it). At 9 entries,
+`supports_player_count()` — every cap defaults to 8 — rejected every minigame
+in all three playlist branches **and** in the empty-list fallback, which
+re-filters with the same size. `session_minigame_list` came out empty and the
+session dead-ended silently before its first minigame: the pick site's
+out-of-bounds read is pitfall 23's silent-null case, so **no error line ever
+prints**.
+
+**Reachability, measured rather than assumed:** the ENet backend's
+`create_server(SERVER_PORT)` sets no client cap (engine default 32), so any
+9th direct-connect joiner triggers it — 8 seated + the 9th demoted to
+spectator, no mixed lobby or `-trailer` needed. Steam lobbies are created at
+`max_player_count` (8), so over Steam it needs `-trailer` (max 9); the audit's
+mixed-lobby path (4 players + 5 demoted modded joiners = 9) is therefore
+ENet-only too. A vanilla host is unaffected — the filter is mod code.
+
+**Fix** (`game.gd`, `generate_session_playlist()` only): `lobby_size` now
+counts the non-debug entries of `connected_players`, matching how the rest of
+the game already treats debug peers as non-playing (they skip `client_loaded`,
+send `player_ready` immediately, and never enter `player_presences`). Chosen
+over clamping to `MAX_PLAYERS`, which would keep counting spectators toward
+the caps and misfilter any future cap set below 8.
+
+| Check | Result |
+|---|---|
+| Repro before fix (9-slot `START=1`, 8 modded + 9th demoted) | `[AUTOSTART] reached 9`, seat map full at 8; **zero** `Generating session playlist with:` lines (a normal 8-run prints 15); one state transition (`SessionStart → SessionIntro`) then nothing for 150s; zero error lines |
+| After fix, same 9-slot run | **15-entry playlist at connected=9**, session cycled `MinigameStart ↔ MinigamePlaying` through three minigames on host, clients **and** the spectator peer; only documented benign error families |
+| 8-slot regression | 15 entries, normal session, no new error classes |
+| 4-slot parity | 15 entries, normal session, benign families only — at ≤4 no debug entries exist, so `lobby_size` is unchanged by the fix |
+
+Public tracker: **issue #6** (the shipped v1.0/v1.1 zips carry the bug; the
+fix ships with the next release). `MINIGAMES.md` §3 updated to describe the
+non-debug count.
+
+### 2026-08-09 — Vanilla-compat mode: mixed lobbies with unmodded clients, verified locally; shipped as v1.1 (Experimental)
 
 Players who keep the mod installed can now host or join ordinary ≤4-player
 lobbies containing UNMODDED v1.5.0 clients. Requested by the maintainer, built

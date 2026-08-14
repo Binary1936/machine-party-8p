@@ -246,9 +246,17 @@ func generate_session_playlist():
 	# 8-PLAYER MOD: minigames that cannot seat more than four players are held
 	# back once the lobby outgrows them. The host builds this list and ships it
 	# to everyone over update_playlist_state_rpc, so clients need no such check.
+	# Demoted debug spectators sit in connected_players but never play, so the
+	# count excludes them - otherwise a 9th connection (8 players plus a demoted
+	# spectator, or a mixed lobby's 4 players plus demoted joiners) filtered
+	# every minigame out and dead-ended the session on an empty playlist.
 	var lobby_size: int = 1
 	if NetworkManager.active_backend:
-		lobby_size = max(NetworkManager.active_backend.connected_players.size(), 1)
+		var mod_seated: int = 0
+		for player_info in NetworkManager.active_backend.connected_players.values():
+			if not player_info.get("debug", false):
+				mod_seated += 1
+		lobby_size = max(mod_seated, 1)
 
 	if GameManager.custom_game:
 
