@@ -21,7 +21,7 @@ this file had grown past the point where one read returned all of it.
 | **"Overlay manifest"** | every file in `mod/`, mapped to the `MINIGAMES.md` section explaining it |
 | **"Update procedure"** | the eight steps for rebuilding against a new game version |
 | **"Testing — the validation recipe"** | the 8-client harness and the traps in it. Cited everywhere as *Testing* |
-| **"Pitfalls"** | 30 numbered failure modes. Cited from code as *pitfall N* — stable, do not renumber |
+| **"Pitfalls"** | 31 numbered failure modes. Cited from code as *pitfall N* — stable, do not renumber |
 | **"A rule to preserve"** | 1-4 stays vanilla, and the two accepted breaches |
 | **"Documentation policy"** | how this doc set stays lean — read before editing any of these files |
 | **"Version control"** | the GitHub repo, commit discipline, and the release flow |
@@ -683,7 +683,61 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-13 (latest) — Playlist cap filter counted demoted spectators; a 9th connection dead-ended the session
+### 2026-08-13 (latest) — Chisel Gauntlet's spectate-marker clones carried a Label3D's transform; expander parse bug fixed
+
+The second finding from the same external audit as the playlist entry below —
+confirmed against the scene, the tool source and the consumption path, with two
+of its impact details corrected on the way.
+
+**The defect.** Vanilla's `DeadLobby/SpectatePositions` ships four
+**transformless** markers — Godot omits the `transform` line when it is
+identity — so all four vanilla spectate cameras stack at one global point,
+3.4u above the DeadLobby floor. The overlay's seven clones
+(`Marker3D4_MOD2`…`_MOD8`) each carried
+`Transform3D(3.6222 …, −1.20x, −2.36469, −3.72135)` — the `temp controls
+label` Label3D's transform, x varying in 0.001 steps. `initialize()` appends
+every child of that parent in order and `spawn_players()` hands
+`spectate_positions[counter]` to `set_spectate_position_rpc` (which sets
+`spectate_camera.global_position`), so at 5-8 players counters 4-7 spectated
+from 2.36u below and 3.72u forward of the intended point — knee height,
+roughly on the screen's plane. 1-4 players never touched the clones (counters
+0-3, and this path never shuffles).
+
+**Cause: `spawn_expand.py`'s `parse()`**, which looked ahead for a transform
+without stopping at the next `[node]` header and dropped transformless markers
+entirely. On this scene it therefore found exactly **one** "marker" —
+`Marker3D4` wearing the Label3D's transform — which is also why all seven
+clones were sourced from `Marker3D4` and numbered from `_MOD2`. The bogus
+nodes predate git (byte-identical in `mod_v107/`) and `chisel_gauntlet` is
+not in `spawn_targets.txt`, so no current sweep regenerates them — a fossil
+of an early invocation, carried forward through two updates.
+
+**Two audit claims corrected by measurement:** the camera sat ~1.0u *above*
+the DeadLobby floor (the 10×10×10 flipped-box room), not under it — 2.36u is
+its offset below the *intended* point; and the 3.62× scale was inert, since
+only `global_position` is ever consumed.
+
+**Fix:** the seven bogus nodes replaced by **four transformless clones**
+(`Marker3D_MOD5`…`Marker3D4_MOD8`) — indices 4-7 now exist and resolve to the
+exact point vanilla stacks its own four cameras at. `parse()` now stops at
+the next `[` and records a transformless marker as identity. Sweep of all 16
+overlay scenes: chisel was the only one with the mis-parse signature — now
+**pitfall 31**, which carries the detection rule (`_MOD` numbering starting
+below 5) and the known false positives.
+
+| Check | Result |
+|---|---|
+| Scene vs vanilla | diff is exactly the four transformless marker headers; `Marker3D4_MOD2` absent from the deployed pck (`grep -a`), `Marker3D_MOD5` present |
+| 8-player pinned run (`START=1`, 130s) | `[STATIONS] player_count=8` + `cloned 7 single nodes` on host and all 7 clients ×3 rounds, `[SHOTGUN]` slots 0-7 at 45° steps ×2 sweeps, zero parse/script errors, `v1.5.0-8P-v1.1` on all peers |
+| 4-player parity | `[STATIONS] player_count=4`, no cloning lines on any peer, zero parse/script errors |
+| Error classes (pitfall-12 filter) | identical three documented families at 4 and at 8; `comm -13` empty |
+| Eyes | the 5-8 spectate view itself is unwatched — low risk (the point is vanilla's own), but only a look closes it |
+
+Public tracker: **issue #7** (the shipped v1.0/v1.1 zips carry the bug; the
+fix ships with the next release). `MINIGAMES.md` §10 documents the scene's
+markers; the overlay manifest row updated.
+
+### 2026-08-13 — Playlist cap filter counted demoted spectators; a 9th connection dead-ended the session
 
 An external audit finding, confirmed by reproduction and fixed the same day.
 `generate_session_playlist()` sized its cap filter from
@@ -1765,7 +1819,7 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `modules/multiplayer/backends/multiplayer_backend.gd` | 8 | window titles P1-P8 |
 | `minigames/intermission_new/components/intermission_score_screen.gd` | 11 | 8 rows; reverb pitch clamp |
 | `minigames/intermission_new/components/intermission_briefing_screen.gd` | 12 | 8 cards; `FLOW=1` auto-ready |
-| `minigames/chisel_gauntlet_multiplayer/*` (4) | 5, 10 | 8 stations, facings, shotgun order, split-screen |
+| `minigames/chisel_gauntlet_multiplayer/*` (4) | 5, 10 | 8 stations, facings, shotgun order, split-screen; the `.tscn` adds 4 identity spectate markers (pitfall 31) |
 | `minigames/escalator_pit/*` (3) | 13 | 8 stair strips, hidden handrails |
 | `minigames/smoke_break/*` (4) | 14 | 8 seats, crates, aim angles, 4 capped arrays |
 | `minigames/green_pea/*` (2) | 10 | runtime 8-seat layout by RPC |
@@ -2932,6 +2986,28 @@ without it a scripted run dies on `EOFError` before touching anything.
       `scene_cache_interface.cpp` stores and confirms the cache entry regardless;
       verified in engine source and clean in every mixed run. **Expect it, do not
       chase it** — see the 2026-08-09 session-log entry and Testing.
+31. **A transformless marker is IDENTITY, not absent — and `_MOD` numbering
+    starting below 5 means the expander mis-parsed the scene.** Godot omits a
+    node's `transform` line when it is identity. Before 2026-08-13,
+    `spawn_expand.py`'s `parse()` scanned past the next `[node]` header looking
+    for one, so an identity marker either vanished from the marker list or
+    **stole the next node's transform**. In `chisel_gauntlet.tscn` that
+    attributed a Label3D's transform (3.62 scale, 2.36u low) to `Marker3D4`,
+    and the resulting single-source expansion put players 5-8's spectate
+    cameras at the label's position — shipped that way in v1.0 and v1.1
+    (issue #7). Both halves are fixed (`parse()` stops at `[`; identity is
+    recorded as identity), but the detection rule outlives the fix: the
+    expander names clones `_MOD<n+1>` onward from n originals, so **any `_MOD`
+    node numbered below 5 means it saw fewer than four originals**. Sweep after
+    any regeneration:
+
+    ```bash
+    grep -roE '_MOD[0-9]+' --include="*.tscn" mod/ | sort -u
+    ```
+
+    Known false positives: `green_pea` / `smoke_break` seat meshes named
+    `*_MOD3/4` — hand-authored `MeshInstance3D`s on a per-side numbering
+    scheme, not expander output (§10, §14).
 
 ---
 

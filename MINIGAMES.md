@@ -223,6 +223,17 @@ code, and each is described in the pitfalls list below.
   8 distinct `player_rotations`, conditional `shotgun_check_order`, and
   `zz_mod_add_stations_rpc()` which clones the console/desk/ring geometry for the
   added slots.
+- `minigames/chisel_gauntlet_multiplayer/chisel_gauntlet.tscn` - four spectate
+  markers (`Marker3D_MOD5`..`Marker3D4_MOD8`) added under
+  `DeadLobby/SpectatePositions`, **transformless like the shipped four** -
+  vanilla stacks every spectate camera at the parent's origin, and
+  `spawn_players()` does `spectate_positions[counter]`, so a 5-8 roster needs
+  indices 4-7 to exist (indexing past the end is pitfall 23's silent-null
+  case). This path
+  never shuffles, so 1-4 always lands on the shipped markers. Until 2026-08-13
+  the overlay carried seven clones wearing a Label3D's transform instead -
+  players 5-8 spectated from knee height at the screen plane; see pitfall 31
+  and the session-log entry.
 - `minigames/chisel_gauntlet_multiplayer/states/round_eliminate.gd` - `[SHOTGUN]`
   trace of the execution sweep under `-localtest`.
 

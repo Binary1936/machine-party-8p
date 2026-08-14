@@ -102,12 +102,21 @@ def parse(lines, container):
         m = NODE_RE.match(line.rstrip("\n"))
         if not m or m.group(3) != container or m.group(2) != "Marker3D":
             continue
-        for j in range(i + 1, min(i + 5, len(lines))):
-            x = XFORM_RE.match(lines[j].rstrip("\n"))
+        # A marker's properties end at the next section header, and Godot omits
+        # the transform line entirely when it is the identity - so the search
+        # must stop at '[' rather than run on into the next node's transform,
+        # and a marker with no transform of its own is identity, not absent.
+        basis, origin = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0]
+        for j in range(i + 1, len(lines)):
+            line_j = lines[j].rstrip("\n")
+            if line_j.startswith("["):
+                break
+            x = XFORM_RE.match(line_j)
             if x:
                 nums = [float(v) for v in x.group(1).split(",")]
-                markers.append(Marker(m.group(1), i, nums[:9], nums[9:12]))
+                basis, origin = nums[:9], nums[9:12]
                 break
+        markers.append(Marker(m.group(1), i, basis, origin))
     return markers
 
 
