@@ -1,0 +1,28 @@
+# Static checks over tracked files only. Nothing here needs (or may ever be
+# given) the game's decompiles, copies, or binary - those are gitignored
+# copyrighted content and their checks run locally via tools/checks/ on the
+# dev machine.
+name: static checks
+
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Format-specifier pre-flight (pitfall 16)
+        run: python3 tools/checks/preflight_format_specifiers.py
+
+      - name: Version strings agree (update step 6)
+        run: python3 tools/checks/version_strings.py
+
+      - name: Overlay manifest counts match docs
+        run: python3 tools/checks/manifest_counts.py
+
+      - name: Mod RPC naming (pitfall 30)
+        run: python3 tools/checks/rpc_prefix.py
+
+      - name: Spawn-marker _MOD numbering sanity
+        run: python3 tools/checks/mod_marker_numbering.py

@@ -688,7 +688,38 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-13 (latest) — Shipped as mod release v1.2, a FULL release: open item 3a closed by a real Steam mixed session
+### 2026-08-13 (latest) — CI: five static checks committed as scripts, run by GitHub Actions on every push and PR
+
+Five paste-in recipes and prose rules became committed scripts under
+`tools/checks/`, run automatically by `.github/workflows/checks.yml` on every
+push and pull request (the repo's first CI). Each also runs standalone —
+`python3 tools/checks/<name>.py [repo-root]`, exit 0/1 — so they slot into the
+local pre-flight habit. **They need only tracked files; the update-procedure
+checks that need decompiles or the game binary (filecmp sweep, `.tscn` audit,
+marker rescan, `-validate-scenes`) stay local-only by design, and game content
+must never be uploaded to CI.**
+
+| Script | Guards |
+|---|---|
+| `preflight_format_specifiers.py` | pitfall 16 — invalid `%` specifiers in `mod/**/*.gd` (the committed form of the Working-environment pre-flight) |
+| `version_strings.py` | step 6 — `game_version` = `MOD_NETWORK_GAME_VERSION` + `-` + `MOD_SUFFIX`, install.py's `SUPPORTED_VERSION` and `--verify` string, and README.txt's two labels all agree |
+| `manifest_counts.py` | the overlay-count claims (total / `.gd` / `.tscn`) in this file's manifest header and README.md vs what `mod/` actually holds — note it matches the FIRST claim-shaped string in each doc, so never quote one verbatim above the manifest |
+| `rpc_prefix.py` | pitfall 30 — any `@rpc` func named `mod_*`/`*_mod_*` must be `zz_`-prefixed |
+| `mod_marker_numbering.py` | `spawn_expand.py` mis-parse tell — `_MOD` numbering below 5 (green_pea's four hand-authored chairs whitelisted) |
+
+**Verification:** all five pass against this tree (the marker check passes
+because the 2026-08-13 chisel fix landed first — against the pre-fix tree it
+correctly flagged the three `_MOD2-4` spectate markers). Each check was also
+mutation-tested against a scratch copy: an injected `%r` string, a bumped
+`MOD_SUFFIX`, a deleted overlay file, and an unprefixed `mod_test_rpc` each
+turned exactly their check red. Origin: the 2026-08-12 independent audit's
+recommendation to convert documented manual checks into CI-enforced ones.
+
+On GitHub, every commit and PR now shows a green check / red X in the Actions
+tab; a red X means one of the five invariants above broke — read the failing
+step's log, it names the file and line.
+
+### 2026-08-13 — Shipped as mod release v1.2, a FULL release: open item 3a closed by a real Steam mixed session
 
 **What ships:** the four fixes since v1.1 — the playlist 9-connection
 dead-end (issue #6), the spectate markers (issue #7), the corner barrels
