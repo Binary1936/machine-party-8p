@@ -683,7 +683,48 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-13 (latest) — Chisel Gauntlet's spectate-marker clones carried a Label3D's transform; expander parse bug fixed
+### 2026-08-13 (latest) — Chisel's station clone list duplicated the room's collision environment; invisible base-mesh clone dropped
+
+Third finding from the same external audit, confirmed in full against the
+scene and the code. `MOD_STATION_CONTAINERS` cloned **every** child of
+`Colliders` at 45°, and that container holds **six** children, not the
+commented "desk collision bodies" four: the four desk `StaticBody3D`s plus
+`GeometryStaticBody` (the room's `ConcavePolygonShape3D` **and** a
+`WorldBoundaryShape3D`) and a collision-enabled `CSGCylinder3D` (the centre
+pillar). So every 5-8 player round also built a phantom copy of the room's
+collision mesh rotated 45° — a rotation the room's 90° symmetry does not
+absorb. Graded before fixing: the WorldBoundary clone is Y-rotation-invariant
+(coincident) and the 12-sided pillar clone near-coincident; the concave mesh
+was the real phantom, invisible by nature, never observed to affect anything
+in any run or look (players stand at stations; the main exposure was effect
+physics). Latent and unintended, not an observed defect.
+
+Same function, second half: the `Geometry/environment/control panel base
+mesh` clone was **invisible** — `Geometry` ships `visible = false`, nothing
+in vanilla or the mod ever shows it, and no NodePath or script reaches into
+that subtree — so the entry's comment ("the desk top the carve cube rests on
+… without it the cube floats") described a purpose the clone never achieved.
+The *visible* surfaces at the added stations come from the two `art2`
+hole-mesh clones, which is consistent with every by-eye check at 8 having
+passed while this clone contributed nothing.
+
+**Fix** (`chisel_gauntlet.gd` only): the container mechanism is gone;
+`MOD_STATION_NODES` now names the four desk bodies explicitly (with the
+constraint in a comment) and the base-mesh entry is dropped. The `[STATIONS]`
+trace accordingly reads `cloned 10 single nodes` (was `7`, plus six silent
+container children).
+
+| Check | Result |
+|---|---|
+| 8-player pinned run (`START=1`, 130s) | 10 `found` lines in list order + `cloned 10 single nodes` ×3 rounds on host and all 7 clients; **zero `MISSING`**; zero hits for the old clone names; `[SHOTGUN]` slots 0,4,2,6,1,5,3,7 at 45° steps ×2; zero parse/script errors |
+| 4-player parity | `player_count=4`, no found/cloned lines on any peer |
+| Error classes (pitfall-12 filter) | 8p: the documented three families; `comm -13` empty. One 4p-only class this run — `ERR_UNAUTHORIZED` / `recv_nodes` — is the documented despawn-churn family (2026-08-05 entry: measured at both roster sizes, deliberately unfiltered); stochastic timing, not fix-related |
+
+No public issue: nothing user-visible was ever observed or is expected from
+the removed clones. This entry is the record; `MINIGAMES.md` §10's chisel
+bullet carries the constraint.
+
+### 2026-08-13 — Chisel Gauntlet's spectate-marker clones carried a Label3D's transform; expander parse bug fixed
 
 The second finding from the same external audit as the playlist entry below —
 confirmed against the scene, the tool source and the consumption path, with two

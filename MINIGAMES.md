@@ -222,7 +222,12 @@ code, and each is described in the pitfalls list below.
 - `minigames/chisel_gauntlet_multiplayer/scripts/chisel_gauntlet.gd` -
   8 distinct `player_rotations`, conditional `shotgun_check_order`, and
   `zz_mod_add_stations_rpc()` which clones the console/desk/ring geometry for the
-  added slots.
+  added slots — ten named nodes, including **exactly** the four desk
+  `StaticBody3D`s out of `Colliders`' six children. The other two (the room's
+  concave collision mesh + WorldBoundary, and the centre CSG pillar) must never
+  be cloned: until 2026-08-13 a clone-the-whole-container loop duplicated the
+  room's collider rotated 45° every 5-8 player round (see that session-log
+  entry).
 - `minigames/chisel_gauntlet_multiplayer/chisel_gauntlet.tscn` - four spectate
   markers (`Marker3D_MOD5`..`Marker3D4_MOD8`) added under
   `DeadLobby/SpectatePositions`, **transformless like the shipped four** -

@@ -209,20 +209,20 @@ const MOD_VANILLA_STATIONS: int = 4
 
 # Everything that makes up a station. All of it sits on the Y axis and differs
 # only by a Y rotation, so a copy turned 45 degrees lands exactly between two
-# existing stations. Containers are cloned per-child; single nodes are cloned
-# whole (children come with them).
-const MOD_STATION_CONTAINERS: Array[String] = [
-	"Colliders",                                  # desk collision bodies
-]
+# existing stations. Nodes are cloned whole (children come with them).
 const MOD_STATION_NODES: Array[String] = [
 	"chisel gauntlet art2/walls/control panel alpha",
 	"chisel gauntlet art2/walls/control panel bravo",
 	"chisel gauntlet art2/walls/control panel charlie",
 	"chisel gauntlet art2/walls/control panel delta",
-	# The console face alone leaves the added slots with no surface: the desk
-	# top the carve cube rests on is this separate ring, so without it the cube
-	# floats and the ring reads as broken.
-	"Geometry/environment/control panel base mesh",
+	# Exactly the four desk collision bodies - Colliders' other two children
+	# are the room's concave collision mesh (plus a WorldBoundary) and the
+	# centre CSG pillar, and cloning either puts a phantom 45-degree-rotated
+	# room collider in the level.
+	"Colliders/StaticBody3D",
+	"Colliders/StaticBody3D2",
+	"Colliders/StaticBody3D3",
+	"Colliders/StaticBody3D4",
 	"chisel gauntlet art2/control panel hole mesh",
 	"chisel gauntlet art2/control panel hole wires",
 ]
@@ -252,17 +252,6 @@ func zz_mod_add_stations_rpc() -> void:
 	var _made := 0
 	if _dbg:
 		print("[STATIONS] running, is_server=", multiplayer.is_server())
-
-	for path in MOD_STATION_CONTAINERS:
-		var parent := get_node_or_null(path)
-		if parent == null:
-			continue
-		# Snapshot: adding children while iterating would clone the clones.
-		var originals: Array[Node] = []
-		for child in parent.get_children():
-			originals.append(child)
-		for child in originals:
-			_mod_clone_rotated(child)
 
 	for path in MOD_STATION_NODES:
 		var node := get_node_or_null(path)
