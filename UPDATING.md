@@ -75,6 +75,13 @@ protects something specific:
   the commits that would go up — what each changed and the evidence behind it
   — and wait for the maintainer's OK. Batch at natural stopping points rather
   than asking per commit.
+- **Run the static checks before every push.** `tools/checks/*.py` are the
+  five invariants CI enforces (what each guards: the 2026-08-13 CI session-log
+  entry); they run in seconds and a local pass guarantees a green run on
+  origin — history there is append-only, so a red X can only be fixed forward.
+  `sh tools/checks/install_hook.sh`, once per clone, installs a pre-push hook
+  that makes the check automatic (hooks live in the untracked `.git/hooks/`,
+  so every clone installs its own).
 - **Subagents never commit or push.** The orchestrating session commits after
   its own review — a commit is a claim the change was verified, and only the
   reviewer can make it.
@@ -667,18 +674,7 @@ memory, but memory is namespaced to `~/Documents/Claude` - a chat started
 script is invisible until that minigame loads (see pitfall 16):
 
 ```bash
-python3 - <<'EOF'
-import re, glob
-strlit = re.compile(r'"([^"\\]*(?:\\.[^"\\]*)*)"')
-spec = re.compile(r'%[-+ 0#]*[\d*]*(?:\.[\d*]+)?([a-zA-Z%])')
-ok = set("scdoxXfv%")
-for f in sorted(glob.glob("mod/**/*.gd", recursive=True)):
-    for n, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
-        for s in strlit.findall(line):
-            for m in spec.finditer(s):
-                if m.group(1) not in ok:
-                    print(f"{f}:{n}: invalid %{m.group(1)}")
-EOF
+python3 tools/checks/preflight_format_specifiers.py
 ```
 
 ---
@@ -688,7 +684,37 @@ EOF
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-13 (latest) — CI: five static checks committed as scripts, run by GitHub Actions on every push and PR
+### 2026-08-14 (latest) — the checks wired into the working docs, plus a pre-push hook
+
+Follow-up to the CI entry below, closing the gap between "the checks exist"
+and "the process uses them": the goal is that a push never reaches origin
+red, because history there is append-only and a failed run can only be fixed
+forward with another commit.
+
+- The two identical `%`-specifier pre-flight heredocs (Working environment,
+  Testing) replaced by `python3 tools/checks/preflight_format_specifiers.py` —
+  the logic now lives only in the committed script, so the copies cannot
+  drift (~30 lines of duplicated code out of this file).
+- New Version-control rule: **run the static checks before every push**; a
+  local pass guarantees a green run on origin (same scripts, same tracked
+  files, stdlib-only).
+- Step 6 now ends with `version_strings.py` verifying all five label sites;
+  step 7 and Handy commands carry the run-all one-liner
+  (`for s in tools/checks/*.py; do python3 "$s" || break; done`).
+- **`tools/checks/install_hook.sh`** (new) installs a `pre-push` git hook
+  that runs all five and blocks the push on any failure. Hooks live in the
+  untracked `.git/hooks/`, so it is a once-per-clone step; the emergency
+  bypass is `git push --no-verify`.
+
+Verified: all five checks pass on this tree; the hook's failure path was
+exercised by dropping a deliberately-failing script into `tools/checks/`
+(run blocked, failing script named, then removed) — and the pass path is
+proven by this entry being on origin at all, since this commit's own push
+went through the installed hook. Also in this commit's parent:
+`checkout@v4 → v5` cleared the Node 20 deprecation warning, so runs are
+green with zero annotations.
+
+### 2026-08-13 — CI: five static checks committed as scripts, run by GitHub Actions on every push and PR
 
 Five paste-in recipes and prose rules became committed scripts under
 `tools/checks/`, run automatically by `.github/workflows/checks.yml` on every
@@ -2350,6 +2376,8 @@ The **display** label therefore still lives in three places that must agree —
 **wire** constants above are a separate, fourth thing that only `globals.gd`
 holds. Getting a display string wrong misinforms; getting
 `MOD_NETWORK_GAME_VERSION` wrong breaks vanilla-compat outright.
+`python3 tools/checks/version_strings.py` verifies all five sites at once —
+run it right after the bump; CI fails the push if any disagree.
 
 **And in the prose, which is easy to skip and leaves the next session reading a
 handoff document that lies about which version it targets.** You are updating
@@ -2374,6 +2402,11 @@ the worked example a future session copies is the freshest one.
 ```bash
 python3 tools/build.py
 MP_DEPLOY=~/Documents/Claude/machine-party-8p/testgame python3 tools/build.py
+```
+Then the static checks — the same five CI runs, so a local pass here means a
+green push later:
+```bash
+for s in tools/checks/*.py; do python3 "$s" || break; done
 ```
 Then run the validation recipe below.
 
@@ -2443,18 +2476,7 @@ way. Either run the `-validate-scenes` recipe above, or pin the minigame with
 pre-flight for that specific class:
 
 ```bash
-python3 - <<'EOF'
-import re, glob
-strlit = re.compile(r'"([^"\\]*(?:\\.[^"\\]*)*)"')
-spec = re.compile(r'%[-+ 0#]*[\d*]*(?:\.[\d*]+)?([a-zA-Z%])')
-ok = set("scdoxXfv%")
-for f in sorted(glob.glob("mod/**/*.gd", recursive=True)):
-    for n, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
-        for s in strlit.findall(line):
-            for m in spec.finditer(s):
-                if m.group(1) not in ok:
-                    print(f"{f}:{n}: invalid %{m.group(1)}")
-EOF
+python3 tools/checks/preflight_format_specifiers.py
 ```
 
 Plain boot test (should run the full timeout with no script errors):
@@ -3312,6 +3334,10 @@ So:
 ## Handy commands
 
 ```bash
+# the five static checks CI enforces - run before every push (or install the
+# pre-push hook once per clone: sh tools/checks/install_hook.sh)
+for s in tools/checks/*.py; do python3 "$s" || break; done
+
 # build + deploy to the throwaway copy
 MP_DEPLOY=~/Documents/Claude/machine-party-8p/testgame python3 tools/build.py
 
