@@ -666,6 +666,19 @@ closed.** What remains:
    error class left. Deliberately not chased.
 6. **Smoke Break player-model clipping** on the left four seats. Cause is seat
    facing, not spacing; blocked by pinned seats and the camera frame. Accepted.
+7. **The other 14 rotation minigames' disconnect handlers are unaudited for a
+   drop DURING the load** — issue #13, opened 2026-08-15 after v1.3. The
+   generic half of the pitfall-32 fix (the load-gate re-check in `game.gd`)
+   covers all of them in the common ordering; what each minigame's own
+   `player_disconnected()` does against a not-yet-spawned game — the narrower
+   ordering — is only guarded in Duck Hunt. Eleven of them call an
+   end-of-game check ~1 s after a disconnect; two index a per-player dictionary
+   unguarded. Method: read each handler pre-spawn, then the kill-at-load recipe
+   (Testing) with the minigame pinned. The maintainer will take this in a
+   later session. Related decision still open: the kill-at-load helper is a
+   scratch script (recipe inline in Testing); promoting it to `tools/` awaits
+   the maintainer's go. Issue #11 (the crash that triggered #10/#12) also
+   remains open, cause unknown.
 
 Fully closed, with per-peer measurements: Duck Hunt (markers, magazine,
 animation timing, round pacing, spawn counts), Spine Breaker (pacing), Inside

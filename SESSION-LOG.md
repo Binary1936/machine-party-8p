@@ -46,7 +46,10 @@ into a no-kill control), and never `pkill -f` a pattern that is also on your
 own command line.
 
 Tagged `v1.3`, `gh release create` with the zip attached; issues #10 and #12
-closed as shipped, #11 (the crash itself) stays open.
+closed as shipped, #11 (the crash itself) stays open. **Issue #13 opened** for
+the follow-up the maintainer deferred to a later session: the other 14 rotation
+minigames' `player_disconnected()` handlers, unaudited for the pre-spawn
+ordering (open item 7).
 
 ### 2026-08-15 — Duck Hunt's silent rifle and the black-screen wedge share one cause: a peer dropping DURING a minigame load leaves vanilla's load gate stuck (issues #10, #12). Reproduced at 4 players, fixed at every roster size
 
