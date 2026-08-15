@@ -75,8 +75,10 @@ each also condensed into the worked example:
   stale at the next bump; historical mentions kept.
 
 **Version sites:** `MOD_NETWORK_GAME_VERSION` → `"v2.1.2"` (copied from the
-new decompile), `MOD_SUFFIX` carried as `"8P-v1.2"` (no new mod release
-decided yet), display `v2.1.2-8P-v1.2`; install.py `SUPPORTED_VERSION`,
+new decompile), `MOD_SUFFIX` carried as `"8P-v1.2"` (maintainer's decision:
+this ships as a REBUILD of v1.2, not a new release — the v1.2 GitHub
+Release's zip asset was replaced with the v2.1.2 build and its notes updated,
+tag untouched), display `v2.1.2-8P-v1.2`; install.py `SUPPORTED_VERSION`,
 README.txt labels, and all doc prose bumped — `version_strings.py` and the
 other four static checks all pass. Quasivanilla: 2 of its 4 overlay files
 re-derived (delta-of-deltas exact), `qv.pck` rebuilt and deployed to
