@@ -675,10 +675,9 @@ closed.** What remains:
    end-of-game check ~1 s after a disconnect; two index a per-player dictionary
    unguarded. Method: read each handler pre-spawn, then the kill-at-load recipe
    (Testing) with the minigame pinned. The maintainer will take this in a
-   later session. Related decision still open: the kill-at-load helper is a
-   scratch script (recipe inline in Testing); promoting it to `tools/` awaits
-   the maintainer's go. Issue #11 (the crash that triggered #10/#12) also
-   remains open, cause unknown.
+   later session, with `tools/kill_slot_at_load.sh` (promoted from the
+   session's scratch script the same day, at the maintainer's request). Issue
+   #11 (the crash that triggered #10/#12) also remains open, cause unknown.
 
 Fully closed, with per-peer measurements: Duck Hunt (markers, magazine,
 animation timing, round pacing, spawn counts), Spine Breaker (pacing), Inside
@@ -778,7 +777,8 @@ mod_v107/    the v1.0.7 overlay, pre-git baseline (git has every later one)
   at `project_old/project/` and make every step-4 diff meaningless. Clear or
   rename the previous generation first.
 tools/       pck.py, gdc.py, build.py, spawn_expand.py, lobby_expand.py,
-             green_pea_chairs.py, spawn_targets.txt, localtest.sh, bin/
+             green_pea_chairs.py, spawn_targets.txt, localtest.sh,
+             kill_slot_at_load.sh, checks/, quasivanilla/, bin/
 docs_old_2026-08-08/  snapshot of all five docs taken 2026-08-08 under
              Documentation policy rule 4, before the v1 release audit's doc
              restructure. The pre-restructure text, if a question needs it.
@@ -802,6 +802,10 @@ userdata_backup/  a backup of the game's user data (saves, settings, shader
   layout (rule 3), so after any run, restore Player2-4's origins to vanilla
   (-2, 2, 6) by hand, or fix the tool first. The v2.1.2 rebuild did the hand
   restore; see the session-log entry.
+- **`tools/kill_slot_at_load.sh`** — arms a watcher that `SIGKILL`s one
+  localtest joiner the instant the host starts loading a minigame: the
+  crash-during-load trigger for pitfall 32. Usage and traps under Testing,
+  "Simulating a peer crash during a minigame load".
 - **`tools/localtest.sh`** — launches N instances locally over ENet (see
   Testing). `START=1` plays a minigame, `MINIGAME=<Identifier>` pins one,
   `FLOW=1` runs the **full normal session loop** instead of the fast path, and
@@ -1696,19 +1700,19 @@ by timeout (~15 s locally), after the others have loaded. Arm the killer
 **before** launching; it waits for the host's load line:
 
 ```bash
-rm -rf /tmp/mp-localtest      # FIRST: a stale p1.log from the last run fires the trigger early
-( until grep -q "load minigame=DuckHunt" /tmp/mp-localtest/p1.log 2>/dev/null; do sleep 0.05; done
-  kill -9 $(pgrep -f "x86_64 -localtest [4] join") ) &
+tools/kill_slot_at_load.sh 4 DuckHunt &        # arm FIRST, in the background
 START=1 MINIGAME=DuckHunt tools/localtest.sh 4 <game-dir> 900
 ```
 
-Two traps, each cost a run on 2026-08-15. The `rm -rf` must come first:
-`localtest.sh` clears the log directory itself, but the armed watcher races
-it, and a leftover `p1.log` that already contains the load line makes it fire
-before any client exists (the run then silently becomes a no-kill control).
-And **do not write `pkill -f "-localtest 4 join"`** — the pattern is also on the
-command line of the shell running it, so it kills the launcher instead of the
-client; the `[4]` regex cannot match its own text.
+`tools/kill_slot_at_load.sh <slot> [MinigameIdentifier]` (added 2026-08-15,
+after the recipe was first run by hand) waits for the host's `[ROUNDS8] load
+minigame=<Identifier>` line and `kill -9`s that joiner by pid. It carries the
+two traps that each cost a run that day: it clears `/tmp/mp-localtest` itself
+before waiting (a leftover `p1.log` already containing the load line fires the
+trigger before any client exists, and the run silently becomes a no-kill
+control), and it finds the pid with `pgrep -f "x86_64 -localtest [4] join"` —
+a plain `pkill -f "-localtest 4 join"` also matches the shell running it and
+kills the launcher instead of the client.
 Kill signature: the slot's log stops at the briefing (`[BRIEF8]`), the host's
 `[BRIEF8] players=` drops by one ~15 s later. Healthy signature after that:
 `Game: SessionIntro → MinigameStart → MinigamePlaying` then the minigame's

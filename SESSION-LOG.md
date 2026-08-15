@@ -49,7 +49,11 @@ Tagged `v1.3`, `gh release create` with the zip attached; issues #10 and #12
 closed as shipped, #11 (the crash itself) stays open. **Issue #13 opened** for
 the follow-up the maintainer deferred to a later session: the other 14 rotation
 minigames' `player_disconnected()` handlers, unaudited for the pre-spawn
-ordering (open item 7).
+ordering (open item 7). The kill-at-load watcher was then promoted from the
+scratch script to **`tools/kill_slot_at_load.sh`** at the maintainer's request
+(`<slot> [MinigameIdentifier]`, clears the log dir itself, kills by pid) and
+re-verified from its new location: 4p, P4 killed at the load line, host went
+`players=3 → MinigameStart → MinigamePlaying → Empty → Round`.
 
 ### 2026-08-15 — Duck Hunt's silent rifle and the black-screen wedge share one cause: a peer dropping DURING a minigame load leaves vanilla's load gate stuck (issues #10, #12). Reproduced at 4 players, fixed at every roster size
 
@@ -145,8 +149,9 @@ path (the bus is restored by `initialize()` alone) and the log ordering, not by
 ear in a multi-minigame local run — a pinned run cannot go silent. Doing that
 needs an unpinned rotation (Duck Hunt 5th) with the kill at its load and a
 listener; offered, not done. **#11 (the crash itself) stays open** — cause
-unknown, one clean 8-player load. The kill-at-load helper is a scratch script;
-adding it to `tools/` awaits the maintainer's go (no unrequested code).
+unknown, one clean 8-player load. The kill-at-load helper started as a scratch
+script and became `tools/kill_slot_at_load.sh` later the same day at the
+maintainer's request (release entry above).
 
 **Two harness lessons.** `pkill -f "-localtest 4 join"` matched the *tool
 shell* that contained the pattern and killed the launcher, not the client —
