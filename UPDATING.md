@@ -54,6 +54,10 @@ by the maintainer, 2026-08-08):
    or `PITFALLS.md` moves to `SESSION-LOG-ARCHIVE.md`. Git history (since 2026-08-08) is a backstop, not
    a reading surface — a future session can grep the archive but will never
    think to excavate a commit, so the archive remains the recall path.
+   **At each release, archive every entry older than the previous release**
+   (verbatim, one stub table naming the owning sections — the 2026-08-15 cut
+   is the model), so the log stays the short "what changed most recently"
+   read it is meant to be; it had reached 1,768 lines before that rule.
 4. **Commit before restructuring.** The docs are in git since 2026-08-08:
    commit before any large reorganisation, then check the new text still
    answers every question the old text answered. The `*_old` copy-aside idiom
@@ -114,7 +118,9 @@ protects something specific:
   tracker.
 - **Release flow**, after step 8's zip rebuild and diff check: commit, tag
   the mod release label, `gh release create <tag>` with the zip attached.
-  The zip is a Release asset, never a tracked file.
+  The zip is a Release asset, never a tracked file. Then archive the
+  session-log entries older than the previous release (documentation policy,
+  rule 3).
 
 ---
 
