@@ -914,7 +914,9 @@ played a P4-killed run to `Play → Finished → Game: MinigamePlaying →
 MinigameEnd` and the score screen on all three peers; at 8 the same kill gave
 `SessionIntro → MinigameStart → MinigamePlaying`, `Empty → Round` and
 `markers roster=7 ducks_needed=6 added=3` on host and clients; no-kill controls
-at 4 and 8 unchanged. Evidence in the 2026-08-15 session-log entry.
+at 4 and 8 unchanged. Evidence in the 2026-08-15 session-log entry. **The
+same guard went into the other fourteen handlers later that day** — a peer that
+*quits* during a load reaches them pre-spawn (§23, pitfall 33).
 
 ### 20. Forklift Certified — `forklift_certified.gd`, `crate_manager.gd`
 
@@ -1606,3 +1608,67 @@ specifically — the desk directly beneath it — that is a **0.026u** gap. It w
 a problem in the playtest, but if either number moves, this is the first thing to
 re-check, and the fix would be to raise by the height plus a small clearance rather
 than by the height alone.
+
+### 23. Pre-start disconnect guard — every rotation minigame's `player_disconnected()`
+
+**Added 2026-08-15, all roster sizes, the §19 precedent (issue #13).** The
+mechanism is pitfall 32's, reached through a different door: a peer that
+disconnects DURING a minigame load while another peer is still loading. The
+host processes the disconnect before the load gate can pass, so
+`player_disconnected()` runs against an unspawned game — every per-player
+container empty, `is_all_player_loaded` false, the state machine still in
+`Empty`. Pitfall 33 explains why that ordering is a **quit** (Alt-F4, pause
+menu — noticed by the host immediately) rather than a crash (ENet timeout,
+noticed after everyone has loaded), and why the kill-at-load recipe alone
+never showed it.
+
+What each vanilla handler did at zero players, from the pre-spawn read of all
+fifteen (verbatim extraction reviewed 2026-08-15):
+
+| Handler | Pre-spawn behaviour |
+|---|---|
+| burn_recycle, dvd_roomba, forklift_certified, green_pea, junk_platform, spine_breaker, train_race (`size() > 1: return`), escalator_pit (same, checked synchronously), exploding_collar_race (`is_empty()` not returned), knife_at_the_office (`size() <= 1` → `end_game()`), manufacture_gun | end check falls through: `player_scores_finalized.emit({})`, 1–4 s later `MINIGAME_SFX` → 0, `set_effects_visibility_rpc(false)`, **`Empty → Finished`** and `minigame_finished` with no listener yet |
+| chisel_gauntlet | safe: `check_all_submitted()` is behind `can_submit`, false until `RoundPlay` |
+| disco_dodge | safe: `check_game_end_on_death()` returns unless `size() == 1` |
+| smoke_break | no end check; `player_characters[_network_id]` unguarded (see pitfall 34) |
+| duck_hunt | already guarded 2026-08-15 (§19) |
+
+What follows the premature `Finished` depends on when the slow peer loads: if
+before the transition fires (1–4 s), the real start runs first and the round is
+cut off ~2 s in with no scores; if after, the game starts **from** `Finished`
+(`can_leave()` is true) with `finished`/`game_end` already latched in
+burn_recycle, dvd_roomba, green_pea, junk_platform, spine_breaker and
+train_race, so `check_game_end()` returns forever and the round cannot end.
+Reproduced pre-fix on DvdRoomba (`Empty → Finished`, then `Finished → Round →
+Play` and no round end in 150 s where the healthy run cycles three rounds),
+KnifeAtTheOffice and BurnRecycle (one elimination, then nothing) — the
+2026-08-15 session-log entry has the runs.
+
+**The fix, one hunk per handler:** `if not is_all_player_loaded: return` as
+the first thing the handler does after its `is_server` check (Duck Hunt keeps
+its removal RPC ahead of the guard because `_ready()` builds `possible_hunters`
+from the roster; none of the other fourteen populate any per-player container
+before `spawn_players()`, verified, so nothing needs removing pre-spawn). The
+flag is safe to key on: every minigame's `all_players_loaded()` sets it and
+emits `minigame_ready` synchronously, `game.gd::_on_minigame_ready` calls
+`initialize()` in the same call stack, and in all fourteen `spawn_players()`
+runs before any `await` — so once the flag is true the game is spawned. That
+is also why the v1.3 gate re-run in `game.gd` (§19) already made the crash
+ordering safe for these fourteen: it spawns the game before the handler runs.
+A single generic gate in `game.gd` was considered and rejected because of
+Duck Hunt's pre-spawn `possible_hunters`. `exploding_collar_race.gd` joins the
+overlay for this (55 → 56 files); chisel_gauntlet and disco_dodge carry the
+guard for uniformity.
+
+Two hygiene hunks alongside: `manufacture_gun.gd` and `smoke_break.gd` now
+`.get()` the per-player dictionary instead of indexing it, because a peer that
+dropped during the load was never spawned there even once the game has
+started. In the shipped release build the vanilla index was a silent null
+(pitfall 34), so these change nothing observable there; a debug build would
+have errored.
+
+Verified 2026-08-15 with the quit-at-load recipe (Testing) on the fixed build
+across the eleven affected minigames and smoke_break — leaver noticed within
+~0.7 s, no `Empty → Finished`, then the healthy start on host and clients —
+plus kill-at-load regressions on the two `.get()` files and no-kill controls
+at 4 and 8; evidence tables in the second 2026-08-15 session-log entry.

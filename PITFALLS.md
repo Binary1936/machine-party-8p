@@ -358,5 +358,46 @@ recipe", and a dated *session-log entry* lives in `SESSION-LOG.md` (or
     trusting a minigame-level trace: every Duck Hunt trace was green in a
     session that had never left `MinigamePick`. Reproduce with the kill-at-load
     recipe in Testing.
+33. **A crash and a quit are two different disconnects, and a fix verified
+    against one is unverified against the other.** A killed or crashed peer is
+    noticed by the host only when ENet times it out (~15 s locally: default
+    `timeoutLimit` 32 → the sixth retry) — *after* every live peer has finished
+    loading. That is the ordering the kill-at-load recipe produces and the one
+    the v1.3 load-gate re-run in `game.gd` repairs. A peer that **quits** —
+    Alt-F4 (Godot's default `WM_CLOSE_REQUEST` quit; the game installs no
+    override) or the pause menu (`NetworkManager.cancel()` RPCs
+    `disconnect_player` → `disconnect_peer` on the host, `enet_backend.gd`) —
+    is noticed on the host's next poll, because `~ENetMultiplayerPeer()` →
+    `close()` → `peer_disconnect_now(0)` + `flush()` (Godot 4.5.2
+    `modules/enet/enet_multiplayer_peer.cpp:290-311, 487-491`; no SIGTERM or
+    SIGINT handler in `os_linuxbsd.cpp`/`main.cpp`, so `kill -TERM` is a
+    crash, not a quit). During a load that lands the disconnect **before** the
+    slower peers report in, and every minigame's `player_disconnected()` then
+    runs against an unspawned game: eleven of fifteen went `Empty → Finished`
+    at zero players, and when the slow peer loaded afterwards six of them
+    started from `Finished` with `finished`/`game_end` already latched, so the
+    round could never end. Guarded in every handler on 2026-08-15 (§23). Two
+    lessons: **a disconnect path needs both recipes** (the 14-minigame
+    kill-at-load series was healthy end to end while the quit path was broken
+    in eleven of them — Testing, "Simulating a peer quitting during a minigame
+    load"); and **the tell is the same as pitfall 32's** — the minigame's own
+    `Empty → …` line arriving before any `Game: … to MinigameStart`, here
+    reading `Empty → Finished`.
+34. **The shipped binary is a release build: GDScript's invalid-key and
+    null-call errors do not exist in it.** In `gdscript_vm.cpp` (4.5.2) the
+    `OPCODE_GET_KEYED*` "Invalid access to property or key" branches and the
+    `OPCODE_CALL*` "Attempt to call function … on a null instance" report are
+    all inside `#ifdef DEBUG_ENABLED`; in release, `dict[missing]` yields
+    `null` and `null.method()` is a silent no-op, and execution **continues**.
+    So code that reads as "this would error and abort" runs on with nulls, and
+    the log stays clean: `manufacture_gun.gd`'s `active_players[_network_id]`
+    and `smoke_break.gd`'s `player_characters[_network_id]`, indexed for a peer
+    that had dropped during the load and never spawned there, produced no
+    `SCRIPT ERROR` in the kill-at-load runs that exercised exactly those lines
+    (2026-08-15) — the read gave null and the handler ran on. Two consequences: an absence of `SCRIPT ERROR` proves
+    less than it seems for guard-shaped bugs, and a missing `has()`/`get()`
+    guard is a logic bug, not a crash. Parse errors and the core `ERR_FAIL_*`
+    macros (`Parameter "node" is null`, `Invalid packet received`) do print
+    in release — those are C++-side, not the VM's.
 
 ---

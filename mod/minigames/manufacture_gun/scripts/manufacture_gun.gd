@@ -675,7 +675,17 @@ func remove_empty_workstation_rpc(index: int):
 func player_disconnected(_network_id: int):
 	super.player_disconnected(_network_id)
 
-	var player_instance = active_players[_network_id]
+	# 8P MOD: before the game has started there is nothing to end - the peer
+	# was never spawned here and its presence is already pruned. Vanilla's end
+	# check below would see zero players and finish an unstarted game
+	# (pitfall 32; session log 2026-08-15).
+	if not is_all_player_loaded:
+		return
+
+	# 8P MOD: a peer that dropped during the load was never spawned here even
+	# though the game has since started. Vanilla indexes unguarded; the release
+	# build swallows the miss as null (pitfall 34), a debug build errors.
+	var player_instance = active_players.get(_network_id, null)
 
 	active_players.erase(_network_id)
 

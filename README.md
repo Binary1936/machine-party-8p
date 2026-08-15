@@ -16,7 +16,7 @@ or submit Pull requests with changes. I'm still figuring GitHub out, so if I mad
 Raises the online (Steam/ENet) player cap from 4 to 8 for **Machine Party
 v2.1.2** (Godot 4.5.2). All fifteen minigames in the rotation seat eight
 players, and the lobby, briefing screen and score screen grow to match. The mod
-is an overlay of 55 files (39 `.gd`, 16 `.tscn`) applied to the shipped
+is an overlay of 56 files (40 `.gd`, 16 `.tscn`) applied to the shipped
 `Machine Party.pck`: one file is new, the rest replace shipped ones.
 
 This is mod release **v1.3**; in game it identifies itself as

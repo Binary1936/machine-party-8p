@@ -16,7 +16,142 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-15 (latest) — Shipped as mod release v1.3: the disconnect-during-load fix (issues #10, #12)
+### 2026-08-15 (latest) — Issue #13: all fifteen disconnect handlers audited for a drop DURING the load. A crash was already safe; a QUIT during the load finished an unstarted game in eleven minigames (six then unable to end the round). Guarded everywhere
+
+**Task:** open item 7 / issue #13 — do the other fourteen minigames break the
+lobby when a player disconnects mid-load, the way Duck Hunt did (pitfall 32)?
+
+**Static audit — every handler read pre-spawn (verbatim extraction by three
+read-only subagents, every quote re-checked against the files):**
+
+- The v1.3 gate re-run in `game.gd::_on_peer_disconnected` already makes the
+  **crash ordering** safe for all fourteen: every `all_players_loaded()` sets
+  `is_all_player_loaded` and emits `minigame_ready` synchronously,
+  `_on_minigame_ready` calls `initialize()` in the same call stack, and in all
+  fourteen `spawn_players()` runs before any `await` (checked per file) — so
+  the game is spawned before `player_disconnected()` runs, the removal is a
+  guarded no-op for a peer that was never spawned, and the end check 1 s later
+  sees the live roster.
+- **Quit ordering** (disconnect processed while a live peer is still loading):
+  the handler runs against an unspawned game. Eleven reach an end check whose
+  "still alive?" guard is false at zero players and go `Empty → Finished`
+  with `player_scores_finalized.emit({})`, `MINIGAME_SFX` zeroed and effects
+  hidden — burn_recycle, dvd_roomba, escalator_pit, exploding_collar_race,
+  forklift_certified, green_pea, junk_platform, knife_at_the_office (inverted
+  `size() <= 1` polarity, via `end_game()`), manufacture_gun, spine_breaker,
+  train_race. Safe by accident: chisel_gauntlet (`can_submit` false until
+  `RoundPlay`), disco_dodge (`size() != 1`). smoke_break has no end check.
+  Six of the eleven latch `finished`/`game_end` in that path (burn_recycle,
+  dvd_roomba, green_pea, junk_platform, spine_breaker, train_race), so a game
+  that starts afterwards can never end its round. Full table: §23.
+- **Which disconnect is which** was settled in the tagged engine source, not
+  guessed: `~ENetMultiplayerPeer()` → `close()` → `peer_disconnect_now(0)` +
+  `flush()` (4.5.2 `modules/enet/enet_multiplayer_peer.cpp:290-311, 487-491`)
+  and no SIGTERM/SIGINT handler in `os_linuxbsd.cpp`/`main.cpp`. So Alt-F4
+  (no `WM_CLOSE_REQUEST` override in the game) and the pause menu
+  (`NetworkManager.cancel()` → `disconnect_player` RPC → `disconnect_peer`,
+  `enet_backend.gd:50-54, 205-208`) are noticed on the host's next poll —
+  during the load, before slower peers report in — while a crash or kill waits
+  for the ~15 s ENet timeout, after them. Pitfall 33.
+- **The two "unguarded index" handlers do not error in the shipped game.**
+  `gdscript_vm.cpp`'s invalid-key and null-call reports are `#ifdef
+  DEBUG_ENABLED`; in the release build `dict[missing]` yields null and
+  `null.queue_free()` is a silent no-op — which is why the ManufactureGun and
+  SmokeBreak kill-at-load runs below show no `SCRIPT ERROR` while exercising
+  exactly those lines, and why manufacture_gun's pre-spawn path *does* reach
+  its end check. Pitfall 34.
+
+**Crash ordering, all fourteen, unfixed v1.3 build (`b3b6621…`) — 14 pinned
+kill-at-load runs at 4 players, P4 `SIGKILL`ed at the load line, 180 s each
+(subagent-run, every verdict re-checked against the archived host log):** every
+run `[BRIEF8] players=3 → SessionIntro → MinigameStart → MinigamePlaying →
+<minigame>: Empty → Round` on the host and both clients, zero `SCRIPT ERROR`,
+no non-benign `ERROR` on the load path; ten reached round 2 / `[SCORE8]`, the
+four idle-only ones (EscalatorPit, GreenPea, KnifeAtTheOffice,
+ManufactureGun) sat in `Play` as documented. Two side notes: `[FORK8]`'s
+`_ready`-time audit warns `got 0 / 4 / 0` before the late start (the pitfall-32
+late-start tell, not a spawn failure), and six logs end with an ENet-teardown
+burst (`Failed to get cached node`, `multiplayer instance isn't currently
+active`, `Attempt to disconnect a nonexistent connection`) after `[SCORE8]`,
+where the harness's timer kills the instances — checked against the no-kill
+controls below.
+
+**Quit ordering — the new recipe (Testing, "Simulating a peer QUITTING during
+a minigame load"; `tools/leave_slot_at_load.sh` + `tools/graceful_close.py`,
+promoted from the session's scratch tools):** at the host's load line,
+`SIGSTOP` P3 for 8 s (a manufactured slow loader — 8 s turned out not to be
+reliably under a *frozen* peer's timeout, see the caveat under the table; the
+recipe now says 5 s) and send P4's X11 window `WM_DELETE_WINDOW`. Pre-fix on the v1.3 build, rebuilt
+from git (reproducible, `b3b6621…`):
+
+| Run (4p, unfixed) | What the host log showed |
+|---|---|
+| DvdRoomba | close sent +0.06 s after the load line, `players=3` at **+0.27 s**, P4 exited normally; `dvd_roomba: Empty → Finished` **before any `Game:` transition**; after the resume `SessionIntro → MinigameStart → MinigamePlaying`, `Finished → Round → Countdown → Play` — and no round end in the remaining ~140 s (the healthy kill run cycles three rounds and reaches `MinigameEnd`). Same sequence on P2 and P3 |
+| KnifeAtTheOffice | `players=3` at +0.69 s; `knife_at_the_office: Empty → Finished` before `MinigameStart`; then `Finished → Round → Countdown → Play` (here the frozen P3 was itself dropped at ~6 s and the start came from the gate re-run on that second drop — see the freeze note below) |
+| BurnRecycle | `players=3` at +0.21 s; `burn_recycle: Empty → Finished` before `MinigameStart`; then `Finished → Round → Countdown → Play`, one `[FILTER8] eliminate victims=1 … contested=true` and nothing after — `finished` latched, the elimination cycle never re-arms |
+
+**Fix (the §19 precedent — every roster size; no new `@rpc`; RPC count still
+8):** `if not is_all_player_loaded: return` at the top of all fourteen
+`player_disconnected()` handlers, after the `is_server` check where there is
+one (Duck Hunt's variant keeps its removal ahead of the guard because `_ready()`
+builds `possible_hunters`; none of the fourteen populate a per-player container
+before `spawn_players()` — verified — so nothing needs removing pre-spawn, and
+that is also why a single generic gate in `game.gd` was rejected).
+`exploding_collar_race.gd` joins the overlay (55 → 56 files, its only delta).
+Two hygiene hunks: `manufacture_gun.gd` / `smoke_break.gd` `.get()` the
+per-player dictionary for a peer that never spawned there — silent in release
+either way (pitfall 34). §23 owns the change; manifest rows updated.
+
+**Verification on the fixed build (`dc1cc971…`, deployed to `testgame/`):**
+
+| Run (4p, fixed, `leave_slot_at_load.sh 4 3 <mg> 8`) | leaver closed → `players=3` | `Empty → Finished` before `MinigameStart`? | after the resume | round 2 / `[SCORE8]` in 120 s | non-benign errors |
+|---|---|---|---|---|---|
+| BurnRecycle | +0.21 s | **no** | `MinigameStart → MinigamePlaying → burn_recycle: Empty → Round`, host + P2 + P3 | round 2 | 0 |
+| DvdRoomba | +0.27 s | **no** | same, `Empty → Round`; three rounds → `MinigameEnd` | both | 0 |
+| EscalatorPit | +0.41 s | **no** | same, `Empty → Round` (idle-only, stays in `Play`) | — | 0 |
+| ExplodingCollarRace (new overlay file) | +0.73 s | **no** (prints no minigame-level lines) | `MinigameStart → MinigamePlaying`, rounds cycle | both | 0 |
+| ForkliftCertified | +0.33 s | **no** | `Empty → Round` | both | 0 |
+| GreenPea | +0.37 s | **no** | `Empty → Round` (idle-only) | — | 0 |
+| JunkPlatform | +0.52 s | **no** | `Empty → Round` | both | 0 |
+| KnifeAtTheOffice | +0.68 s | **no** | `Empty → Round` (idle-only) | — | 0 |
+| ManufactureGun | +0.47 s | **no** | `Empty → Round` (idle-only) | — | 0 |
+| SmokeBreak | +0.26 s | **no** | `Empty → Round` | round 2 | 0 |
+| SpineBreaker | +0.21 s | **no** | `Empty → Round` | round 2 | 0 |
+| TrainRace | +0.42 s | **no** | `Empty → Round` | both | 0 |
+| kill-at-load regression: ManufactureGun, SmokeBreak (150 s) | `SIGKILL` confirmed, `players=3` after the timeout | — | `MinigameStart → MinigamePlaying → Empty → Round` | — | 0 (the two `.get()` hunks changed nothing visible, as pitfall 34 predicts) |
+| no-kill controls: DvdRoomba 4p and 8p | `players=4` / `players=8` only | — | `SessionIntro → MinigameStart → MinigamePlaying → Empty → Round`, rounds cycling, `[SCORE8]`, every peer `v2.1.2-8P-v1.3` | both | 0 |
+
+Every leaver's log ends with a normal exit; P2 and P3 show the same Game and
+minigame transitions as the host in every run where P3 survived. **The freeze
+caveat, learned here:** with an 8 s freeze the host dropped the *frozen* peer
+at ~7–8 s in 4 of the 12 (ExplodingCollarRace, GreenPea, KnifeAtTheOffice,
+ManufactureGun — `players=2` before the resume, the game then starting with
+two peers through the gate re-run). Those four still exercise the guard —
+P4's disconnect landed pre-spawn with no `Empty → Finished`, and P3's did too
+— but the recipe now says 5 s, and the same drop happened in the
+KnifeAtTheOffice pre-fix run. The verification agent's table was re-derived
+line by line from the archived host and client logs before being trusted; the
+"Failed to get cached node" lines it flagged turned out to be the companion
+line of the documented `Node not found` round-transition family (present in
+both no-kill controls, 12 and 74 lines) and joined the benign filter; the
+`Ignoring sync data from non-authority or for missing node` line it also
+flagged is the 2026-08-14 entry's benign-shaped churn, present in both controls
+as well.
+
+Static: five checks + `%` pre-flight pass; boot prints `v2.1.2-8P-v1.3` (label
+unchanged — no release cut this session); build reproducible (two builds,
+same md5).
+
+**What this does NOT claim:** nobody heard or watched these runs — the
+verification is the state-machine order in the host and client logs. The Steam
+backend's quit path rests on the host-side `disconnect_peer` call being
+backend-independent plus the ENet evidence; a real Steam quit-at-load has not
+been run. `MOD_SUFFIX` stays `8P-v1.3`: the fix is on `main`, unreleased.
+Issue #11 (the original crash) stays open. Archived logs: scratchpad
+`killload/<Identifier>/`, `leave/<Identifier>-{prefix,postfix}/`,
+`killload-postfix/`, `controls/`.
+
+### 2026-08-15 — Shipped as mod release v1.3: the disconnect-during-load fix (issues #10, #12)
 
 **What ships:** the single fix from the entry below — `game.gd` re-runs the
 minigame load gate when a peer drops during a load, and `duck_hunt.gd` no

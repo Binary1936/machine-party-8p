@@ -191,10 +191,21 @@ func _on_player_finished(network_id: int):
 func player_disconnected(_network_id: int):
 	super.player_disconnected(_network_id)
 
-	var player_instance = player_characters[_network_id]
+	# 8P MOD: before the game has started there is nothing to remove - the peer
+	# was never spawned here and its presence is already pruned; the same guard
+	# every minigame carries (pitfall 32; session log 2026-08-15).
+	if not is_all_player_loaded:
+		return
 
-	active_players.erase(player_instance)
+	# 8P MOD: a peer that dropped during the load was never spawned here even
+	# though the game has since started. Vanilla indexes unguarded and calls
+	# queue_free() on the result; the release build swallows both silently
+	# (pitfall 34), a debug build errors.
+	var player_instance = player_characters.get(_network_id, null)
 
-	finished_players.erase(player_instance)
+	if player_instance:
+		active_players.erase(player_instance)
 
-	player_instance.queue_free()
+		finished_players.erase(player_instance)
+
+		player_instance.queue_free()

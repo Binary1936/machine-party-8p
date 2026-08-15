@@ -24,7 +24,7 @@ are recorded there).
 | **"Overlay manifest"** | every file in `mod/`, mapped to the `MINIGAMES.md` section explaining it |
 | **"Update procedure"** | the eight steps for rebuilding against a new game version |
 | **"Testing — the validation recipe"** | the 8-client harness and the traps in it. Cited everywhere as *Testing* |
-| **`PITFALLS.md`** | the numbered failure modes (32 so far). Cited from code as *pitfall N* — stable, do not renumber |
+| **`PITFALLS.md`** | the numbered failure modes (34 so far). Cited from code as *pitfall N* — stable, do not renumber |
 | **"A rule to preserve"** | 1-4 stays vanilla, and the two accepted breaches |
 | **"Documentation policy"** | how this doc set stays lean — read before editing any of these files |
 | **"Version control"** | the GitHub repo, commit discipline, and the release flow |
@@ -339,7 +339,11 @@ repo is in git, `<old mod>` is just `git show <last-release-tag>:mod/$f`.
   **2026-08-15:** the vanilla disconnect-during-load wedge behind issues #10
   and #12 (silent rifle, black screen at the end) is fixed at every roster size
   — pitfall 32, §19, and the session-log entry. Issue #11 (the crash that
-  triggered it) remains open, cause unknown.
+  triggered it) remains open, cause unknown. **Later that day, the other
+  fourteen handlers** got the same pre-start guard: a peer that *quits* (not
+  crashes) during a load reaches them before the game has spawned, and eleven
+  finished an unstarted game — §23, pitfall 33, issue #13, and the second
+  2026-08-15 session-log entry.
 - Forklift Certified (`ForkliftCertified`) - **uncapped 2026-08-04**. Four more
   delivery zones built at runtime at the yard's mid-edges (RPC, every peer),
   four more spawn markers (host-only), the crate sampler given the free centre
@@ -666,18 +670,18 @@ closed.** What remains:
    error class left. Deliberately not chased.
 6. **Smoke Break player-model clipping** on the left four seats. Cause is seat
    facing, not spacing; blocked by pinned seats and the camera frame. Accepted.
-7. **The other 14 rotation minigames' disconnect handlers are unaudited for a
-   drop DURING the load** — issue #13, opened 2026-08-15 after v1.3. The
-   generic half of the pitfall-32 fix (the load-gate re-check in `game.gd`)
-   covers all of them in the common ordering; what each minigame's own
-   `player_disconnected()` does against a not-yet-spawned game — the narrower
-   ordering — is only guarded in Duck Hunt. Eleven of them call an
-   end-of-game check ~1 s after a disconnect; two index a per-player dictionary
-   unguarded. Method: read each handler pre-spawn, then the kill-at-load recipe
-   (Testing) with the minigame pinned. The maintainer will take this in a
-   later session, with `tools/kill_slot_at_load.sh` (promoted from the
-   session's scratch script the same day, at the maintainer's request). Issue
-   #11 (the crash that triggered #10/#12) also remains open, cause unknown.
+7. ~~**The other 14 rotation minigames' disconnect handlers are unaudited for a
+   drop DURING the load** — issue #13.~~ **Closed 2026-08-15, same day, later
+   session.** All fifteen handlers were read pre-spawn and every one is now
+   guarded (§23). The crash ordering was already safe for all fourteen (the
+   `game.gd` gate re-run spawns the game before the handler runs — 14 pinned
+   kill-at-load runs, all healthy); the *quit* ordering — noticed by the host
+   before the slower peers load — was broken in eleven of them (`Empty →
+   Finished` at zero players, six then unable to end the round), reproduced
+   pre-fix on three and verified fixed with the new quit-at-load recipe
+   (Testing; pitfall 33). Two of the fifteen (chisel, disco) were safe by
+   accident and carry the guard for uniformity. Issue #11 (the crash that
+   triggered #10/#12) remains open, cause unknown.
 
 Fully closed, with per-peer measurements: Duck Hunt (markers, magazine,
 animation timing, round pacing, spawn counts), Spine Breaker (pacing), Inside
@@ -753,7 +757,7 @@ CLAUDE.md     auto-loaded pointer for sessions started inside this folder
 ```
 extracted/   pristine unpack of the shipped .pck (reference; regenerate on update)
 project/     full decompile via GDRE Tools — readable .gd / .tscn source
-mod/         the overlay: ONLY the 55 files that differ (see the manifest)
+mod/         the overlay: ONLY the 56 files that differ (see the manifest)
 dist/        built "Machine Party.pck" + machine-party-8p-mod.zip (release zip)
 installer/   install.py, install.sh, install.bat, README.txt - the installer
               scripts, no mod copy inside; install.py falls back to the
@@ -845,10 +849,11 @@ mod needs **no Godot export templates and no editor round-trip**.
 
 ## Overlay manifest — every file in `mod/`, and what documents it
 
-**55 files: 39 `.gd`, 16 `.tscn`** (was 56 until the v2.1.2 rebuild dropped
-`duck_hunt_local_handler.gd` — upstream deleted the roster-indexed `Layouts`
-its delta guarded, so the file went byte-identical to vanilla; see the
-2026-08-14 session-log entry). Regenerate with `find mod -type f | sort`.
+**56 files: 40 `.gd`, 16 `.tscn`** (55 from the v2.1.2 rebuild, which
+dropped `duck_hunt_local_handler.gd` — upstream deleted the roster-indexed
+`Layouts` its delta guarded, so the file went byte-identical to vanilla, see
+the 2026-08-14 session-log entry — until `exploding_collar_race.gd` joined on
+2026-08-15 for the §23 guard). Regenerate with `find mod -type f | sort`.
 On a game update, every one of these must be re-derived from the *new* source —
 see step 5 of the update procedure. The "§" column is the section of **`MINIGAMES.md`** that explains the change.
 
@@ -868,19 +873,19 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `modules/multiplayer/backends/multiplayer_backend.gd` | 8 | window titles P1-P8 |
 | `minigames/intermission_new/components/intermission_score_screen.gd` | 11 | 8 rows; reverb pitch clamp |
 | `minigames/intermission_new/components/intermission_briefing_screen.gd` | 12 | 8 cards; `FLOW=1` auto-ready |
-| `minigames/chisel_gauntlet_multiplayer/*` (4) | 5, 10 | 8 stations, facings, shotgun order, split-screen; the `.tscn` adds 4 identity spectate markers (pitfall 31) |
-| `minigames/escalator_pit/*` (3) | 13 | 8 stair strips, hidden handrails |
-| `minigames/smoke_break/*` (4) | 14 | 8 seats, crates, aim angles, 4 capped arrays |
-| `minigames/green_pea/*` (2) | 10 | runtime 8-seat layout by RPC |
-| `minigames/knife_at_the_office/*` (3) | 17 | search-target clamp, 8 hunt icons |
-| `minigames/spine_breaker/*` (2) | 16, 18 | spawn audit + roster-scaled kill pace |
+| `minigames/chisel_gauntlet_multiplayer/*` (4) | 5, 10, 23 | 8 stations, facings, shotgun order, split-screen; the `.tscn` adds 4 identity spectate markers (pitfall 31) |
+| `minigames/escalator_pit/*` (3) | 13, 23 | 8 stair strips, hidden handrails |
+| `minigames/smoke_break/*` (4) | 14, 23 | 8 seats, crates, aim angles, 4 capped arrays |
+| `minigames/green_pea/*` (2) | 10, 23 | runtime 8-seat layout by RPC |
+| `minigames/knife_at_the_office/*` (3) | 17, 23 | search-target clamp, 8 hunt icons |
+| `minigames/spine_breaker/*` (2) | 16, 18, 23 | spawn audit + roster-scaled kill pace |
 | `minigames/duck_hunt/*` (2) | 19 | runtime markers, magazine curve, animation fit, **`debug_skip_brief` reveal-skip repair (`can_aim` + overlay)**, **pre-start disconnect guard (pitfall 32)**. The old third file (`duck_hunt_local_handler.gd`, splitscreen crash guard) went byte-identical to vanilla in v2.1.2 and left the overlay |
-| `minigames/forklift_certified/*` (2) | 20 | runtime mid-edge delivery zones + markers, crate spawn region and target, blood-decal pool refill |
-| `minigames/burn_recycle/*` (2) | 21 | **two-room layout**, balanced rooms, per-room elimination, tie-corrected scoring |
-| `minigames/manufacture_gun/*` (1) | 22 | **runtime mid-edge spawns + workstations**, wall-desk turn + slide + **wall push (`MOD_WALL_DESK_PUSH`)**, `empty_desk_array` bounds guard, `spawn_limit` raise by property write, roster-scaled ingredients at **`MOD_ITEM_SPREAD` 1.10**, **ingredient projection raised by its own measured height (RPC, all peers)** |
-| `minigames/disco_dodge/*` (2) | 10, 16 | `spawn_limit` 4→8 (inert — see §10), `[DISCO8]` |
-| `minigames/junk_platform/*` (2), `train_race/*` (2), `dvd_roomba/*` (2) | 15, 16 | markers + spawn audits |
-| `minigames/exploding_collar_race/*` (2) | 10 | `blood_trail.gd` empty-`Curve3D` guard |
+| `minigames/forklift_certified/*` (2) | 20, 23 | runtime mid-edge delivery zones + markers, crate spawn region and target, blood-decal pool refill |
+| `minigames/burn_recycle/*` (2) | 21, 23 | **two-room layout**, balanced rooms, per-room elimination, tie-corrected scoring |
+| `minigames/manufacture_gun/*` (1) | 22, 23 | **runtime mid-edge spawns + workstations**, wall-desk turn + slide + **wall push (`MOD_WALL_DESK_PUSH`)**, `empty_desk_array` bounds guard, `spawn_limit` raise by property write, roster-scaled ingredients at **`MOD_ITEM_SPREAD` 1.10**, **ingredient projection raised by its own measured height (RPC, all peers)** |
+| `minigames/disco_dodge/*` (2) | 10, 16, 23 | `spawn_limit` 4→8 (inert — see §10), `[DISCO8]` |
+| `minigames/junk_platform/*` (2), `train_race/*` (2), `dvd_roomba/*` (2) | 15, 16, 23 | markers + spawn audits |
+| `minigames/exploding_collar_race/*` (3) | 10, 23 | `blood_trail.gd` empty-`Curve3D` guard; `exploding_collar_race.gd` joined the overlay 2026-08-15 for the **pre-start disconnect guard** (§23) — its only delta |
 | `minigames/cutscene_test/*`, `cutscene_game_02/*`, `shape_cutter/*`, `memorize_path/*` (4 `.tscn`) | 9 | spawn markers only; unreachable scenes, kept defensively |
 
 ---
@@ -1693,11 +1698,13 @@ other two gave wrong numbers, this one gives a wrong *verdict*.
 
 ### Simulating a peer crash during a minigame load
 
-The trigger for pitfall 32 — and the only way to exercise the disconnect
-handlers on the load path — is to kill one client the instant the host starts
+The trigger for pitfall 32 is to kill one client the instant the host starts
 loading a minigame, so its `player_loaded` never arrives and ENet notices only
-by timeout (~15 s locally), after the others have loaded. Arm the killer
-**before** launching; it waits for the host's load line:
+by timeout (~15 s locally), **after the others have loaded**. That is the
+crash ordering; a peer that *quits* is a different, earlier ordering with its
+own recipe below (pitfall 33) — **a disconnect path is not verified until both
+have run.** Arm the killer **before** launching; it waits for the host's load
+line:
 
 ```bash
 tools/kill_slot_at_load.sh 4 DuckHunt &        # arm FIRST, in the background
@@ -1720,6 +1727,43 @@ Kill signature: the slot's log stops at the briefing (`[BRIEF8]`), the host's
 (pitfall 32). Killing a joiner leaves 3 (or 7) live peers, so expect
 roster-scaled traces to report the smaller roster. The 2026-08-15 session-log
 entry has the measured runs.
+
+### Simulating a peer QUITTING during a minigame load
+
+The trigger for pitfall 33 and the §23 guards. A graceful quit (Alt-F4, the
+pause menu) is noticed by the host on its next poll, not by timeout, so it
+lands while slower peers are still loading — and locally every client loads
+in about the same second, so the recipe manufactures a slow peer by freezing
+one with `SIGSTOP` and closes another gracefully by sending its X11 window
+`WM_DELETE_WINDOW` (Godot's default close request runs the normal quit, whose
+ENet teardown sends the disconnect — the same thing Alt-F4 does):
+
+```bash
+tools/leave_slot_at_load.sh 4 3 DvdRoomba 5 &   # leave slot 4, freeze slot 3 for 5 s; arm FIRST
+START=1 MINIGAME=DvdRoomba tools/localtest.sh 4 <game-dir> 120
+```
+
+`tools/leave_slot_at_load.sh <leave_slot> <freeze_slot> [Identifier] [freeze_secs]`
+(added 2026-08-15, promoted from the session's scratch script) clears the log
+dir itself, waits for the host's load line, `SIGSTOP`s the freeze slot, calls
+`tools/graceful_close.py <pid> P<slot>` (python-xlib; matches the window by
+`_NET_WM_PID`, falling back to the `P<n>` title) on the leave slot, sleeps,
+`SIGCONT`s, and stamps wall-clock times of the host's `players=` drop and
+`MinigameStart` so the ordering can be read without in-game timestamps. **Freeze
+for 5 s:** longer than every affected minigame's finish timer (1–4 s, so the
+pre-fix `Finished` fires before the resume), but a *frozen* peer is dropped by
+the host sooner than a killed one — at ~7–8 s in 5 of 15 runs on 2026-08-15
+with an 8 s freeze (`[BRIEF8] players=2` before the resume; the run then
+starts with two peers via the gate re-run, which still exercises the guard but
+is not the scenario). Quit signature:
+the watcher prints "host saw players=3" within ~1 s of the load line (a kill
+takes ~15 s) and the leaver's log ends with a normal exit (`resources still in
+use at exit`), not a truncation. Healthy: `players=3`, then after the resume
+`Game: SessionIntro → MinigameStart → MinigamePlaying` and the minigame's
+`Empty → Round`. **The pre-fix tell was `<minigame>: Empty → Finished`
+arriving before any `Game:` transition, then `Finished → Round`** — the game
+starting from its finished state (pitfall 33). Runs on the fixed and unfixed
+builds are tabled in the 2026-08-15 (issue #13) session-log entry.
 
 ### What the local test still is not
 
@@ -1966,13 +2010,15 @@ grep -h "Generating session playlist with" /tmp/mp-localtest/p1.log
 
 # 4-vs-8 error CLASSES (pitfall 12) - run at 4, save, run at 8, compare
 grep -hE "^ERROR|^SCRIPT ERROR" /tmp/mp-localtest/p*.log \
-  | grep -viE "NO GRAB|Invalid packet|Node not found|Failed to get path" \
+  | grep -viE "NO GRAB|Invalid packet|Node not found|Failed to get cached node|Failed to get path" \
   | sed -E "s/#[0-9]+/#N/g; s/'[A-Za-z_]+[0-9]*:/'X:/g; s/[0-9]+/N/g" | sort -u > /tmp/err8.txt
 comm -13 /tmp/err4.txt /tmp/err8.txt   # anything here is player-count related
 
-# errors, minus the usual replication churn
+# errors, minus the usual replication churn ("Failed to get cached node" is the
+# companion line of a "Node not found" at a round transition - present in
+# no-disconnect controls, 2026-08-15)
 grep -hE "^ERROR|^SCRIPT ERROR" /tmp/mp-localtest/p*.log \
-  | grep -viE "NO GRAB|Invalid packet|Node not found|Failed to get path" \
+  | grep -viE "NO GRAB|Invalid packet|Node not found|Failed to get cached node|Failed to get path" \
   | sort | uniq -c | sort -rn
 ```
 

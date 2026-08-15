@@ -203,6 +203,13 @@ func player_disconnected(_network_id: int):
 	if not multiplayer.is_server():
 		return
 
+	# 8P MOD: before the game has started there is nothing to end - the peer
+	# was never spawned here and its presence is already pruned. Vanilla's end
+	# check below would see zero players and finish an unstarted game
+	# (pitfall 32; session log 2026-08-15).
+	if not is_all_player_loaded:
+		return
+
 	remove_player_rpc.rpc(_network_id)
 	await get_tree().create_timer(1.0).timeout
 
