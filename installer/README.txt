@@ -28,9 +28,10 @@ The installer sits in the same folder as this file:
   Windows      double-click install.bat
   macOS/Linux  double-click install.sh, or run:  python3 install.py
 
-The installer finds your Steam copy automatically, saves the original file
-next to it as "Machine Party.pck.vanilla", and patches the game. Running it
-again is harmless - every install rebuilds from that saved original.
+The installer finds your Steam copy automatically and patches your game files
+directly. It keeps no backup of its own. If you run it again on a game that is
+already patched it stops and tells you to restore the original first (see
+UNINSTALL below) - that keeps it from building the mod on top of itself.
 
 If it cannot find the game, point it at the folder yourself:
 
@@ -53,10 +54,14 @@ That reports PATCHED, NOT PATCHED, or PARTIALLY PATCHED.
 
 UNINSTALL
 ---------
+Steam: Properties -> Installed Files -> Verify integrity of game files. That
+puts the original game back, and it is the uninstall - the installer keeps no
+backup to restore from.
+
   python3 install.py --uninstall
 
-Or just use Steam: Properties -> Installed Files -> Verify integrity of game
-files. That restores the original too.
+only tells you whether the mod is currently installed and points you at those
+same steps. It does not change your game files.
 
 Note that a Steam update will also overwrite the mod - simply run the
 installer again afterwards.

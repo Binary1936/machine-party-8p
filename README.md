@@ -52,10 +52,15 @@ Lobbies of 1-4 play as vanilla, with two deliberate exceptions — see
 
 The mod zip (~21 MB) is published on the project's Releases page. Extract it
 and double-click `install.bat` (Windows) or `install.sh` (macOS/Linux), or run
-`python3 install.py`. It auto-detects the Steam copy, backs the original up as
-`Machine Party.pck.vanilla`, and patches in place. Only `Machine Party.pck` is
-replaced; the executable and the native libraries beside it are untouched. Every
-install rebuilds from the `.vanilla` backup, so re-running is idempotent.
+`python3 install.py`. It auto-detects the Steam copy and patches
+`Machine Party.pck` in place; the executable and the native libraries beside
+it are untouched. **No backup is kept** — Steam's *Verify integrity of game
+files* re-downloads the original at any time, so the installer refuses to run
+on an already-patched copy rather than build the mod on top of itself (verify
+the game files first, then reinstall). Older installer versions kept a
+`Machine Party.pck.vanilla` backup; the current one offers to delete it, and
+never restores from it — after a game update that copy holds the wrong game
+version (issue #9).
 
 A clone or source download of the repository installs the same way, with no
 build step: run `python3 installer/install.py` (or the wrappers in
@@ -72,13 +77,11 @@ build — so a Windows player is never running a `.pck` exported for Linux.
 
 ### Uninstall
 
-```bash
-python3 install.py --uninstall
-```
-
-Restores the backup; verified byte-identical to the original on a clean copy.
-Steam's *Verify integrity of game files* also restores it at any time — and a
-game update silently reverts the mod, so re-run the installer after one.
+Steam: *Properties → Installed Files → Verify integrity of game files*. That
+restores the original download and is the uninstall — the installer keeps no
+backup to restore from. (`python3 install.py --uninstall` reports whether the
+mod is installed and points at those steps; it changes nothing.) A game update
+silently reverts the mod the same way, so re-run the installer after one.
 
 ### Verify
 

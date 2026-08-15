@@ -16,7 +16,35 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-14 (latest) — REBUILT AGAINST GAME v2.1.2 (largest patch yet); overlay 56 → 55 files
+### 2026-08-14 (latest) — installer: backup feature removed entirely (issue #9)
+
+Maintainer's decision, same session as the rebuild below: the game is a small
+download, so the `.pck.vanilla` backup wasn't worth its failure mode — after a
+Steam game update the backup is stale, and both re-install (rebuilds the old
+version over the new) and `--uninstall` (restores the old version) silently
+downgraded the game. Rather than version-checking the backup, it is gone:
+
+- `install()` patches the **live** pck, and **refuses** (not `--force`-able)
+  when the pck is not pristine — a shared `mod_state()` classifier keeps the
+  guard and `--verify` in exact agreement. Path guards (pitfall 5) untouched.
+- `--uninstall` restores nothing: it reports the state and points at Steam's
+  *Verify integrity of game files*, which is now the documented uninstall.
+- A leftover `.vanilla` from older installer versions is never read; both
+  paths offer to delete it (prompted; `--force` answers yes).
+- `installer/README.txt`, `README.md` and the Testing round-trip recipe
+  updated to match; release zip rebuilt (extraction diff empty).
+
+Evidence: implemented and command-verified by a subagent, reviewed here —
+eight-step suite on `testgame_new` (pristine `f5ea2339…`): NOT PATCHED →
+install (no `.vanilla` created) → PATCHED `v2.1.2-8P-v1.2` → re-install
+refused twice with pck MD5 unchanged → `--uninstall` exit 0, pck untouched →
+stale-backup migration exercised in all three answer paths (kept on `n`,
+deleted on `y` and under `--force`) → final state byte-identical pristine.
+The partial-state refusal branch was exercised via the classifier in-process
+(no e2e path can produce a partial pck). `py_compile` and all five static
+checks pass. Closes **issue #9**.
+
+### 2026-08-14 — REBUILT AGAINST GAME v2.1.2 (largest patch yet); overlay 56 → 55 files
 
 The game updated v1.5.0 → v2.1.2 and the mod was rebuilt per the update
 procedure, steps 1-8 complete. "The last update, and how it was verified" in

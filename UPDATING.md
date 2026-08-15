@@ -1698,13 +1698,19 @@ Installer round-trip, on a **copy**, with literal absolute paths:
 ```bash
 python3 ~/Documents/Claude/machine-party-8p/installer/install.py --game-dir ~/Documents/Claude/machine-party-8p/testgame_new --verify
 ```
-Expect `NOT PATCHED` → install → `PATCHED` → `--uninstall` → MD5 matches the
-original recorded in step 1. Verified 2026-08-09 against a clean v1.5.0 copy:
-install wrote 4174 files (56 from the mod, 94 originals replaced), `--verify`
-reported `PATCHED` and `v1.5.0-8P-v1.1`, and uninstall restored the pck
-**byte-identically** (`f5912732…`, 635,333,716 bytes). **Both counts track the
-overlay size** — each added `.gd` also displaces its `.remap` and `.gdc`
-siblings — so re-derive them from the run rather than treating them as
+Expect `NOT PATCHED` → install → `PATCHED` → a second install attempt
+**refused** (already-patched guard) → restore the pck from a pristine copy and
+confirm the step-1 MD5. **The installer keeps no backup since 2026-08-14**
+(issue #9 — a stale backup silently downgraded the game after an update), so
+`--uninstall` restores nothing: it reports the state and points at Steam's
+Verify integrity, and the test restores by re-copying the pristine pck you
+staged. Verified 2026-08-14 against a clean v2.1.2 copy: install wrote 4206
+files (55 from the mod, 92 originals replaced), `--verify` reported `PATCHED`
+and `v2.1.2-8P-v1.2`, both re-install attempts were refused with the pck MD5
+unchanged, and the earlier same-day round-trip on the backup-era installer
+restored **byte-identically** (`f5ea2339…`, 634,798,100 bytes). **Both counts
+track the overlay size** — each added `.gd` also displaces its `.remap` and
+`.gdc` siblings — so re-derive them from the run rather than treating them as
 constants; the 2026-08-08 wall-desk entry explains an earlier 82 → 88 shift.
 
 `install.py --force` answers every prompt yes for non-interactive runs;
