@@ -19,7 +19,7 @@ are recorded there).
 |---|---|
 | **Start here → "Paste this to start"** | including the variant for "the game just updated" |
 | **"Current status"** | what works, what is unproven, and "Open items" — where to pick up |
-| **"Working environment"** | screenshots, missing tools, the build pre-flight. Read before running anything |
+| **"Working environment"** | repo-relative commands, the screenshot rule, the fast path, the build pre-flight. Read before running anything |
 | **`SESSION-LOG.md`** | what changed most recently and what evidence backed it. New entries are recorded there |
 | **"Overlay manifest"** | every file in `mod/`, mapped to the `MINIGAMES.md` section explaining it |
 | **"Update procedure"** | the eight steps for rebuilding against a new game version |
@@ -185,7 +185,7 @@ first. Do not assume a small update, and do not assume a big one.**
 | Game | Machine Party, Steam AppID **4108000** |
 | Engine | Godot **4.5.2** (`.pck` format v3 — unchanged by the 4.5.1 → 4.5.2 bump) |
 | Mod built against | game **v2.1.2** |
-| Install (this machine) | `/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux/` |
+| Install | `<Steam library>/steamapps/common/party project/Machine Party_Linux/` — copy it out, never work in place (the maintainer's library root is machine-local: project-folder `CLAUDE.md` / `NOTES-LOCAL.md`) |
 | v1.0.6 pck MD5 | `e8442750eb55abd0185c646b694b05da` (635,329,556 bytes) |
 | v1.0.7 pck MD5 | `01e9d9140a01745dc4236c50c9837bcd` (635,331,268 bytes) |
 | v1.5.0 pck MD5 | `f5912732bfa2cc5cba4340270fd76147` (635,333,716 bytes) |
@@ -710,7 +710,10 @@ Job (search economy, hunt HUD), Stable Footing, and the score/briefing screens.
 
 ## Working environment (read before running anything)
 
-Facts about *this machine* that are not in the code and cost time to rediscover.
+What a session needs to know before running anything. The maintainer's
+machine-local facts — Steam library root, desktop and capture tooling, the
+layout-viewer URL — are deliberately not here: they live in the project
+folder's local `CLAUDE.md` and the repo's untracked `NOTES-LOCAL.md`.
 
 **Every command in this file is run from the repo root and uses repo-relative
 paths** (`testgame`, `testgame_new`, `tools/...`); the tools resolve their own
@@ -720,25 +723,16 @@ with a space in it works as long as the one absolute path you ever type,
 Unquoted, `tools/localtest.sh` would read the first word of such a path as the
 game dir and the rest as the duration.
 
-**Screenshots.** The desktop is **Wayland** (`XDG_SESSION_TYPE=wayland`) with
-XWayland present, so `DISPLAY=:0` is set but the X root window is **empty** -
-`scrot` and ImageMagick `import` return a uniformly black image (1 unique
-colour). Use KDE's tool instead:
-
-```bash
-spectacle -b -n -f -o /path/out.png     # -b background, -n no notify, -f full screen
-```
-
-`xdotool` and `wmctrl` are **not installed**, so there is no way to target or
-raise a specific window from the shell.
-
-**Because of that, do not take blind full-screen captures.** The game window is
-not reliably frontmost, and a full-screen grab picks up whatever else is on the
-desktop - during this project one such capture accidentally caught unrelated
-private content from another application, and was discarded unused. **Ask the
-user to screenshot instead.** They have done so throughout and it is the safe
-loop. `-localtest` traces are the primary evidence anyway; a screenshot is for
-judging *looks*, which the user is better placed to do.
+**Screenshots: never take a blind full-screen capture.** There is no way to
+target or raise the game window from the shell on the maintainer's desktop, so
+a capture grabs the whole screen with the game not reliably frontmost - during
+this project one such capture accidentally caught unrelated private content
+from another application, and was discarded unused. **Ask the user to
+screenshot instead.** They have done so throughout and it is the safe loop.
+`-localtest` traces are the primary evidence anyway; a screenshot is for
+judging *looks*, which the user is better placed to do. (Which capture tool
+works there and why the X11 ones return black is machine-local:
+`NOTES-LOCAL.md`.)
 
 **Layout viewer.** An interactive 3D layout viewer exists for Smoke Break's
 seats, crates and props. Its URL and re-sync caveat are in `NOTES-LOCAL.md`
@@ -1107,11 +1101,11 @@ too".
 
 ### 1. Snapshot the new build
 ```bash
-md5sum "/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux/Machine Party.pck"
+md5sum "<Steam library>/steamapps/common/party project/Machine Party_Linux/Machine Party.pck"
 ```
 Record it. Then **copy the game folder out** — never work in place:
 ```bash
-cp -r "/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux" testgame_new
+cp -r "<Steam library>/steamapps/common/party project/Machine Party_Linux" testgame_new
 ```
 
 ### 2. Keep the old decompile for diffing

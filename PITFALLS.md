@@ -229,8 +229,8 @@ recipe", and a dated *session-log entry* lives in `SESSION-LOG.md` (or
     **After step 1 of any update, refresh the whole test folder, not the pck:**
 
     ```bash
-    cp "/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux/Machine Party.x86_64" testgame/
-    cp "/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux/"*.so testgame/
+    cp "<Steam library>/steamapps/common/party project/Machine Party_Linux/Machine Party.x86_64" testgame/
+    cp "<Steam library>/steamapps/common/party project/Machine Party_Linux/"*.so testgame/
     ```
 
     and confirm it took, because no in-game output will tell you:
