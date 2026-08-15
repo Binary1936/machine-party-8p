@@ -16,7 +16,119 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-14 (latest) — UPDATING.md split: pitfalls to `PITFALLS.md`, session log to this file
+### 2026-08-14 (latest) — REBUILT AGAINST GAME v2.1.2 (largest patch yet); overlay 56 → 55 files
+
+The game updated v1.5.0 → v2.1.2 and the mod was rebuilt per the update
+procedure, steps 1-8 complete. "The last update, and how it was verified" in
+`UPDATING.md` is the worked example for this rebuild (the v1.5.0 one moved
+verbatim to `SESSION-LOG-ARCHIVE.md`); this entry is the evidence record.
+
+**The patch:** 101 changed / 33 added / 2 removed files at the raw-pck level;
+counts 368→371 `.gd`, 140→141 `.tscn`; pck **shrank** ~535 KB
+(`f5ea2339e870cc507a58de63e4b78908`, 634,798,100 bytes); engine binary
+unchanged (`9bac4458…`, still Godot 4.5.2). Theme: couch/local-multiplayer
+features (`GameManager.local_game` branches threaded through many minigames,
+new local-lobby character-select UI) plus a custom-playlist shuffle option
+(`custom_shuffled`, new ShuffleButton in the playlist UI). **No new minigame**
+— the marker rescan found no new spawn containers and all 14 recorded paths
+still resolve.
+
+**Steam patched over a modded install.** The real install still carried the
+mod (its `Machine Party.pck.vanilla` backup sits beside the new pck); the
+updated pck verified vanilla-shaped (no mod files, remaps intact) and 4,109 of
+its files are byte-identical to the pristine v1.5.0 extraction, so the delta
+patch came out clean. **The stale v1.5.0 backup in the Steam install is now a
+live hazard** — see the installer bug below.
+
+**Sweep result: 25 of 56 overlay files re-derived** (30 byte-identical
+upstream and carried; `mod_player_name_list.gd` mod-added). Re-derivation was
+done by five parallel subagents (per-file upstream-change summaries, delta
+re-application, delta-of-deltas checks), then independently re-verified here —
+every content-line residue is one of: the intended version constants, the
+junk_platform marker rotation (below), or a named adaptation. Notable events,
+each also condensed into the worked example:
+
+- `duck_hunt_local_handler.gd`'s delta became **obsolete** (upstream deleted
+  the roster-indexed `Layouts` it guarded; new `setup()` is
+  roster-independent) — file came out byte-identical to vanilla and **left the
+  overlay: 56 → 55 files (39 `.gd`, 16 `.tscn`)**.
+- `junk_platform.gd`'s `spawn_players()` was rewritten upstream; online path
+  re-verified to walk markers in child order (the 2-per-deck property).
+  Upstream also rotated two shipped `junk_platform.tscn` markers 180°; the
+  expander clones inherit the flip (displacement flips with local X) — traced
+  arithmetically, still 1.2u from their source markers on radius-6 decks.
+- `burn_recycle.gd`: upstream's new couch hide-tag call landed inside the
+  block the mod's per-room `eliminate_players()` replaces; re-inserted per
+  victim inside the mod's loop, matching vanilla semantics.
+- **Tool trap — `lobby_expand.py` moves the shipped Player2-4 preview slots**
+  (spread interpolation), but the shipped v1.2 scene has them at vanilla
+  positions, and `lobby_scene.gd` snapshots the baked positions at load as its
+  ≤4-player home layout (rule 3). Restored by hand post-run; the added-line
+  set then matched the shipped v1.2 delta exactly (modulo resource ids). The
+  tool itself is still unfixed — see open note below.
+- **Tool trap — `spawn_expand.py` must never run on `smoke_break.tscn`**
+  (§14 hand-authored seats; a supervised run this session produced wrong
+  markers and was reverted). Its `spawn_targets.txt` entry is now commented
+  out with the reason, duck_hunt/forklift style.
+- Stale "v1.5.0" prose in shipped mod comments made version-agnostic
+  (globals, network_manager, both backends, quasivanilla) so it cannot go
+  stale at the next bump; historical mentions kept.
+
+**Version sites:** `MOD_NETWORK_GAME_VERSION` → `"v2.1.2"` (copied from the
+new decompile), `MOD_SUFFIX` carried as `"8P-v1.2"` (no new mod release
+decided yet), display `v2.1.2-8P-v1.2`; install.py `SUPPORTED_VERSION`,
+README.txt labels, and all doc prose bumped — `version_strings.py` and the
+other four static checks all pass. Quasivanilla: 2 of its 4 overlay files
+re-derived (delta-of-deltas exact), `qv.pck` rebuilt and deployed to
+`testgame2/`.
+
+**Validation evidence:**
+
+| Check | Result |
+|---|---|
+| Five static checks (`tools/checks/`) | all pass |
+| `-validate-scenes` in the real release binary | **55/55 OK, failures=0** |
+| Boot test | `Running version: v2.1.2-8P-v1.2`, zero script/parse errors |
+| 8-client `START=1` baseline | version print on all 8; `[SEATS]` to `connected=8`; 15-entry playlist; ChiselGauntlet `[STATIONS]` cloning positive on host **and all 7 clients** (24 lines each, `is_server=false`) |
+| 4-client parity | `player_count=4`, zero clone lines on host, zero `[STATIONS]` on clients — roster gate dormant |
+| Pitfall-12 error-class diff 4 vs 8 | only `Parameter "data.tree" is null` at 8 — the documented benign entry; nothing new |
+| Mixed lobby, modded host + vanilla joiners | all 4 connect, no refusals, versions `v2.1.2-8P-v1.2`/`v2.1.2` per slot, checksum-failed prints as documented |
+| Mixed lobby, vanilla host + modded joiners | all 4 connect, minigames load on every peer (host-authoritative mod traces absent by construction — vanilla host carries no mod code) |
+| Installer round-trip on clean v2.1.2 copy | NOT PATCHED → install (55 files) → PATCHED `v2.1.2-8P-v1.2` → uninstall → **byte-identical restore** (`f5ea2339…`) |
+| Release zip | rebuilt; extracted `mod/` diffs empty against working tree |
+
+One unlisted-but-benign-shaped log line seen at 4p only (`Ignoring sync data
+from non-authority or for missing node`, 4×) — same replication-churn family
+as the documented noise, not new-at-8, not chased. Archived logs:
+scratchpad `v212-baseline/run{1-4}/`.
+
+**Found this session, needs a decision — installer stale-backup bug.**
+`install.py install()` uses an existing `Machine Party.pck.vanilla` as its
+patch base with no staleness check, and `--uninstall` restores it blindly. A
+user who updates the game and re-runs the installer gets the OLD game silently
+rebuilt over the new one (the compatibility warning cannot fire — the old
+backup satisfies it), and an `--uninstall` after a game update "restores" the
+previous version. The maintainer's own install is in exactly this state (stale
+v1.5.0 backup beside the v2.1.2 pck — delete it by hand; rule 1 forbids the
+assistant touching that folder). Candidate fix: refresh the backup from the
+live pck whenever the live pck verifies NOT PATCHED and differs from the
+backup; warn on uninstall version mismatch. Filed as **issue #9** (with the
+delete-the-backup workaround); the fix itself awaits the maintainer's go.
+
+**Also unfixed, recorded:** `lobby_expand.py`'s current spread step moves the
+shipped preview slots — its output no longer matches the shipped scene without
+the hand restore above. Fix the tool before the next lobby regeneration, or
+repeat the restore.
+
+**What this rebuild does NOT claim:** the per-minigame 8-player verification
+in "Current status" was measured on v1.5.0 and carries forward on the sweep's
+proof plus this session's two-minigame baseline (ExplodingCollarRace,
+ChiselGauntlet at 4/8/mixed). The other thirteen minigames have not been
+re-run at 8 on v2.1.2; open item 1 (nobody has *played* an 8-human session)
+is untouched. Arcade remains unproven (no local harness reaches it) — its
+filter re-anchored and re-read, nothing more.
+
+### 2026-08-14 — UPDATING.md split: pitfalls to `PITFALLS.md`, session log to this file
 
 Requested by the maintainer. `UPDATING.md` had regrown past one read
 (3,404 lines) — the same problem that split out `MINIGAMES.md` on

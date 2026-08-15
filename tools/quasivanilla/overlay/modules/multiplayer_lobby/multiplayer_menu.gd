@@ -42,6 +42,8 @@ func _ready() -> void :
 	Globals.all_minigames_finished = false
 	GameManager.local_game = false
 	GameManager.custom_game = true
+	GameManager.custom_shuffled = Globals.settings.get("custom_shuffled", false)
+	playlist_handler.shuffle_button.visible = true
 	if not GameManager.is_using_controller():
 		GameManager.current_input_device = GameManager.InputDevice.Keyboard
 

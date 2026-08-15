@@ -27,7 +27,7 @@ PACK_DIR_ENCRYPTED = 1
 PACK_REL_FILEBASE = 2
 PCK_NAME = "Machine Party.pck"
 BACKUP_NAME = "Machine Party.pck.vanilla"
-SUPPORTED_VERSION = "v1.5.0"
+SUPPORTED_VERSION = "v2.1.2"
 
 # Files the mod ADDS rather than replaces. These have nothing to displace in a
 # stock .pck, so they must not count towards the "game was updated" check.

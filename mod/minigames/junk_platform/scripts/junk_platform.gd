@@ -99,6 +99,10 @@ func _ready() -> void :
 		countdown_state.tick.connect(_on_countdown_tick)
 		countdown_state.expired.connect(_on_countdown_expired)
 
+	if GameManager.local_game:
+		await get_tree().create_timer(1.0).timeout
+		minigame_ready.emit(1)
+
 func fade_in_ambience():
 	for speaker_controller in ambience_speaker_controllers:
 		speaker_controller.speaker.volume_linear = 0
@@ -128,13 +132,17 @@ func initialize(_round_number: int, _total_rounds: int, _scores: Dictionary = {}
 func spawn_players():
 
 	player_count = PlayerManager.player_presences.size()
+	var spawn_positions: Array[Transform3D]
+	for p in player_spawn_position_node.get_children():
+		spawn_positions.append(p.global_transform)
+	if GameManager.local_game:
+		spawn_positions.shuffle()
 
 	for i in PlayerManager.player_presences.size():
 		var network_id = PlayerManager.player_presences.keys()[i]
 
 		var camera_rotation: float = 0.0
-		var spawn_marker: Node3D = player_spawn_position_node.get_child(i)
-		var position: Vector3 = spawn_marker.global_position
+		var position: Vector3 = spawn_positions[i].origin
 		var player_character: JunkPlatformPlayer = player_scene.instantiate()
 		players_node.add_child(player_character, true)
 
@@ -148,7 +156,11 @@ func spawn_players():
 		if position.z < 0:
 			camera_rotation = 180.0
 
+		if GameManager.local_game:
+			camera_rotation = rad_to_deg(spawn_positions[i].basis.get_euler().y)
+
 		if Array(OS.get_cmdline_args()).has("-localtest"):
+			var spawn_marker: Node3D = player_spawn_position_node.get_child(i)
 			print("[PLATFORM] assign slot=", i, " id=", network_id,
 				" marker=", spawn_marker.name,
 				" pos=(%.2f, %.2f, %.2f)" % [position.x, position.y, position.z],
@@ -159,7 +171,8 @@ func spawn_players():
 			position, camera_rotation
 		)
 
-		if camera_rotation > 0.0:
+		if not GameManager.local_game and camera_rotation > 0.0:
+
 			if network_id == 1:
 				camera_base.rotation_degrees.y = camera_rotation
 				visuals_base.rotation_degrees.y = camera_rotation
@@ -278,6 +291,11 @@ func _on_player_died(_network_id: int):
 func _on_player_fallen(last_hit_by_network_id: int):
 
 	if last_hit_by_network_id > 0:
+
+		if GameManager.local_game:
+			AchievementManager.set_achievement("ACH_03")
+			return
+
 		if players.has(last_hit_by_network_id):
 			players[last_hit_by_network_id].trigger_achievement_rpc.rpc()
 

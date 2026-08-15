@@ -72,12 +72,16 @@ func tick():
 		update_cigarette_left_rpc.rpc(player.cigarette_left)
 
 func pan_back_fov():
+	if GameManager.local_game:
+		return
 	if multiplayer.get_unique_id() != player.player_presence.network_id: return
 	if tween_camera_fov != null: tween_camera_fov.kill()
 	tween_camera_fov = get_tree().create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel(true)
 	tween_camera_fov.tween_property(player.manager.camera, "fov", tween_camera_fov_original, tween_camera_fov_pan_back_duration)
 
 func pan_in_fov():
+	if GameManager.local_game:
+		return
 	if multiplayer.get_unique_id() != player.player_presence.network_id: return
 	if tween_camera_fov != null: tween_camera_fov.kill()
 	tween_camera_fov = get_tree().create_tween().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_CUBIC).set_parallel(true)

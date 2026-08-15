@@ -14,6 +14,12 @@ const searchable_scene = preload("res://minigames/knife_at_the_office/components
 @export var countdown_handler: KnifeAtTheOfficeCountdownHandler
 @export var anim_projector_hide_hunt: AnimationPlayer
 
+@export_category("Local Nodes")
+@export var local_root_node: Node3D
+@export var local_handler: KnifeAtTheOfficeLocalHandler
+@export var fow_meshes: Array[MeshInstance3D]
+@export var local_audio_listener: AudioListener3D
+
 @export_category("Game Settings")
 @export var items_to_spawn: int = 2
 
@@ -143,6 +149,37 @@ func _ready() -> void :
 
 		countdown_handler.expired.connect(_on_game_countdown_expired)
 
+	if GameManager.local_game:
+
+		await get_tree().create_timer(1.0).timeout
+		local_root_node.visible = true
+		local_handler.local_after_post_processing_canvas.visible = true
+		local_handler.canvas_layer.visible = true
+		minigame_ready.emit(1)
+
+		local_audio_listener.make_current()
+
+func _process(delta: float) -> void :
+
+	if not GameManager.local_game:
+		return
+
+	if players.is_empty():
+		return
+
+	var positions: Array[Vector3]
+	for p in players.values():
+		positions.append(p.global_position)
+	var position_count: int = positions.size()
+
+	var sum: Vector3 = positions.pop_front()
+	for p in positions:
+		sum += p
+	var avg_position: Vector3 = sum / position_count
+
+	local_audio_listener.global_position = local_audio_listener.global_position.move_toward(
+		avg_position, delta * 128.0
+	)
 
 func initialize(_round_number: int, _total_rounds: int, _scores: Dictionary = {}):
 	super.initialize(_round_number, _total_rounds, _scores)
@@ -157,8 +194,6 @@ func fade_in_ambience():
 		speaker_controller.speaker.volume_linear = 0
 		speaker_controller.fade_duration = 3
 		speaker_controller.fade_in_custom(db_to_linear(speaker_controller.original_volume_db), true)
-
-	pass
 
 func spawn_players():
 
@@ -205,7 +240,6 @@ func spawn_players():
 
 	var counter: int = 0
 	for key in PlayerManager.player_presences.keys():
-
 		var player_presence: PlayerPresence = PlayerManager.player_presences[key]
 
 		var player_character = player_scene.instantiate()
@@ -228,6 +262,17 @@ func spawn_players():
 		player_scores[player_presence.network_id] = 0
 
 		counter += 1
+
+	if GameManager.local_game:
+		local_handler.set_players(players.values())
+
+		for i in players.size():
+			var network_id = players.keys()[i]
+			var player = players[network_id]
+			var starting_layer = 11 + (i * 2)
+			player.set_local_values(starting_layer)
+			for mesh in fow_meshes:
+				mesh.set_layer_mask_value(starting_layer, true)
 
 func all_players_loaded():
 	super.all_players_loaded()
@@ -340,6 +385,15 @@ func request_item_find_rpc(_network_id: int):
 
 	containers_searched += 1
 
+	if GameManager.local_game:
+
+		if containers_searched == guaranteed_search_result:
+			players[_network_id].search_result_rpc(true)
+		else:
+			players[_network_id].search_result_rpc(false)
+
+		return
+
 	if containers_searched == guaranteed_search_result:
 		players[_network_id].search_result_rpc.rpc(true)
 	else:
@@ -390,6 +444,8 @@ func _on_player_infected(_network_id: int, _by_network_id: int):
 
 	if not infected_players.has(_network_id):
 		infected_players.append(_network_id)
+		if GameManager.local_game:
+			local_handler.player_infected(players[_network_id])
 
 	if multiplayer.is_server():
 

@@ -8,7 +8,7 @@ const Epsilon: float = 0.001
 #
 # It is deliberately NOT the version put on the wire any more. Vanilla-compat
 # mode splits the two: the handshake reports MOD_NETWORK_GAME_VERSION, which is
-# vanilla's string verbatim, so an unmodded v1.5.0 peer's exact-equality check
+# vanilla's string verbatim, so an unmodded peer's exact-equality check
 # in receive_client_data_rpc passes and modded and vanilla players can share an
 # ordinary <=4-player lobby. Mod-to-mod strictness did not disappear, it moved:
 # the backends also put MOD_SUFFIX on the wire under the "mod8p" key, refuse a
@@ -22,14 +22,15 @@ const Epsilon: float = 0.001
 # and game_version their concatenation. That extends the existing three-places
 # rule for the version label - globals.gd, installer/install.py and
 # installer/README.txt still all have to agree on game_version.
-var game_version: String = "v1.5.0-8P-v1.2"
-const MOD_NETWORK_GAME_VERSION := "v1.5.0"
+var game_version: String = "v2.1.2-8P-v1.2"
+const MOD_NETWORK_GAME_VERSION := "v2.1.2"
 const MOD_SUFFIX := "8P-v1.2"
 
 
 const GROUP_UI: StringName = "GROUP_UI"
 
 var debug: bool = false
+var debug_local: bool = false
 var debug_instant_start = false
 var debug_capture_mouse_enabled = false
 var debug_skip_brief = false
@@ -379,7 +380,8 @@ var default_settings: Dictionary = {
 	"vsync": true, 
 	"fullscreen": true, 
 	"language": "EN", 
-	"original_finished": false
+	"original_finished": false, 
+	"custom_shuffled": false
 }
 
 var game_settings: Dictionary = {
@@ -544,6 +546,9 @@ func load_settings():
 		)
 		settings["original_finished"] = (
 			json.data.get("original_finished", Globals.default_settings.get("original_finished"))
+		)
+		settings["custom_shuffled"] = (
+			json.data.get("custom_shuffled", Globals.default_settings.get("custom_shuffled"))
 		)
 
 		set_bus_volume_linear("Master", settings["master_volume"])

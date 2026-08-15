@@ -3,7 +3,7 @@
 # duplicate this logic and must never be allowed to drift apart:
 #
 #   1. self_data reports Globals.MOD_NETWORK_GAME_VERSION (vanilla's exact
-#      "v1.5.0") instead of Globals.game_version, so an unmodded host's
+#      version string) instead of Globals.game_version, so an unmodded host's
 #      exact-equality check accepts us and ours accepts it. The mod tag moved
 #      into a separate "mod8p" capability key, which vanilla never looks at: it
 #      reads self_data through .get()/known keys and rebroadcasts the dict
@@ -24,7 +24,7 @@
 #
 # STANDING CONSTRAINT: never add, remove, reorder or re-annotate an @rpc method
 # in this file or in enet_backend.gd. The handshake has to stay wire-identical
-# to vanilla v1.5.0 or unmodded peers cannot talk to us at all. Anything
+# to the vanilla build or unmodded peers cannot talk to us at all. Anything
 # vanilla-compat needs travels inside the existing self_data Dictionary.
 extends MultiplayerBackend
 

@@ -37,12 +37,19 @@ enum InputType{
 @export var anim_camera_movement: AnimationPlayer
 @export var debug: Label3D
 
+@export_category("Local Multiplayer")
+@export var local_root_node: Node3D
+@export var local_camera: Camera3D
+@export var local_viewport: SubViewport
+
+@export_category("Audio")
 @export var speaker_pull_lever: AudioStreamPlayer3D
 @export var speaker_invalid_item: AudioStreamPlayer3D
 @export var speaker_tally_click: AudioStreamPlayer3D
 @export var speaker_death: AudioStreamPlayer3D
 @export var sounds_lever: Array[AudioStream]
 
+@export_category("Other")
 @export var items_parent: Node3D
 @export var item_position_parent: Node3D
 @export var player_model_node: Node3D
@@ -53,8 +60,7 @@ enum InputType{
 @export var player_marker: Node3D
 @export var player_name_label: PlayerNameLabel
 
-
-var visual_parent_rotations: Array[float] = [180.0, 270.0, 0.0, 90.0]
+const visual_parent_rotations: Array[float] = [180.0, 270.0, 0.0, 90.0]
 
 var game_instance: BurnRecycleMinigame
 
@@ -88,10 +94,12 @@ var is_dead: bool = false
 var ach_invalid_inputs: int = 0
 var ach_active: bool = true
 
+var tally_previous_text = ""
+var playing_tally_sound = false
+
 signal tweens_finished()
 signal item_queue_cleared(network_id)
 signal item_launched(rot, type)
-
 
 func _ready() -> void :
 
@@ -112,7 +120,39 @@ func _ready() -> void :
 func offset_nametag(_amount: float):
 	pass
 
-func _physics_process(delta: float) -> void :
+func _process(delta: float) -> void :
+
+	if penalty_timer > 0.0:
+		penalty_timer = max(penalty_timer - delta, 0.0)
+		if penalty_timer <= 0.0:
+			set_penalty_lights_rpc.rpc(false)
+
+	if GameManager.local_game:
+		local_camera.global_transform = camera.global_transform
+		local_camera.fov = camera.fov
+
+	if not active:
+		return
+
+	if is_dead:
+		return
+
+	if not GameManager.game_focused:
+		return
+
+	if penalty_timer > 0.0:
+		return
+
+	if GameManager.local_game and player_presence and not player_presence.local_controller_connected:
+		return
+
+	if DynamicInput.is_action_just_pressed(player_presence.device_id, "action_1"):
+		burn_rpc.rpc()
+
+	elif DynamicInput.is_action_just_pressed(player_presence.device_id, "action_2"):
+		recycle_rpc.rpc()
+
+func _physics_process(_delta: float) -> void :
 	play_tally_indicator_click()
 
 
@@ -134,30 +174,30 @@ func _physics_process(delta: float) -> void :
 
 
 
-var tally_previous_text = ""
-var playing_tally_sound = false
 func play_tally_indicator_click():
+
 	if end_score_labels[0].text != tally_previous_text:
 		if playing_tally_sound:
 			speaker_tally_click.play()
 	tally_previous_text = end_score_labels[0].text
 
-func _unhandled_input(event: InputEvent) -> void :
+func setup_local_visuals():
 
-	if not active:
-		return
+	var wall_copy = game_instance.client_side_wall_mesh.duplicate()
+	add_child(wall_copy)
+	wall_copy.top_level = true
+	wall_copy.global_position = Vector3.ZERO
 
-	if not GameManager.game_focused:
-		return
+	wall_copy.visible = true
+	wall_copy.rotation_degrees = Vector3(
+		0.0, 90.0 + (active_seat_index * 90.0), 0.0
+	)
+	for c in wall_copy.get_children():
+		if c is MeshInstance3D:
+			c.set_layer_mask_value(1, false)
+			c.set_layer_mask_value(active_seat_index + 2, true)
 
-	if penalty_timer > 0.0:
-		return
-
-	if event.is_action_pressed("action_1"):
-		burn_rpc.rpc()
-
-	elif event.is_action_pressed("action_2"):
-		recycle_rpc.rpc()
+	local_camera.set_cull_mask_value(active_seat_index + 2, true)
 
 # --- 8P MOD -------------------------------------------------------------------
 # Which room this player sits in. 0 for everyone at 1-4 players, so every path
@@ -227,13 +267,6 @@ func set_active_press(_seat_counter: int):
 		if i.press_id == _seat_counter:
 			active_press = i
 			break
-
-func _process(delta: float) -> void :
-
-	if penalty_timer > 0.0:
-		penalty_timer = max(penalty_timer - delta, 0.0)
-		if penalty_timer <= 0.0:
-			set_penalty_lights_rpc.rpc(false)
 
 func play_lever_sound():
 	speaker_pull_lever.stream = sounds_lever.pick_random()
@@ -539,7 +572,7 @@ func set_eliminated_rpc():
 @rpc("any_peer", "call_local", "reliable")
 func trigger_achievement_rpc():
 
-	if multiplayer.get_unique_id() == player_presence.network_id:
+	if GameManager.local_game or (multiplayer.get_unique_id() == player_presence.network_id):
 		if ach_invalid_inputs <= 0:
 			AchievementManager.set_achievement("ACH_15")
 
@@ -588,6 +621,7 @@ func set_random_type_array_rpc(_random_types_byte_array: PackedByteArray):
 func set_manager_from_path_rpc(node_path: String):
 	game_instance = get_node(node_path)
 
+
 @rpc("any_peer", "call_local", "reliable")
 func set_player_presence(_network_id: int, seat_counter: int):
 
@@ -604,6 +638,15 @@ func set_player_presence(_network_id: int, seat_counter: int):
 	set_active_belt(seat_counter)
 	set_active_press(seat_counter)
 
+	if GameManager.local_game:
+
+		player_name_label.text = ""
+		player_name_label.visible = false
+
+		local_camera.current = true
+		setup_local_visuals()
+		return
+
 	if player_presence.network_id == multiplayer.get_unique_id():
 
 		player_name_label.text = ""
@@ -619,7 +662,4 @@ func set_player_presence(_network_id: int, seat_counter: int):
 	else:
 
 		set_process(false)
-
-		set_process_input(false)
-		set_process_unhandled_input(false)
 		indicator.visible = false

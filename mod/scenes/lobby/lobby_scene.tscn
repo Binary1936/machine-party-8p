@@ -1569,7 +1569,7 @@ allow_single_player = false
 check_locale = true
 debug_player_label = NodePath("../../Lobby/Control/DebugPlayerLabel")
 
-[node name="PlaylistHandler" type="Node" parent="Components" node_paths=PackedStringArray("root", "all_minigames_list", "selected_minigames_list", "back_button", "presets_button", "default_button", "reset_button", "accept_button", "message_label")]
+[node name="PlaylistHandler" type="Node" parent="Components" node_paths=PackedStringArray("root", "all_minigames_list", "selected_minigames_list", "back_button", "presets_button", "default_button", "reset_button", "accept_button", "shuffle_button", "message_label")]
 script = ExtResource("4")
 root = NodePath("../../Playlist")
 all_minigames_list = NodePath("../../Playlist/ColorRect/MarginContainer/Control/MarginContainer/GridContainer/AllGames/MarginContainer/AllMinigames/VBoxContainer")
@@ -1579,6 +1579,7 @@ presets_button = NodePath("../../Playlist/ColorRect/MarginContainer/Control/HFlo
 default_button = NodePath("../../Playlist/ColorRect/MarginContainer/Control/HFlowContainer/DefaultButton")
 reset_button = NodePath("../../Playlist/ColorRect/MarginContainer/Control/HFlowContainer/ResetButton")
 accept_button = NodePath("../../Playlist/ColorRect/MarginContainer/Control/HFlowContainer/AcceptButton")
+shuffle_button = NodePath("../../Playlist/ColorRect/MarginContainer/Control/HFlowContainer/ShuffleButton")
 message_label = NodePath("../../Playlist/ColorRect/MessageMarginContainer/Message")
 
 [node name="ReconnectHandler" type="Node" parent="Components" node_paths=PackedStringArray("root", "center_label", "cancel_button")]
@@ -4221,18 +4222,18 @@ check_if_disabled = true
 metadata/_custom_type_script = "uid://mxdkkj4y5jrd"
 
 [node name="HFlowContainer3" type="HFlowContainer" parent="Lobby/Control"]
-visible = false
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 368.0
-offset_top = -48.0
-offset_right = -19.0
-offset_bottom = -13.0
+offset_top = -38.00003
+offset_right = 76.47064
+offset_bottom = -3.0000305
 grow_horizontal = 2
 grow_vertical = 0
+scale = Vector2(0.85, 0.85)
 mouse_filter = 2
 alignment = 2
 last_wrap_alignment = 1
@@ -4496,7 +4497,7 @@ layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
 focus_neighbor_left = NodePath("../DefaultButton")
-focus_neighbor_right = NodePath("../AcceptButton")
+focus_neighbor_right = NodePath("../ShuffleButton")
 focus_neighbor_bottom = NodePath(".")
 theme = ExtResource("52")
 text = "LOC_RESET"
@@ -4508,12 +4509,28 @@ speaker_hover = NodePath("../../../../../../../speaker_hover")
 force_play_sound = true
 metadata/_custom_type_script = "uid://mxdkkj4y5jrd"
 
+[node name="ShuffleButton" type="Button" parent="Playlist/ColorRect/MarginContainer/Control/HFlowContainer"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_horizontal = 8
+focus_neighbor_left = NodePath("../ResetButton")
+focus_neighbor_right = NodePath("../AcceptButton")
+theme = ExtResource("52")
+text = "LOC_SHUFFLE"
+
+[node name="ButtonClass" type="Node" parent="Playlist/ColorRect/MarginContainer/Control/HFlowContainer/ShuffleButton" node_paths=PackedStringArray("speaker_press", "speaker_hover")]
+script = ExtResource("53")
+speaker_press = NodePath("../../../../../../../speaker_press")
+speaker_hover = NodePath("../../../../../../../speaker_hover")
+force_play_sound = true
+metadata/_custom_type_script = "uid://mxdkkj4y5jrd"
+
 [node name="AcceptButton" type="Button" parent="Playlist/ColorRect/MarginContainer/Control/HFlowContainer"]
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 4
-focus_neighbor_left = NodePath("../ResetButton")
+focus_neighbor_left = NodePath("../ShuffleButton")
 focus_neighbor_bottom = NodePath(".")
 theme = ExtResource("52")
 text = "LOC_ACCEPT"

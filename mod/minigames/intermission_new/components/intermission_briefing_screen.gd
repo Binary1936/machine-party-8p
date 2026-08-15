@@ -252,7 +252,7 @@ func _mod_set_capacity() -> void:
 @export var invite_buttons_interacts: Array[Button]
 
 @export_category("Local")
-@export var local_ready_button: Control
+@export var local_ready_main_visibility: Control
 
 var all_ready: bool = false
 var is_ready: bool = false
@@ -425,14 +425,29 @@ func process_local_input():
 		if not player_presence.local_controller_connected:
 			continue
 		var device_id = player_presence.device_id
-
+		var had_input: bool = false
 		if MultiplayerInput.is_action_just_pressed(device_id, "left"):
 			page_left_pressed()
+			had_input = true
 		elif MultiplayerInput.is_action_just_pressed(device_id, "right"):
 			page_right_pressed()
+			had_input = true
 
 		if MultiplayerInput.is_action_just_pressed(device_id, "local_intermission_ready"):
 			set_ready_rpc(player_id, not players_ready.get(player_id, false))
+			had_input = true
+		elif MultiplayerInput.is_action_just_pressed(device_id, "local_intermission_unready"):
+			if players_ready.get(player_id, false):
+				set_ready_rpc(player_id, false)
+				had_input = true
+
+		if had_input:
+			var input_device = GameManager.InputDevice.Keyboard
+			if player_presence.using_joystick:
+				input_device = GameManager.InputDevice.Controller
+
+			for bcc in brief_controls_container.get_children():
+				bcc.fake_input_device_change(input_device)
 
 func process_online_input():
 
@@ -547,6 +562,11 @@ func show_briefing_screen():
 	show_user_info()
 	sort_user_containers_by_score()
 
+	if GameManager.local_game:
+		local_ready_main_visibility.visible = true
+	else:
+		local_ready_main_visibility.visible = false
+
 	anim_brief_screen.play("setup brief screen")
 
 	for scaler in color_rect_scalers:
@@ -555,8 +575,6 @@ func show_briefing_screen():
 	await get_tree().create_timer(1.45, false).timeout
 	show_score_nodes()
 	set_briefing_screen_button_disabled(false)
-	if GameManager.local_game:
-		show_local_ready()
 
 	update_progess_elements()
 
@@ -605,12 +623,6 @@ func show_briefing_screen():
 			return
 		await get_tree().create_timer(1.5, false).timeout
 		anim_pagination_highlight.play("show")
-
-func show_local_ready():
-	if not is_inside_tree():
-		return
-	await get_tree().create_timer(1.0).timeout
-	local_ready_button.visible = true
 
 func update_briefing_screen():
 
@@ -1000,8 +1012,6 @@ func hide_briefing_screen_rpc():
 	speaker_transition_out.volume_linear = db_to_linear(sc_transition_out.original_volume_db)
 	speaker_transition_out.play()
 	await get_tree().create_timer(0.4, false).timeout
-	if GameManager.local_game:
-		local_ready_button.visible = false
 	intermission_manager.picker.minigame_viewfinder_anim.play("hide")
 	anim_brief_screen.play("hide brief screen")
 	hide_score_nodes()

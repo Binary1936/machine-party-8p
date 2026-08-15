@@ -23,10 +23,14 @@ const hunter_player_scene = preload("uid://bg7h0g6d2m2xu")
 
 @export_category("Local Nodes")
 @export var local_handler: DuckHuntLocalHandler
+@export var local_multiplayer_root: Node3D
+@export var local_multiplayer_camera_viewport: SubViewport
+@export var local_multiplayer_camera_parent: Node3D
 
 @export_category("Components")
 
 @export var light_parent_ducks_only: Node3D
+@export var light_parent_local: Node3D
 @export var ambience_speaker_controllers: Array[SpeakerController]
 @export var speaker_spectate1: AudioStreamPlayer
 @export var speaker_spectate2: AudioStreamPlayer
@@ -212,6 +216,7 @@ var hunter_name: String = ""
 
 var last_spectate_camera_transform: Transform3D
 
+var local_duck_players: Dictionary[int, DuckHuntDuckPlayer]
 var local_game_players_order: Dictionary
 
 func _ready() -> void :
@@ -243,10 +248,48 @@ func _ready() -> void :
 		await get_tree().create_timer(1.0).timeout
 		minigame_ready.emit(1)
 
-		role_canvas.visible = false
+		role_canvas.visible = true
+		local_multiplayer_root.visible = true
 		local_handler.canvas_layer.visible = true
 
 func _process(_delta: float) -> void :
+
+	process_local(_delta)
+	process_online(_delta)
+
+func process_local(_delta: float):
+
+	if not GameManager.local_game:
+		return
+
+	if local_duck_players.is_empty():
+		return
+
+	var duck_player_positions: Array[Vector3]
+	for duck_player in local_duck_players.values():
+		if duck_player.health > 0:
+			duck_player_positions.append(duck_player.global_position)
+
+	if duck_player_positions.is_empty():
+		return
+
+	var positions_count: int = duck_player_positions.size()
+	var position_sum: Vector3 = duck_player_positions.pop_front()
+	for duck_player_position in duck_player_positions:
+		position_sum += duck_player_position
+	var positions_avg: Vector3 = position_sum / positions_count
+	positions_avg *= Vector3(0.0, 0.0, 1.0)
+	positions_avg.z = max(positions_avg.z, 0.0)
+
+	local_multiplayer_camera_parent.global_position = local_multiplayer_camera_parent.global_position.move_toward(
+		positions_avg, 
+		_delta * 64.0
+	)
+
+func process_online(_delta: float):
+
+	if GameManager.local_game:
+		return
 
 	if not is_spectating:
 		return
@@ -321,6 +364,7 @@ func spawn_players():
 		force_game_end()
 		return
 
+	local_duck_players.clear()
 	local_game_players_order.clear()
 	for player_presence in PlayerManager.player_presences.keys():
 		local_game_players_order[player_presence] = null
@@ -333,7 +377,10 @@ func spawn_players():
 
 	var player_presence: PlayerPresence
 
-	set_ducks_ambient_light_rpc.rpc(hunter_network_id)
+	if GameManager.local_game:
+		set_local_lights()
+	else:
+		set_ducks_ambient_light_rpc.rpc(hunter_network_id)
 
 	# 8P MOD: must run BEFORE the marker list is read below. Host-only, like the
 	# rest of spawn_players(), and a no-op at four players or fewer.
@@ -367,6 +414,7 @@ func spawn_players():
 
 		if GameManager.local_game:
 			acknowledge_role_rpc(network_id)
+			local_duck_players[player_presence.network_id] = player_character
 
 		counter += 1
 
@@ -384,8 +432,13 @@ func spawn_players():
 		duck_player_count
 	)
 
-	var hunter_initialization_delay = 8
-	if current_round != 0: hunter_initialization_delay = 5
+	var hunter_initialization_delay = 8.0
+	if current_round > 0:
+		hunter_initialization_delay = 5.0
+
+	if GameManager.local_game:
+		hunter_initialization_delay -= 2.0
+
 	hunter_player_character.initialize_hunter_rpc.rpc(hunter_initialization_delay)
 
 	local_game_players_order[player_presence.network_id] = hunter_player_character
@@ -395,7 +448,7 @@ func spawn_players():
 	for network_id in duck_players.keys():
 		duck_player_added_rpc.rpc(network_id)
 
-	local_handler.set_players(local_game_players_order.values())
+	local_handler.setup(local_multiplayer_camera_viewport, hunter_player.local_viewport)
 
 	_mod_apply_skipped_reveal()
 
@@ -470,6 +523,9 @@ func force_game_end():
 	set_minigame_sfx_linear_volume_rpc.rpc(0.0)
 	state_machine.transition_to_rpc.rpc(&"Finished")
 	set_effects_visibility_rpc.rpc(false)
+
+func set_local_lights():
+	light_parent_local.visible = true
 
 func fade_camera(set_to_backup: bool = false):
 
@@ -666,6 +722,10 @@ func _on_finish_area_entered(body):
 
 func _on_player_finished(_network_id: int):
 
+	if GameManager.local_game:
+		if local_duck_players.has(_network_id):
+			local_duck_players.erase(_network_id)
+
 	if duck_players.has(_network_id):
 		duck_players.erase(_network_id)
 		remove_spectate_player_rpc.rpc(_network_id)
@@ -678,6 +738,10 @@ func _on_player_finished(_network_id: int):
 	check_game_end()
 
 func _on_player_died(_network_id: int):
+
+	if GameManager.local_game:
+		if local_duck_players.has(_network_id):
+			local_duck_players.erase(_network_id)
 
 	# 8P MOD: `hunter_player` is set to null by remove_player_rpc when the hunter
 	# disconnects, and vanilla dereferenced `.player_presence` unguarded on both

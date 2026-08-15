@@ -51,6 +51,7 @@ var sequence_preview_nodes: Array[Node3D]
 var sequence_preview_node_meshes: Array[Array]
 
 var item_sequence: Array
+var local_item_sequence: Dictionary
 
 
 
@@ -84,6 +85,10 @@ func _ready() -> void :
 		countdown_state.countdown_started.connect(_on_countdown_started)
 		countdown_state.tick.connect(_on_countdown_tick)
 		countdown_state.expired.connect(_on_countdown_expired)
+
+	if GameManager.local_game:
+		await get_tree().create_timer(1.0).timeout
+		minigame_ready.emit(1)
 
 func fade_in_ambience():
 	for speaker_controller in ambience_speaker_controllers:
@@ -504,9 +509,30 @@ func spawn_workstations():
 
 		remove_empty_workstation_rpc.rpc(counter)
 		workstations.append(workstation_instance)
-		spawned_workstation_rpc.rpc_id(player_presence.network_id)
+
+		if GameManager.local_game:
+			local_setup_workstation(player_presence.network_id)
+		else:
+			spawned_workstation_rpc.rpc_id(player_presence.network_id)
 
 		counter += 1
+
+func local_setup_workstation(network_id: int):
+
+
+	var sequence: Array = ManufactureGunItem.Variation.values()
+	sequence.erase(0)
+	sequence.shuffle()
+	if sequence[0] == ManufactureGunItem.Variation.Three:
+		sequence.pop_front()
+		sequence.insert(randi_range(1, sequence.size()), ManufactureGunItem.Variation.Three)
+
+	local_item_sequence[network_id] = sequence
+
+	for w in workstations:
+		if w.player_presence.network_id == network_id:
+			w.local_set_item_sequence(sequence)
+			break
 
 func spawn_items():
 

@@ -5,8 +5,8 @@ Same recipe as tools/build.py - pristine `extracted/` as the base, an overlay on
 top, drop the compiled/remap siblings of anything overlaid - but the overlay is
 `tools/quasivanilla/overlay/` and the output is `tools/quasivanilla/qv.pck`.
 
-The point of this build is to be WIRE-IDENTICAL to stock v1.5.0: it reports
-game_version "v1.5.0" (globals is deliberately not overlaid), stamps no "mod8p"
+The point of this build is to be WIRE-IDENTICAL to the stock game: it reports
+the vanilla game_version (globals is deliberately not overlaid), stamps no "mod8p"
 key, and keeps every @rpc set exactly as shipped. The only additions are the
 local-test harness entry points (`-localtest`, `-startgame`, window titling), so
 this copy can play the vanilla side of a mixed lobby against the 8-player mod

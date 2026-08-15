@@ -1,5 +1,6 @@
 extends Node
 
+@export var local_development_scene: String = "res://scenes/local_lobby/local_lobby.tscn"
 @export var development_scene: String = "res://scenes/debug_lobby/debug_lobby.tscn"
 @export var release_scene: String = "res://scenes/main_menu/main_menu.tscn"
 
@@ -18,6 +19,11 @@ func _ready() -> void :
 		MusicManager.filter_controller.effect_low_pass.cutoff_hz = 300
 		Globals.splash_screen_viewed = true
 		get_tree().change_scene_to_file("res://scenes/lobby/lobby_scene.tscn")
+		return
+
+	if OS.has_feature("editor") and Globals.debug_local:
+		GameManager.custom_game = true
+		get_tree().call_deferred("change_scene_to_file", local_development_scene)
 		return
 
 	if (OS.has_feature("editor") and Globals.debug) or local_test:

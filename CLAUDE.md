@@ -12,10 +12,10 @@ diagnostic traces and the caps — is in **`MINIGAMES.md`**, cited as *§N*. Rea
 when you are touching a specific minigame, not before. `UPDATING.md`'s overlay
 manifest maps each file to its section.
 
-Currently targets game **v1.5.0** (Godot 4.5.2), shipped as mod release
-**v1.2** — vanilla-compat mode (added in v1.1) was confirmed in a real Steam
-mixed session on 2026-08-13, closing open item 3a — with in-game version
-string `v1.5.0-8P-v1.2`. Before running anything, read
+Currently targets game **v2.1.2** (Godot 4.5.2), rebuilt 2026-08-14 from the
+v1.5.0-based mod release **v1.2** — vanilla-compat mode (added in v1.1) was
+confirmed in a real Steam mixed session on 2026-08-13 — with in-game version
+string `v2.1.2-8P-v1.2`. Before running anything, read
 **"Working environment"** in `UPDATING.md` (screenshots, missing tools, the
 build pre-flight) and **`SESSION-LOG.md`** for what changed most recently.
 

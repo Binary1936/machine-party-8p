@@ -163,6 +163,10 @@ func _ready() -> void :
 
 		device.request_new_target.connect(_on_device_requested_target)
 
+	if GameManager.local_game:
+		await get_tree().create_timer(1.0).timeout
+		minigame_ready.emit(1)
+
 func _physics_process(_delta: float) -> void :
 
 	if not playing:

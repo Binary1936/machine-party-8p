@@ -1,4 +1,4 @@
-[gd_scene load_steps=207 format=4 uid="uid://cor5msx084s0s"]
+[gd_scene load_steps=206 format=4 uid="uid://cor5msx084s0s"]
 
 [ext_resource type="Script" uid="uid://buffq85tlo8np" path="res://minigames/smoke_break/scripts/smoke_break.gd" id="1"]
 [ext_resource type="AudioStream" uid="uid://cq18f4k860p32" path="res://audio/unique/smoke_break_ambiance.ogg" id="2"]
@@ -15,42 +15,41 @@
 [ext_resource type="Script" uid="uid://q0g8psdvev1r" path="res://minigames/smoke_break/states/finished_state.gd" id="13"]
 [ext_resource type="Shader" uid="uid://jfc74mbh2omt" path="res://shaders/vignette.gdshader" id="14"]
 [ext_resource type="Shader" uid="uid://cwi0meuxw8np6" path="res://shaders/posterization.gdshader" id="15"]
-[ext_resource type="Texture2D" uid="uid://dqw3lhsmrayck" path="res://textures/decals/smoke_break_poster.png" id="16"]
-[ext_resource type="Texture2D" uid="uid://dvsvgordfki2r" path="res://textures/decals/blood decals/blood9.png" id="17"]
-[ext_resource type="Texture2D" uid="uid://ho5axhqke3sd" path="res://textures/decals/blood decals/blood5.png" id="18"]
-[ext_resource type="Texture2D" uid="uid://wt356d66ya8p" path="res://textures/decals/blood decals/blood1.png" id="19"]
-[ext_resource type="Texture2D" uid="uid://bb7h8pxxj3jp2" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_concrete1.png" id="20"]
-[ext_resource type="Texture2D" uid="uid://brfqf0m5e8td4" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_metal floor tiles1.png" id="21"]
-[ext_resource type="Texture2D" uid="uid://dtcd3xglr0ef" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_metal base smoke1.png" id="22"]
-[ext_resource type="Texture2D" uid="uid://14jwn7tfpudc" path="res://minigames/smoke_break/models/smoke break fan1/smoke break fan1_base sheet2.png" id="23"]
-[ext_resource type="Texture2D" uid="uid://dnhd1yqb42aeu" path="res://textures/decals/blood decals/blood11.png" id="24"]
-[ext_resource type="Texture2D" uid="uid://cn15bxvnbq5yr" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_metal pipe rust.png" id="25"]
-[ext_resource type="Texture2D" uid="uid://dul5ciwa5e1fc" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_crate3.png" id="26"]
-[ext_resource type="Texture2D" uid="uid://cgisls5rvhx0q" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_outlet23.png" id="27"]
-[ext_resource type="Texture2D" uid="uid://dt1364iey70tr" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_fire switch1.png" id="28"]
-[ext_resource type="Texture2D" uid="uid://crctcbipsa8w1" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_sliding.png" id="29"]
-[ext_resource type="Texture2D" uid="uid://d0hj051pyyvwj" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_maintenance hatch2.png" id="30"]
-[ext_resource type="Texture2D" uid="uid://c3ms0wr0toejs" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_no smoking.png" id="31"]
-[ext_resource type="Texture2D" uid="uid://dsql8ncvaa2qm" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_base sheet2.png" id="32"]
-[ext_resource type="Texture2D" uid="uid://ckdyh0nb2biey" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_stucco radiator1.png" id="33"]
-[ext_resource type="Texture2D" uid="uid://4n6efobm3ukb" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_doohickey5.png" id="34"]
-[ext_resource type="Texture2D" uid="uid://cg0pii2a2tnbb" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_crt smoke break timer1.png" id="35"]
-[ext_resource type="Texture2D" uid="uid://bnoni4gsm0u2g" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_crt timer support.png" id="36"]
-[ext_resource type="FontFile" uid="uid://b54g2i0kf8br7" path="res://fonts/alarm clock.ttf" id="37"]
-[ext_resource type="Script" uid="uid://bfhj5t3esq57b" path="res://minigames/smoke_break/scripts/tick_blink.gd" id="38"]
-[ext_resource type="PackedScene" uid="uid://d2ue0rn4bfoes" path="res://modules/minigame/components/overlay/minigame_overlay.tscn" id="39"]
-[ext_resource type="Script" uid="uid://diq8gqwp5aj7b" path="res://minigames/smoke_break/scripts/smoke_break_trolley.gd" id="40"]
-[ext_resource type="Script" uid="uid://bh5x6oc3ul1xv" path="res://addons/shaker/src/Vector3/shaker_component3D.gd" id="41"]
-[ext_resource type="Script" uid="uid://dxj4hsknicmnt" path="res://addons/shaker/data/Vector3/ShakerTypeNoiseShake3D.gd" id="42"]
-[ext_resource type="Script" uid="uid://b32ximuhrdnon" path="res://addons/shaker/data/Vector3/ShakerPreset3D.gd" id="43"]
-[ext_resource type="Texture2D" uid="uid://hoo8rrq6ger" path="res://minigames/smoke_break/models/smoke break trolley gun1/smoke break trolley gun1_trolley base1.png" id="44"]
-[ext_resource type="Texture2D" uid="uid://dn0lw2c2b0baw" path="res://minigames/smoke_break/models/smoke break trolley gun1/smoke break trolley gun1_trolley gun mechanism base.png" id="45"]
-[ext_resource type="Texture2D" uid="uid://g4ud45e3rtlb" path="res://minigames/smoke_break/models/muzzle flash plane1/muzzle flash plane1_muzzle1.png" id="46"]
-[ext_resource type="Texture2D" uid="uid://b2g716lu62kew" path="res://minigames/smoke_break/models/muzzle flash plane1/muzzle flash plane1_muzzle plane2.png" id="47"]
-[ext_resource type="Texture2D" uid="uid://dmuodys316om8" path="res://minigames/smoke_break/models/smoke break trolley gun1/smoke break trolley gun1_trolley revolver2.png" id="48"]
-[ext_resource type="Texture2D" uid="uid://bwd1s8n57841f" path="res://textures/particles/smoke/smoke_07.png" id="49"]
-[ext_resource type="AudioStream" uid="uid://b4xldovenc4rx" path="res://audio/unique/smoke_break_trolley_start.ogg" id="50"]
-[ext_resource type="AudioStream" uid="uid://btqo4pqtg6of4" path="res://audio/unique/smoke_break_trolley_gunshot.ogg" id="51"]
+[ext_resource type="Texture2D" uid="uid://dvsvgordfki2r" path="res://textures/decals/blood decals/blood9.png" id="16"]
+[ext_resource type="Texture2D" uid="uid://ho5axhqke3sd" path="res://textures/decals/blood decals/blood5.png" id="17"]
+[ext_resource type="Texture2D" uid="uid://wt356d66ya8p" path="res://textures/decals/blood decals/blood1.png" id="18"]
+[ext_resource type="Texture2D" uid="uid://bb7h8pxxj3jp2" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_concrete1.png" id="19"]
+[ext_resource type="Texture2D" uid="uid://brfqf0m5e8td4" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_metal floor tiles1.png" id="20"]
+[ext_resource type="Texture2D" uid="uid://dtcd3xglr0ef" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_metal base smoke1.png" id="21"]
+[ext_resource type="Texture2D" uid="uid://14jwn7tfpudc" path="res://minigames/smoke_break/models/smoke break fan1/smoke break fan1_base sheet2.png" id="22"]
+[ext_resource type="Texture2D" uid="uid://dnhd1yqb42aeu" path="res://textures/decals/blood decals/blood11.png" id="23"]
+[ext_resource type="Texture2D" uid="uid://cn15bxvnbq5yr" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_metal pipe rust.png" id="24"]
+[ext_resource type="Texture2D" uid="uid://dul5ciwa5e1fc" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_crate3.png" id="25"]
+[ext_resource type="Texture2D" uid="uid://cgisls5rvhx0q" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_outlet23.png" id="26"]
+[ext_resource type="Texture2D" uid="uid://dt1364iey70tr" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_fire switch1.png" id="27"]
+[ext_resource type="Texture2D" uid="uid://crctcbipsa8w1" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_sliding.png" id="28"]
+[ext_resource type="Texture2D" uid="uid://d0hj051pyyvwj" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_maintenance hatch2.png" id="29"]
+[ext_resource type="Texture2D" uid="uid://c3ms0wr0toejs" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_no smoking.png" id="30"]
+[ext_resource type="Texture2D" uid="uid://dsql8ncvaa2qm" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_base sheet2.png" id="31"]
+[ext_resource type="Texture2D" uid="uid://ckdyh0nb2biey" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_stucco radiator1.png" id="32"]
+[ext_resource type="Texture2D" uid="uid://4n6efobm3ukb" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_doohickey5.png" id="33"]
+[ext_resource type="Texture2D" uid="uid://cg0pii2a2tnbb" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_crt smoke break timer1.png" id="34"]
+[ext_resource type="Texture2D" uid="uid://bnoni4gsm0u2g" path="res://minigames/smoke_break/models/smoke break near final3/smoke break near final3_crt timer support.png" id="35"]
+[ext_resource type="FontFile" uid="uid://b54g2i0kf8br7" path="res://fonts/alarm clock.ttf" id="36"]
+[ext_resource type="Script" uid="uid://bfhj5t3esq57b" path="res://minigames/smoke_break/scripts/tick_blink.gd" id="37"]
+[ext_resource type="PackedScene" uid="uid://d2ue0rn4bfoes" path="res://modules/minigame/components/overlay/minigame_overlay.tscn" id="38"]
+[ext_resource type="Script" uid="uid://diq8gqwp5aj7b" path="res://minigames/smoke_break/scripts/smoke_break_trolley.gd" id="39"]
+[ext_resource type="Script" uid="uid://bh5x6oc3ul1xv" path="res://addons/shaker/src/Vector3/shaker_component3D.gd" id="40"]
+[ext_resource type="Script" uid="uid://dxj4hsknicmnt" path="res://addons/shaker/data/Vector3/ShakerTypeNoiseShake3D.gd" id="41"]
+[ext_resource type="Script" uid="uid://b32ximuhrdnon" path="res://addons/shaker/data/Vector3/ShakerPreset3D.gd" id="42"]
+[ext_resource type="Texture2D" uid="uid://hoo8rrq6ger" path="res://minigames/smoke_break/models/smoke break trolley gun1/smoke break trolley gun1_trolley base1.png" id="43"]
+[ext_resource type="Texture2D" uid="uid://dn0lw2c2b0baw" path="res://minigames/smoke_break/models/smoke break trolley gun1/smoke break trolley gun1_trolley gun mechanism base.png" id="44"]
+[ext_resource type="Texture2D" uid="uid://g4ud45e3rtlb" path="res://minigames/smoke_break/models/muzzle flash plane1/muzzle flash plane1_muzzle1.png" id="45"]
+[ext_resource type="Texture2D" uid="uid://b2g716lu62kew" path="res://minigames/smoke_break/models/muzzle flash plane1/muzzle flash plane1_muzzle plane2.png" id="46"]
+[ext_resource type="Texture2D" uid="uid://dmuodys316om8" path="res://minigames/smoke_break/models/smoke break trolley gun1/smoke break trolley gun1_trolley revolver2.png" id="47"]
+[ext_resource type="Texture2D" uid="uid://bwd1s8n57841f" path="res://textures/particles/smoke/smoke_07.png" id="48"]
+[ext_resource type="AudioStream" uid="uid://b4xldovenc4rx" path="res://audio/unique/smoke_break_trolley_start.ogg" id="49"]
+[ext_resource type="AudioStream" uid="uid://btqo4pqtg6of4" path="res://audio/unique/smoke_break_trolley_gunshot.ogg" id="50"]
 
 [sub_resource type="Environment" id="Environment_ghpo8"]
 background_mode = 1
@@ -126,21 +125,21 @@ _data = {
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shugo"]
 resource_name = "concrete1"
 cull_mode = 2
-albedo_texture = ExtResource("20")
+albedo_texture = ExtResource("19")
 roughness = 0.859091
 texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jg5rm"]
 resource_name = "metal tiles"
 cull_mode = 2
-albedo_texture = ExtResource("21")
+albedo_texture = ExtResource("20")
 roughness = 0.822727
 texture_filter = 2
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xf0il"]
 resource_name = "metal base1"
 cull_mode = 2
-albedo_texture = ExtResource("22")
+albedo_texture = ExtResource("21")
 roughness = 0.822727
 texture_filter = 2
 
@@ -229,7 +228,7 @@ shadow_mesh = SubResource("ArrayMesh_pk4wa")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ts3rl"]
 resource_name = "base sheet"
 cull_mode = 2
-albedo_texture = ExtResource("23")
+albedo_texture = ExtResource("22")
 roughness = 0.859091
 texture_filter = 2
 
@@ -307,7 +306,7 @@ _data = {
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_whcf2"]
 resource_name = "pipe"
 cull_mode = 2
-albedo_texture = ExtResource("25")
+albedo_texture = ExtResource("24")
 roughness = 0.859091
 texture_filter = 2
 
@@ -346,7 +345,7 @@ shadow_mesh = SubResource("ArrayMesh_kecsg")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wa360"]
 resource_name = "crate1"
 cull_mode = 2
-albedo_texture = ExtResource("26")
+albedo_texture = ExtResource("25")
 roughness = 0.85
 texture_filter = 2
 texture_repeat = false
@@ -386,7 +385,7 @@ shadow_mesh = SubResource("ArrayMesh_unhft")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e8jha"]
 resource_name = "wall outlet1"
 cull_mode = 2
-albedo_texture = ExtResource("27")
+albedo_texture = ExtResource("26")
 roughness = 0.777273
 texture_filter = 2
 texture_repeat = false
@@ -428,7 +427,7 @@ shadow_mesh = SubResource("ArrayMesh_drksn")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ossv"]
 resource_name = "fire switch"
 cull_mode = 2
-albedo_texture = ExtResource("28")
+albedo_texture = ExtResource("27")
 roughness = 0.790909
 texture_filter = 2
 texture_repeat = false
@@ -470,7 +469,7 @@ shadow_mesh = SubResource("ArrayMesh_7k7ox")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3k8vq"]
 resource_name = "siding"
 cull_mode = 2
-albedo_texture = ExtResource("29")
+albedo_texture = ExtResource("28")
 roughness = 0.859091
 texture_filter = 2
 
@@ -511,7 +510,7 @@ shadow_mesh = SubResource("ArrayMesh_avw1h")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5c8gw"]
 resource_name = "maintenance hatch"
 cull_mode = 2
-albedo_texture = ExtResource("30")
+albedo_texture = ExtResource("29")
 roughness = 0.777273
 texture_filter = 2
 
@@ -784,7 +783,7 @@ shadow_mesh = SubResource("ArrayMesh_cg6f8")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ane1o"]
 resource_name = "no smoking"
 cull_mode = 2
-albedo_texture = ExtResource("31")
+albedo_texture = ExtResource("30")
 roughness = 0.777273
 texture_filter = 2
 texture_repeat = false
@@ -824,7 +823,7 @@ shadow_mesh = SubResource("ArrayMesh_bkqb1")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d6m50"]
 resource_name = "base sheet"
 cull_mode = 2
-albedo_texture = ExtResource("32")
+albedo_texture = ExtResource("31")
 roughness = 0.859091
 texture_filter = 2
 
@@ -899,7 +898,7 @@ shadow_mesh = SubResource("ArrayMesh_vi2oq")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k6jhd"]
 resource_name = "radiator stucco"
 cull_mode = 2
-albedo_texture = ExtResource("33")
+albedo_texture = ExtResource("32")
 roughness = 0.754545
 texture_filter = 2
 
@@ -1008,7 +1007,7 @@ shadow_mesh = SubResource("ArrayMesh_201u5")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t3tv4"]
 resource_name = "doohickey"
 cull_mode = 2
-albedo_texture = ExtResource("34")
+albedo_texture = ExtResource("33")
 roughness = 0.85
 texture_filter = 2
 texture_repeat = false
@@ -1050,7 +1049,7 @@ shadow_mesh = SubResource("ArrayMesh_lhqcm")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v2h8e"]
 resource_name = "base sheet.001"
 cull_mode = 2
-albedo_texture = ExtResource("35")
+albedo_texture = ExtResource("34")
 roughness = 0.859091
 texture_filter = 2
 
@@ -1131,7 +1130,7 @@ shadow_mesh = SubResource("ArrayMesh_tymkx")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_faxnw"]
 resource_name = "crt support"
 cull_mode = 2
-albedo_texture = ExtResource("36")
+albedo_texture = ExtResource("35")
 roughness = 0.85
 texture_filter = 2
 texture_repeat = false
@@ -1752,20 +1751,20 @@ seed = -3
 noise = SubResource("FastNoiseLite_guogi")
 
 [sub_resource type="Resource" id="Resource_3xnly"]
-script = ExtResource("42")
+script = ExtResource("41")
 noise_texture = SubResource("NoiseTexture3D_jcu7k")
 amplitude = Vector3(0.1, 0.1, 0.1)
 metadata/_custom_type_script = "uid://dxj4hsknicmnt"
 
 [sub_resource type="Resource" id="Resource_jwc1q"]
-script = ExtResource("43")
+script = ExtResource("42")
 RotationShake = [SubResource("Resource_3xnly")]
 metadata/_custom_type_script = "uid://b32ximuhrdnon"
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2gmf3"]
 resource_name = "trolley base.001"
 cull_mode = 2
-albedo_texture = ExtResource("44")
+albedo_texture = ExtResource("43")
 roughness = 0.809091
 texture_filter = 2
 
@@ -1840,7 +1839,7 @@ shadow_mesh = SubResource("ArrayMesh_fn8w3")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_can2t"]
 resource_name = "trolley revolver mechanism"
 cull_mode = 2
-albedo_texture = ExtResource("45")
+albedo_texture = ExtResource("44")
 roughness = 0.863636
 texture_filter = 2
 texture_repeat = false
@@ -2023,7 +2022,7 @@ blend_mode = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(1, 1, 1, 0)
-albedo_texture = ExtResource("46")
+albedo_texture = ExtResource("45")
 texture_filter = 0
 texture_repeat = false
 
@@ -2034,7 +2033,7 @@ blend_mode = 1
 cull_mode = 2
 shading_mode = 0
 albedo_color = Color(1, 1, 1, 0)
-albedo_texture = ExtResource("47")
+albedo_texture = ExtResource("46")
 texture_filter = 0
 texture_repeat = false
 
@@ -2095,7 +2094,7 @@ shadow_mesh = SubResource("ArrayMesh_h3adc")
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4saej"]
 resource_name = "trolley revolver1"
 cull_mode = 2
-albedo_texture = ExtResource("48")
+albedo_texture = ExtResource("47")
 roughness = 0.863636
 texture_filter = 2
 texture_repeat = false
@@ -2308,7 +2307,7 @@ shadow_mesh = SubResource("ArrayMesh_4ei0o")
 transparency = 1
 blend_mode = 1
 albedo_color = Color(1, 1, 1, 0.176471)
-albedo_texture = ExtResource("49")
+albedo_texture = ExtResource("48")
 billboard_mode = 1
 
 [sub_resource type="Curve" id="Curve_xbwpx"]
@@ -2631,7 +2630,6 @@ transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 
 [node name="character blockout_004" type="Marker3D" parent="PlayerSpawner/PlayerPositions"]
 transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 2.87227, 3.06939, 0.190167)
 
-
 [node name="character blockout_001_MOD5" type="Marker3D" parent="PlayerSpawner/PlayerPositions"]
 transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, -1.92835, 3.06939, 3.62059)
 
@@ -2643,15 +2641,6 @@ transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 
 
 [node name="character blockout_004_MOD8" type="Marker3D" parent="PlayerSpawner/PlayerPositions"]
 transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 2.86915, 3.06939, -1.10983)
-[node name="Decals" type="Node3D" parent="."]
-visible = false
-
-[node name="decal jamesy" type="Decal" parent="Decals"]
-transform = Transform3D(-0.993538, 8.18967e-08, -0.113498, 0.113498, -5.33512e-08, -0.993538, -8.74228e-08, -1, 4.37114e-08, -1.88729, 4.72683, 5)
-layers = 512
-size = Vector3(1, 0.2, 1.5)
-texture_albedo = ExtResource("16")
-normal_fade = 0.999
 
 [node name="blood decals" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.259731, 1.97683, 0.724958)
@@ -2662,14 +2651,14 @@ visible = false
 [node name="Decal3" type="Decal" parent="blood decals/blood decals seat 0"]
 transform = Transform3D(-0.303125, 3.10132, 0.687092, 0.187115, -0.671581, 3.11386, 3.17101, 0.336093, -0.118062, 3.98769, 0.896953, 1.53477)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("17")
+texture_albedo = ExtResource("16")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
 [node name="Decal4" type="Decal" parent="blood decals/blood decals seat 0"]
 transform = Transform3D(-0.208812, 2.25403, 0.012067, 0.36624, 0.0219697, 2.23378, 2.22411, 0.208004, -0.3667, 4.24446, 0.451813, 1.58562)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("18")
+texture_albedo = ExtResource("17")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
@@ -2679,14 +2668,14 @@ visible = false
 [node name="Decal7" type="Decal" parent="blood decals/blood decals seat 1"]
 transform = Transform3D(-3.08728, 0.732616, 0.337855, 0.219689, -0.522376, 3.14023, 0.776278, 3.06147, 0.454966, 3.42266, -0.0593594, 4.13481)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("17")
+texture_albedo = ExtResource("16")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
 [node name="Decal8" type="Decal" parent="blood decals/blood decals seat 1"]
 transform = Transform3D(-2.16451, 0.565713, 0.345342, 0.388986, 0.129275, 2.22629, 0.536639, 2.18807, -0.220819, 3.46233, -0.491346, 4.41495)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("18")
+texture_albedo = ExtResource("17")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
@@ -2696,14 +2685,14 @@ visible = false
 [node name="Decal5" type="Decal" parent="blood decals/blood decals seat 2"]
 transform = Transform3D(-2.64444, 0.739442, -1.62554, -1.68644, -1.98945, 1.83853, -0.587422, 2.38275, 2.03952, 0.247588, -0.074352, 4.54925)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("17")
+texture_albedo = ExtResource("16")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
 [node name="Decal6" type="Decal" parent="blood decals/blood decals seat 2"]
 transform = Transform3D(-1.99374, 0.262494, -1.03946, -1.02881, -1.08581, 1.69911, -0.301563, 1.96888, 1.07562, 0.522418, -0.511215, 4.56605)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("18")
+texture_albedo = ExtResource("17")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
@@ -2713,19 +2702,19 @@ visible = false
 [node name="Decal" type="Decal" parent="blood decals/blood decals seat 3"]
 transform = Transform3D(-0.215042, 2.20013, 0.487434, 0.132742, -0.476431, 2.20902, 2.24956, 0.23843, -0.083755, 4.88998, 0.605732, -0.808033)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("19")
+texture_albedo = ExtResource("18")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
 [node name="Decal2" type="Decal" parent="blood decals/blood decals seat 3"]
 transform = Transform3D(-0.208812, 2.25403, 0.012067, 0.36624, 0.0219697, 2.23378, 2.22411, 0.208004, -0.3667, 5.05659, 0.0928755, -1.63576)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("18")
+texture_albedo = ExtResource("17")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 512
 
 [node name="CameraParent" type="Node3D" parent="."]
-transform = Transform3D(-0.69837743, 0.08520269, -0.71063983, -0.016566122, 0.9906974, 0.13506094, 0.7155376, 0.106095955, -0.69047016, -8.93387, 4.46526, -8.85084)
+transform = Transform3D(-0.69837743, 0.08520269, -0.71063983, -0.016566122, 0.9906973, 0.13506094, 0.7155376, 0.106095955, -0.69047016, -8.93387, 4.46526, -8.85084)
 
 [node name="OffsetParent" type="Node3D" parent="CameraParent"]
 transform = Transform3D(1, 0, 2.98023e-08, 0, 1, 7.45058e-09, 0, -7.45058e-09, 1, 0, 0, 0)
@@ -2815,14 +2804,14 @@ visible = false
 [node name="Decal8" type="Decal" parent="smoke break near final3/base mesh/fan/blood decal fan"]
 transform = Transform3D(1, 7.45058e-09, 4.4638e-09, 7.45058e-09, 1, 5.52973e-10, -1.60435e-09, 3.20142e-10, 1, 0, 0, 0)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("24")
+texture_albedo = ExtResource("23")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 32768
 
 [node name="Decal9" type="Decal" parent="smoke break near final3/base mesh/fan/blood decal fan"]
 transform = Transform3D(0.826732, -0.330754, 0.4551, 0.176885, 0.920721, 0.347827, -0.534065, -0.20706, 0.819695, -0.286471, -0.373685, 0.288325)
 size = Vector3(2, 2.76709, 2)
-texture_albedo = ExtResource("17")
+texture_albedo = ExtResource("16")
 modulate = Color(1, 0, 0, 1)
 cull_mask = 32768
 
@@ -2843,7 +2832,6 @@ transform = Transform3D(-0.399153, 0, 0.916884, 0, 1, 0, -0.916884, 0, -0.399153
 visible = false
 mesh = SubResource("ArrayMesh_j2xe2")
 skeleton = NodePath("")
-
 
 [node name="crate1_003_MOD8" type="MeshInstance3D" parent="smoke break near final3/base mesh"]
 transform = Transform3D(-0.399153, 0, 0.916884, 0, 1, 0, -0.916884, 0, -0.399153, 3.71524, 0, -1.49696)
@@ -3017,7 +3005,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.58441, 2.12108, -14.9715)
 transform = Transform3D(0.425332, 0, 0, 0, 0.205106, 0, 0, 0, 0.205106, 0.478165, 2.98771, -17.0074)
 modulate = Color(1, 0, 0, 1)
 text = "00:00"
-font = ExtResource("37")
+font = ExtResource("36")
 font_size = 442
 
 [node name="anim_timer tick blink" type="AnimationPlayer" parent="viewport_timer screen/label_timer screen"]
@@ -3026,17 +3014,17 @@ libraries = {
 }
 
 [node name="tick blink" type="Node" parent="viewport_timer screen/label_timer screen" node_paths=PackedStringArray("label", "anim")]
-script = ExtResource("38")
+script = ExtResource("37")
 label = NodePath("..")
 anim = NodePath("../anim_timer tick blink")
 
-[node name="MinigameOverlay" parent="." instance=ExtResource("39")]
+[node name="MinigameOverlay" parent="." instance=ExtResource("38")]
 
 [node name="trolley gun main parent" type="Node3D" parent="."]
 transform = Transform3D(0.931348, 0, -0.364129, 0, 1, 0, 0.364129, 0, 0.931348, 0.231531, 0, 0.243701)
 
 [node name="trolley gun manager" type="Node" parent="trolley gun main parent" node_paths=PackedStringArray("manager", "state_machine", "player_parent", "blood_decals_by_seat_index_array", "blood_decal_fan", "particles_smoke", "shaker_trolley", "anim_trolley", "anim_revolver_firing", "revolver_yaw_parent", "setup_audio_player", "fire_audio_player")]
-script = ExtResource("40")
+script = ExtResource("39")
 manager = NodePath("../..")
 state_machine = NodePath("../../StateMachine")
 player_parent = NodePath("../../PlayerSpawner/Players")
@@ -3063,7 +3051,7 @@ libraries = {
 
 [node name="shaker_trolley" type="Node3D" parent="trolley gun main parent" node_paths=PackedStringArray("Targets")]
 transform = Transform3D(3.13916e-07, 0, 1, 0, 1, 0, -1, 0, 3.13916e-07, -1.2683, 7.15256e-07, -0.470417)
-script = ExtResource("41")
+script = ExtResource("40")
 custom_target = true
 Targets = [NodePath("../trolley movement parent/trolley parent")]
 intensity = 7.0
@@ -3244,12 +3232,12 @@ mesh = SubResource("ArrayMesh_0xydr")
 skeleton = NodePath("")
 
 [node name="TrolleyAudio" type="AudioStreamPlayer3D" parent="trolley gun main parent/trolley movement parent"]
-stream = ExtResource("50")
+stream = ExtResource("49")
 bus = &"MINIGAME_SFX"
 
 [node name="GunAudio" type="AudioStreamPlayer3D" parent="trolley gun main parent/trolley movement parent"]
 transform = Transform3D(1.0000005, 0, -5.9604645e-08, 0, 1, 0, 5.9604645e-08, 0, 1.0000005, 0, 1.6, 0)
-stream = ExtResource("51")
+stream = ExtResource("50")
 bus = &"MINIGAME_SFX"
 
 [node name="RoomCollision" type="CSGBox3D" parent="."]

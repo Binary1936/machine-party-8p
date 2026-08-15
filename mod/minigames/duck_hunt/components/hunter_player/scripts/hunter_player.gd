@@ -12,8 +12,11 @@ class_name DuckHuntHunterPlayer
 @export var unzoom_after_shot: bool = true
 @export var return_to_zoom_after_shot: bool = false
 @export var magazine_capacity: int = 7
+
+@export_category("Nodes")
 @export var customization_assigner: CustomizationAssigner
 @export var hand_meshes: Array[MeshInstance3D]
+@export var laser_mesh: MeshInstance3D
 
 # 8-PLAYER MOD: keys 4-7 added. `duck_count` is the roster minus the hunter, so
 # vanilla only ever needed 0-3; above that `.get(duck_count, 7)` in
@@ -198,6 +201,30 @@ var scope_text_tween: Tween
 func _ready() -> void :
 	speaker_scope.volume_linear = 2
 
+	Globals.locale_changed.connect(scale_UI_depending_on_locale)
+	scale_UI_depending_on_locale()
+
+func scale_UI_depending_on_locale():
+	if GameManager.local_game:
+		var changing = false
+		match TranslationServer.get_locale():
+			"SV":
+				changing = true
+			"DE":
+				changing = true
+			"ES":
+				changing = true
+			"BR":
+				changing = true
+			"UA":
+				changing = true
+		if changing:
+			controller_sensitivity_prompt.scale = Vector2(0.816, 0.816)
+			keyboard_sensitivity_prompt.scale = Vector2(0.816, 0.816)
+		else:
+			controller_sensitivity_prompt.scale = Vector2(1, 1)
+			keyboard_sensitivity_prompt.scale = Vector2(1, 1)
+
 func ready_setup():
 	if multiplayer.get_unique_id() != player_presence.network_id: return
 
@@ -265,10 +292,17 @@ func _process(_delta: float) -> void :
 	process_controller(_delta)
 	update_look(_delta)
 
-	if DynamicInput.is_action_just_pressed(player_presence.device_id, "left_shoulder"):
-		update_sensitivity(-0.1)
-	elif DynamicInput.is_action_just_pressed(player_presence.device_id, "right_shoulder"):
-		update_sensitivity(0.1)
+	if GameManager.local_game:
+		if player_presence and player_presence.local_controller_connected:
+			if DynamicInput.is_action_just_pressed(player_presence.device_id, "left_shoulder"):
+				update_sensitivity(-0.1)
+			elif DynamicInput.is_action_just_pressed(player_presence.device_id, "right_shoulder"):
+				update_sensitivity(0.1)
+	else:
+		if DynamicInput.is_action_just_pressed(player_presence.device_id, "left_shoulder"):
+			update_sensitivity(-0.1)
+		elif DynamicInput.is_action_just_pressed(player_presence.device_id, "right_shoulder"):
+			update_sensitivity(0.1)
 
 	if not active:
 		return
@@ -276,11 +310,13 @@ func _process(_delta: float) -> void :
 	if not can_shoot:
 		return
 
+	if GameManager.local_game and player_presence and not player_presence.local_controller_connected:
+		return
+
 	if (
 		DynamicInput.is_action_just_pressed(player_presence.device_id, "action_2") or 
 		DynamicInput.is_action_just_pressed(player_presence.device_id, "left_trigger")
 	):
-
 		zoom_fov_index = wrap(zoom_fov_index + 1, 0, zoom_fovs.size())
 		update_zoom()
 
@@ -295,6 +331,9 @@ func process_controller(_delta: float):
 	if not can_aim:
 		return
 
+	if GameManager.local_game and player_presence and not player_presence.local_controller_connected:
+		return
+
 	var controller_input: Vector2 = Vector2(
 		(
 			DynamicInput.get_action_strength(player_presence.device_id, "right") - 
@@ -304,7 +343,6 @@ func process_controller(_delta: float):
 			DynamicInput.get_action_strength(player_presence.device_id, "down") - 
 			DynamicInput.get_action_strength(player_presence.device_id, "up")
 		)
-
 	).limit_length(1.0)
 
 	if controller_input.length() > Globals.Epsilon:
@@ -425,8 +463,9 @@ func shoot():
 	look_recoil.x += 0.025 * (-1 + (randf() * 2))
 
 	play_shoot_sound_rpc.rpc()
-	if multiplayer.get_unique_id() == get_multiplayer_authority() && num_of_current_rounds_in_magazine != 1:
-		speaker_rack_rifle.play()
+	if num_of_current_rounds_in_magazine != 1:
+		if GameManager.local_game or (multiplayer.get_unique_id() == get_multiplayer_authority()):
+			speaker_rack_rifle.play()
 
 	# 8P MOD: this literal is coupled to MOD_POST_SHOT_DELAY - if the developers
 	# retime it on an update, change the constant to match or the animation
@@ -457,7 +496,7 @@ func shoot():
 	can_shoot = true
 
 func reload(_cycle_time: float = 0.95):
-	if multiplayer.get_unique_id() == get_multiplayer_authority():
+	if GameManager.local_game or (multiplayer.get_unique_id() == get_multiplayer_authority()):
 		play_reload_sound_rpc.rpc()
 	can_shoot = false
 	# 8P MOD: same clipping as the bolt, milder - the reload animation is
@@ -470,7 +509,6 @@ func reload(_cycle_time: float = 0.95):
 	await get_tree().create_timer(MOD_RELOAD_WAIT, false).timeout
 
 func update_laser():
-
 
 	var laser_length: float = 500.0
 	if laser_raycast.is_colliding():
@@ -621,16 +659,33 @@ func set_player_presence(network_id: int) -> void :
 
 		hud.reparent(local_viewport)
 
-		laser_parent_node.visible = false
+		laser_mesh.set_layer_mask_value(1, false)
+		laser_mesh.set_layer_mask_value(11, true)
 		hud.visible = true
 
-		var ui_nodes = get_tree().get_nodes_in_group(Globals.GROUP_UI)
-		for ui_node in ui_nodes:
-			ui_node.visible = false
+		if player_presence.using_joystick:
+			_on_input_device_changed(GameManager.InputDevice.Controller)
+		else:
+			_on_input_device_changed(GameManager.InputDevice.Keyboard)
+
+
+
+
 
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
-		ready_setup()
+		var customization_data = player_presence.customization
+		var hands_texture: Texture = customization_assigner.get_suit_texture(
+			customization_data[2]
+		)
+
+		if not hand_meshes.is_empty():
+
+			var material: StandardMaterial3D = hand_meshes[0].get_active_material(0).duplicate()
+			material.albedo_texture = hands_texture
+
+			for hm in hand_meshes:
+				hm.set_surface_override_material(0, material)
 
 		return
 
@@ -639,7 +694,6 @@ func set_player_presence(network_id: int) -> void :
 		CursorManager.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		laser_parent_node.visible = false
 		hud.visible = true
-
 
 		camera.current = true
 		var ui_nodes = get_tree().get_nodes_in_group(Globals.GROUP_UI)
@@ -695,6 +749,8 @@ func _on_input_device_changed(input_device: GameManager.InputDevice):
 
 
 func reveal_role():
+
+	role_label.text = tr("LOC_CONTROL_HUNTER_NAME") % player_presence.network_name
 
 	role_overlay.modulate.a = 1.0
 	role_overlay.visible = true

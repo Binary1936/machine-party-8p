@@ -42,7 +42,15 @@ minigames/junk_platform/junk_platform.tscn::Networked/PlayerSpawner/PlayerSpawnP
 minigames/knife_at_the_office/knife_at_the_office.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
 minigames/memorize_path/memorize_path.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
 minigames/shape_cutter/shape_cutter.tscn::Positions/PlayerSpawnPositions
-minigames/smoke_break/smoke_break.tscn::PlayerSpawner/PlayerPositions
+# smoke_break: EXCLUDED - its eight seats are HAND-AUTHORED, not expander
+# output. The four added markers interpolate position AND aim angle together
+# along the bench arc (MINIGAMES.md section 14) and are coupled to
+# rot_by_seat_index_array and the two added crates. The container path still
+# resolves, so the expander will happily "re-expand" this scene and silently
+# destroy that coupling - it did exactly that in a supervised run on
+# 2026-08-14 (v2.1.2 rebuild) and had to be reverted. Carry the seats forward
+# by hand from the previous overlay instead.
+# minigames/smoke_break/smoke_break.tscn::PlayerSpawner/PlayerPositions
 minigames/spine_breaker/spine_breaker.tscn::Networked/PlayerSpawner/PlayerSpawnPositions
 # train_race: INWARD mode (third field). The default ranking ties +offset against
 # -offset and the stable sort always picks +, so both right-hand clones landed

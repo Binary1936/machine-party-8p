@@ -324,3 +324,90 @@ camera frame. Section 14 has the numbers.
 
 ---
 
+
+### ARCHIVED 2026-08-14 — the v1.0.7 → v1.5.0 "last update" worked example, moved verbatim from UPDATING.md when the v2.1.2 rebuild replaced it (that section always describes the MOST RECENT update)
+
+## The last update, and how it was verified (v1.0.7 → v1.5.0, 2026-08-05)
+
+**This is a worked example, not a changelog entry — and the sweep at the bottom
+of it is a tool you should run, not a note about something that already
+happened.** If you are here to rebuild against a new version, this section plus
+step 4 of the update procedure is the whole method; the 2,000 lines in between
+are reference for when something breaks.
+
+The mod targets **v1.5.0** as of this writing. This was a **much larger patch
+than v1.0.7** — a new game mode, an engine bump and two gameplay fixes — and it
+is the update that proves why the sweep is not a formality. Measured by diffing
+the two extractions:
+
+| Changed in v1.5.0 | | In the overlay? |
+|---|---|---|
+| `autoloads/globals.gd` | `game_version` `"v1.0.7"` -> `"v1.5.0"`, one line | **yes** |
+| `scripts/scenes/game/game.gd` | new **Arcade** branch in `generate_session_playlist()` | **yes** |
+| `scenes/bootstrap/scripts/bootstrap.gd` | `GameManager.arcade_game = false` | **yes** |
+| `scenes/lobby/scripts/lobby_scene.gd` | hides the playlist button in Arcade | **yes** |
+| `minigames/intermission_new/components/intermission_briefing_screen.gd` | `anim_env.play("set env to intermission screen instant")` — **the "flashbang" fix** | **yes** |
+| `minigames/train_race/scripts/train_race.gd` + `train_race.tscn` | `SafetyKillbox` Area3D — **the Tunnel Hazard clip-out fix** | **yes** |
+| `autoloads/game_manager.gd` | `var arcade_game: bool` | no |
+| `modules/.../lobby_handler.gd` | hides the playlist button in Arcade | no |
+| `minigames/knife_at_the_office/.../knife_at_the_office_player.gd` | `min(delayed_blend, 1.0)` — the blend-tree "uncanny visuals" fix | no |
+| `intermission_new.tscn`, `knife_at_the_office_player.tscn`, `manufacture_gun_player.tscn`, `nook.tscn`, `main_menu.tscn` | scenes for the above | no |
+| 20 localization files | `.translation` x17, the `.csv`, `.csv.import`, one `.md5` | no |
+| `.godot/uid_cache.bin`, `filesystem_cache10` | engine caches | no |
+| `Machine Party.x86_64` | **CHANGED** — Godot 4.5.1 → 4.5.2 | n/a |
+
+368 `.gd` and 140 `.tscn` before and after, **no files added or removed** — the
+Arcade mode ships entirely inside existing files, so the "watch for new
+minigames" check in step 5 came up empty. The `.pck` grew only 2,448 bytes.
+
+The sweep put **7 of the 50 overlay files** in the re-derive column, 42 as
+byte-identical upstream, and 1 (`mod_player_name_list.gd`) as mod-added. **Two
+of those seven carried an upstream bug fix** — the flashbang fix and the Tunnel
+Hazard killbox — so carrying the overlay forward wholesale would have silently
+reverted both, in exactly the way step 5 warns about. That is the argument for
+the sweep in one sentence: it is not a shortcut, it is what tells you *which*
+files you cannot afford to skip.
+
+**Verify that claim yourself before trusting it on the next update** - do not
+assume a small patch. The check is cheap:
+
+```bash
+python3 - <<'EOF'
+import os, filecmp
+for root, _, files in os.walk("mod"):
+    for f in files:
+        rel = os.path.relpath(os.path.join(root, f), "mod")
+        a, b = os.path.join("project_old", rel), os.path.join("project", rel)
+        if not os.path.exists(a):
+            print("added   ", rel)
+        elif not filecmp.cmp(a, b, shallow=False):
+            print("CHANGED ", rel, "<- re-derive this one")
+EOF
+```
+
+| | |
+|---|---|
+| v1.0.7 pck | `01e9d9140a01745dc4236c50c9837bcd`, 635,331,268 bytes |
+| v1.5.0 pck | `f5912732bfa2cc5cba4340270fd76147`, 635,333,716 bytes |
+
+A clean unmodified v1.5.0 copy is kept at `testgame_new/`; the v1.0.7 decompile
+is at `project_old/` / `extracted_old/`, and the v1.0.7 overlay at `mod_v107/`.
+
+**One thing to know about the re-derivation itself.** Applying the old mod delta
+to the new source with `patch` works for most files — five of the six scripts
+came out with a **byte-identical mod delta** — but `game.gd` applied its filter
+hunk **with fuzz 3** and silently landed it in the *wrong branch*, inside the new
+Arcade block, producing a bare `continue` outside any loop. That is a Parse
+Error, i.e. pitfall 16: invisible at boot, and a black screen with the music
+still looping when the minigame loads. **`patch` reporting "succeeded with fuzz"
+is a request to go and read the result, not a pass.** The check that catches it
+cheaply is to diff the deltas against each other:
+
+```bash
+diff <(diff project_old/$f mod_v107/$f) <(diff project/$f mod/$f)
+```
+
+Empty means the mod change carried over exactly; anything else is either an
+upstream restructure you must account for, or a misapplied hunk.
+
+---

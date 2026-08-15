@@ -34,6 +34,7 @@ enum JumbotronScreen{
 @export var segments_to_remove: int = 4
 @export var max_segments_to_remove: int = 9
 @export var carving_duration: int = 15
+@export var local_extra_carving_duration: int = 5
 
 @export_category("Local Nodes")
 @export var local_root_node: Node3D
@@ -123,8 +124,10 @@ func _ready() -> void :
 
 	if GameManager.local_game:
 		await get_tree().create_timer(1.0).timeout
+		carving_duration += local_extra_carving_duration
 		local_root_node.visible = true
 		local_handler.canvas_layer.visible = true
+		local_handler.local_after_post_processing_canvas.visible = true
 		minigame_ready.emit(1)
 
 func initialize(_round_number: int, _total_rounds: int, _scores: Dictionary = {}):
@@ -152,6 +155,9 @@ func _process(delta: float) -> void :
 		return
 
 	if active_players.size() == players.size():
+		return
+
+	if GameManager.local_game:
 		return
 
 	var input_sum = Vector2.ZERO
@@ -323,6 +329,9 @@ func spawn_players():
 		player_scores[player_presence.network_id] = player_count
 		players_alive.append(player_presence.network_id)
 
+		if GameManager.local_game:
+			player_character.setup_local_visuals(counter)
+
 		counter += 1
 
 	if GameManager.local_game:
@@ -359,7 +368,9 @@ func check_game_end():
 
 	if active_players.size() > 1:
 		segments_to_remove = min(segments_to_remove + 1, max_segments_to_remove)
-		carving_duration = max(carving_duration - 1, 5)
+
+		var next_round_duration = carving_duration - 1
+		carving_duration = max(next_round_duration, 5)
 		state_machine.transition_to_rpc(&"RoundInstruction")
 
 		if segments_to_remove == max_segments_to_remove:
@@ -479,6 +490,10 @@ func _on_all_brief_ready():
 
 func _on_player_eliminated(network_id: int):
 
+	if GameManager.local_game:
+		if players.has(network_id):
+			local_handler.hide_player_tag(players.get(network_id))
+
 	if active_players.has(network_id):
 		active_players[network_id].eliminate_rpc.rpc()
 
@@ -499,6 +514,13 @@ func _on_round_timer_tick():
 	update_round_timers_rpc.rpc(round_time_remaining)
 
 func _on_player_submitted_solution(network_id, solution):
+	print("_on_player_submitted_solution %s" % network_id)
+
+	if GameManager.local_game:
+		var player = players.get(network_id, null)
+		if player and local_handler.keyboard_player:
+			if local_handler.keyboard_player == player:
+				local_handler.fake_cursor.visible = false
 
 	if not can_submit:
 		return

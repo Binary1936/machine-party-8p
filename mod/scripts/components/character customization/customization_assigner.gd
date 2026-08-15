@@ -42,6 +42,13 @@ func _ready() -> void :
 	assign_glasses(Globals.active_cosmetic_glasses)
 	assign_suit_color(Globals.active_cosmetic_suit_color)
 
+func set_visibility_layer(_layer: int):
+
+	for hat_parent in bone_attachment_hat.get_children():
+		for hat_mesh in hat_parent.get_children():
+			if hat_mesh is MeshInstance3D:
+				hat_mesh.layers = _layer
+
 func get_character_material():
 
 	if not character_material:

@@ -3,7 +3,7 @@ Machine Party - 8 Player Mod
 
 Raises the online player cap from 4 to 8.
 
-Built for Machine Party v1.5.0. Works on Windows, macOS and Linux - it patches
+Built for Machine Party v2.1.2. Works on Windows, macOS and Linux - it patches
 whichever copy of the game you already own.
 
 
@@ -41,8 +41,8 @@ DID IT WORK?
 ------------
 Launch the game and look at the version in the corner of the main menu:
 
-  v1.5.0-8P-v1.2    <- mod is active
-  v1.5.0            <- still the original
+  v2.1.2-8P-v1.2    <- mod is active
+  v2.1.2            <- still the original
 
 Or check without launching:
 

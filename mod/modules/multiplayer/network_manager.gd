@@ -58,7 +58,7 @@ func _ready() -> void :
 		active_backend_type = NetworkBackendType.Steam
 		create_backend()
 
-# 8-PLAYER MOD: true when nobody in the lobby is running unmodded v1.5.0.
+# 8-PLAYER MOD: true when nobody in the lobby is running the unmodded game.
 # Every peer's self_data reaches the host through the join handshake and is
 # rebroadcast verbatim to everyone, so active_backend.connected_players holds
 # the dicts as sent - including the host's own, which both backends insert

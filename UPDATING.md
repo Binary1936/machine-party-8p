@@ -143,7 +143,7 @@ may layer their own workflow prompt on top of it (orchestration, delegation,
 review habits); the rules above and the rest of this document remain the
 binding minimum either way.
 
-The mod currently targets **v1.5.0**. Read "Working environment" before
+The mod currently targets **v2.1.2**. Read "Working environment" before
 running anything, and `SESSION-LOG.md` for what changed most recently.
 
 **If the game has just updated, replace that last line with this** — it is the
@@ -178,60 +178,80 @@ first. Do not assume a small update, and do not assume a big one.**
 |---|---|
 | Game | Machine Party, Steam AppID **4108000** |
 | Engine | Godot **4.5.2** (`.pck` format v3 — unchanged by the 4.5.1 → 4.5.2 bump) |
-| Mod built against | game **v1.5.0** |
+| Mod built against | game **v2.1.2** |
 | Install (this machine) | `/mnt/secondary/SteamLibrary/steamapps/common/party project/Machine Party_Linux/` |
 | v1.0.6 pck MD5 | `e8442750eb55abd0185c646b694b05da` (635,329,556 bytes) |
 | v1.0.7 pck MD5 | `01e9d9140a01745dc4236c50c9837bcd` (635,331,268 bytes) |
-| v1.5.0 pck MD5 (current target) | `f5912732bfa2cc5cba4340270fd76147` (635,333,716 bytes) |
-| v1.5.0 `Machine Party.x86_64` MD5 | `9bac445821a671a8adfd782773fdbdb8` (70,179,064 bytes) — **changed** this update (engine bump); it was identical across 1.0.6→1.0.7 |
+| v1.5.0 pck MD5 | `f5912732bfa2cc5cba4340270fd76147` (635,333,716 bytes) |
+| v2.1.2 pck MD5 (current target) | `f5ea2339e870cc507a58de63e4b78908` (634,798,100 bytes — the first update to SHRINK the pck) |
+| `Machine Party.x86_64` MD5 | `9bac445821a671a8adfd782773fdbdb8` (70,179,064 bytes) — unchanged v1.5.0 → v2.1.2 (no engine bump this time); it changed at v1.5.0 (4.5.1 → 4.5.2) |
 | Scope | **Online (Steam/ENet) only.** Local couch play was explicitly out of scope. |
 
 The install folder holds `Machine Party.pck`, `Machine Party.x86_64`, and four
 `.so` files. **The mod only ever changes `Machine Party.pck`.**
 
-## The last update, and how it was verified (v1.0.7 → v1.5.0, 2026-08-05)
+## The last update, and how it was verified (v1.5.0 → v2.1.2, 2026-08-14)
 
 **This is a worked example, not a changelog entry — and the sweep at the bottom
 of it is a tool you should run, not a note about something that already
 happened.** If you are here to rebuild against a new version, this section plus
-step 4 of the update procedure is the whole method; the 2,000 lines in between
-are reference for when something breaks.
+step 4 of the update procedure is the whole method.
 
-The mod targets **v1.5.0** as of this writing. This was a **much larger patch
-than v1.0.7** — a new game mode, an engine bump and two gameplay fixes — and it
-is the update that proves why the sweep is not a formality. Measured by diffing
-the two extractions:
+The mod targets **v2.1.2** as of this writing. This was the **largest patch
+yet** — a couch/local-multiplayer feature wave plus a custom-playlist shuffle
+option — and the first to add and remove files (33 added, 2 removed, 101
+changed at the raw-pck level; the pck *shrank* by ~535 KB). The engine binary
+did **not** change (still Godot 4.5.2), the first update where it didn't need
+re-checking under pitfall 25 — but check it every time; that is what the md5
+row in "The facts" is for. Script and scene counts moved for the first time:
+368 → **371** `.gd`, 140 → **141** `.tscn` (all three new scripts and the one
+new scene are couch-mode UI — no new minigame; the marker rescan confirmed no
+new spawn containers).
 
-| Changed in v1.5.0 | | In the overlay? |
-|---|---|---|
-| `autoloads/globals.gd` | `game_version` `"v1.0.7"` -> `"v1.5.0"`, one line | **yes** |
-| `scripts/scenes/game/game.gd` | new **Arcade** branch in `generate_session_playlist()` | **yes** |
-| `scenes/bootstrap/scripts/bootstrap.gd` | `GameManager.arcade_game = false` | **yes** |
-| `scenes/lobby/scripts/lobby_scene.gd` | hides the playlist button in Arcade | **yes** |
-| `minigames/intermission_new/components/intermission_briefing_screen.gd` | `anim_env.play("set env to intermission screen instant")` — **the "flashbang" fix** | **yes** |
-| `minigames/train_race/scripts/train_race.gd` + `train_race.tscn` | `SafetyKillbox` Area3D — **the Tunnel Hazard clip-out fix** | **yes** |
-| `autoloads/game_manager.gd` | `var arcade_game: bool` | no |
-| `modules/.../lobby_handler.gd` | hides the playlist button in Arcade | no |
-| `minigames/knife_at_the_office/.../knife_at_the_office_player.gd` | `min(delayed_blend, 1.0)` — the blend-tree "uncanny visuals" fix | no |
-| `intermission_new.tscn`, `knife_at_the_office_player.tscn`, `manufacture_gun_player.tscn`, `nook.tscn`, `main_menu.tscn` | scenes for the above | no |
-| 20 localization files | `.translation` x17, the `.csv`, `.csv.import`, one `.md5` | no |
-| `.godot/uid_cache.bin`, `filesystem_cache10` | engine caches | no |
-| `Machine Party.x86_64` | **CHANGED** — Godot 4.5.1 → 4.5.2 | n/a |
+The filecmp sweep put **25 of the 56 overlay files** in the re-derive column,
+30 as byte-identical upstream, and 1 (`mod_player_name_list.gd`) as mod-added.
+What the re-derivation actually met, worth knowing next time:
 
-368 `.gd` and 140 `.tscn` before and after, **no files added or removed** — the
-Arcade mode ships entirely inside existing files, so the "watch for new
-minigames" check in step 5 came up empty. The `.pck` grew only 2,448 bytes.
+- **Most upstream changes were additive couch-mode branches** (`if
+  GameManager.local_game:`) threaded through scripts the mod owns. The mod is
+  online-only, so its deltas re-applied beside them cleanly — but two files
+  were genuinely restructured:
+- **`duck_hunt_local_handler.gd`: the mod's delta became obsolete.** Upstream
+  deleted the roster-indexed `Layouts` dictionary whose missing 5-8 keys the
+  delta guarded against, replacing it with a roster-independent two-pane
+  `setup()`. The re-derived file came out byte-identical to vanilla, so it
+  **left the overlay** (56 → 55 files). A delta can evaporate; the sweep plus
+  a per-file read is what notices.
+- **`junk_platform.gd`'s `spawn_players()` was rewritten** (positions gathered
+  into an array, shuffled only in couch mode). The online path still walks
+  markers in child order — re-derived by hand and the 2-per-deck property
+  re-verified, not assumed.
+- **Upstream rotated two of `junk_platform.tscn`'s shipped spawn markers
+  180°.** The expander clones inherit the flip (their displacement flips with
+  local X); traced arithmetically and accepted as vanilla's change.
+- **Two tool traps surfaced.** `lobby_expand.py` today repositions the shipped
+  Player2-4 preview slots (the shipped v1.2 scene had them at vanilla
+  positions — restored by hand, because `lobby_scene.gd` snapshots the baked
+  positions at load as its ≤4-player home layout, so moving them breaks rule
+  3). And `spawn_expand.py` must never run on `smoke_break.tscn` — its seats
+  are hand-authored (§14); the entry in `spawn_targets.txt` is now commented
+  out with the reason. **Run the expander only on scenes whose overlay change
+  is markers-only.**
+- One upstream/mod collision needed a judgment call: `burn_recycle.gd`'s new
+  couch hide-tag call landed inside the block the mod's per-room
+  `eliminate_players()` rewrite replaces; it was re-inserted per victim inside
+  the mod's loop, matching vanilla's semantics.
 
-The sweep put **7 of the 50 overlay files** in the re-derive column, 42 as
-byte-identical upstream, and 1 (`mod_player_name_list.gd`) as mod-added. **Two
-of those seven carried an upstream bug fix** — the flashbang fix and the Tunnel
-Hazard killbox — so carrying the overlay forward wholesale would have silently
-reverted both, in exactly the way step 5 warns about. That is the argument for
-the sweep in one sentence: it is not a shortcut, it is what tells you *which*
-files you cannot afford to skip.
+Verification: delta-of-deltas per file (residue explained line by line — the
+only content residues are the version constants, the junk marker rotation, and
+the two adaptations above), all five static checks, `-validate-scenes` in the
+real release binary (**55/55 OK, failures=0**), boot test printing
+`v2.1.2-8P-v1.2`, and the localtest series in the 2026-08-14 session-log
+entry. The quasivanilla overlay needed 2 of its 4 files re-derived and
+`qv.pck` rebuilt.
 
-**Verify that claim yourself before trusting it on the next update** - do not
-assume a small patch. The check is cheap:
+**Verify the sweep's claim yourself before trusting it on the next update** —
+do not assume a small patch, and do not assume a big one. The check is cheap:
 
 ```bash
 python3 - <<'EOF'
@@ -249,28 +269,29 @@ EOF
 
 | | |
 |---|---|
-| v1.0.7 pck | `01e9d9140a01745dc4236c50c9837bcd`, 635,331,268 bytes |
 | v1.5.0 pck | `f5912732bfa2cc5cba4340270fd76147`, 635,333,716 bytes |
+| v2.1.2 pck | `f5ea2339e870cc507a58de63e4b78908`, 634,798,100 bytes |
 
-A clean unmodified v1.5.0 copy is kept at `testgame_new/`; the v1.0.7 decompile
-is at `project_old/` / `extracted_old/`, and the v1.0.7 overlay at `mod_v107/`.
+A clean unmodified v2.1.2 copy is kept at `testgame_new/`; the v1.5.0
+decompile is at `project_old/` / `extracted_old/`. (The v1.0.7 generation was
+deleted this rebuild, as its note said to; `mod_v107/` stays as the pre-git
+baseline.)
 
-**One thing to know about the re-derivation itself.** Applying the old mod delta
-to the new source with `patch` works for most files — five of the six scripts
-came out with a **byte-identical mod delta** — but `game.gd` applied its filter
-hunk **with fuzz 3** and silently landed it in the *wrong branch*, inside the new
-Arcade block, producing a bare `continue` outside any loop. That is a Parse
-Error, i.e. pitfall 16: invisible at boot, and a black screen with the music
-still looping when the minigame loads. **`patch` reporting "succeeded with fuzz"
-is a request to go and read the result, not a pass.** The check that catches it
-cheaply is to diff the deltas against each other:
+**One thing to know about the re-derivation itself.** Applying the old mod
+delta to the new source with `patch` works for most files — but **`patch`
+reporting "succeeded with fuzz" is a request to go and read the result, not a
+pass** (a fuzzed hunk once landed in the wrong branch of `game.gd` and parsed
+into a black screen; see the archived v1.5.0 worked example in
+`SESSION-LOG-ARCHIVE.md`). The check that catches a misapplied hunk cheaply is
+to diff the deltas against each other:
 
 ```bash
-diff <(diff project_old/$f mod_v107/$f) <(diff project/$f mod/$f)
+diff <(diff project_old/$f <old mod>/$f) <(diff project/$f mod/$f)
 ```
 
 Empty means the mod change carried over exactly; anything else is either an
-upstream restructure you must account for, or a misapplied hunk.
+upstream restructure you must account for, or a misapplied hunk. Since the
+repo is in git, `<old mod>` is just `git show <last-release-tag>:mod/$f`.
 
 ---
 
@@ -323,7 +344,7 @@ upstream restructure you must account for, or a misapplied hunk.
 
 **Vanilla-compat mode works and is verified locally (2026-08-09).** A player who
 keeps the mod installed can host or join an ordinary lobby containing unmodded
-v1.5.0 clients: the mod's RPCs were renamed to sort after vanilla's (pitfall 30)
+clients on the same game version: the mod's RPCs were renamed to sort after vanilla's (pitfall 30)
 and are kept off the wire at ≤4. **A mixed lobby caps at 4** — a vanilla joiner
 that would push it past 4 is refused, because an unmodded build cannot render or
 spectate a 5-8 player session — and **plays the exact vanilla rotation, cutscene
@@ -458,8 +479,12 @@ is a bug to fix; anything *else* that differs at 1-4 is.
 
 ### Open items, in rough priority — where to pick up
 
-Nothing is broken. As of **2026-08-08** the mod builds clean against **v1.5.0**,
-installs and uninstalls byte-identically (re-verified that day on a clean copy),
+Nothing is broken. As of **2026-08-14** the mod builds clean against **v2.1.2**
+(the full rebuild is the 2026-08-14 session-log entry; the per-minigame
+verification below was done at 8 players on v1.5.0 and carries forward on the
+strength of the sweep — 30 of 55 overlay files byte-identical upstream, the
+rest re-derived and delta-checked). On v1.5.0 it installed and uninstalled
+byte-identically (re-verified 2026-08-08 on a clean copy),
 and every rotation minigame has been verified at 8 with a *positive* trace count
 rather than absence-of-errors — and, since 2026-08-08, watched at 8 by a person as
 well. **Firearm Factory and The Filter, the last two uncapped, are both fully
@@ -711,30 +736,24 @@ CLAUDE.md     auto-loaded pointer for sessions started inside this folder
 ```
 extracted/   pristine unpack of the shipped .pck (reference; regenerate on update)
 project/     full decompile via GDRE Tools — readable .gd / .tscn source
-mod/         the overlay: ONLY the 56 files that differ (see the manifest)
+mod/         the overlay: ONLY the 55 files that differ (see the manifest)
 dist/        built "Machine Party.pck" + machine-party-8p-mod.zip (release zip)
 installer/   install.py, install.sh, install.bat, README.txt - the installer
               scripts, no mod copy inside; install.py falls back to the
               repo-root mod/ when run from here. The release zip is built
               from these four files plus mod/
 testgame/    throwaway copy of the game install, for test runs
-testgame_new/ clean UNMODIFIED v1.5.0 copy - installer round-trip target
-project_old/ v1.0.7 decompile, kept as the diff baseline for step 4
-extracted_old/ v1.0.7 raw extraction, same purpose
-mod_v107/    the v1.0.7 overlay, kept for reference
+testgame_new/ clean UNMODIFIED v2.1.2 copy - installer round-trip target
+project_old/ v1.5.0 decompile, kept as the diff baseline for step 4
+extracted_old/ v1.5.0 raw extraction, same purpose
+mod_v107/    the v1.0.7 overlay, pre-git baseline (git has every later one)
 
-  The four above are ~2.8 GB of update scaffolding. On the NEXT update they
-  become stale: project_old/extracted_old must be replaced by the v1.5.0
-  decompile (that is what `mv project project_old` in step 2 does) and
-  mod_v107/ superseded. Delete them once that update lands.
-
-project_v106/, extracted_v106/, mod_v106_ref/
-  The PREVIOUS generation of that scaffolding (v1.0.6), now two updates stale
-  and safe to delete - ~2.1 GB. They were renamed aside rather than removed
-  during the v1.5.0 rebuild only because this environment's sandbox refused the
-  `rm -rf`; nothing references them. Deleting them is the intended end state:
-
-    rm -rf project_v106 extracted_v106 mod_v106_ref
+  The scaffolding above (~2.8 GB) goes stale on the NEXT update:
+  project_old/extracted_old must be replaced by the v2.1.2 decompile (that is
+  what `mv project project_old` in step 2 does — clear or rename the previous
+  generation FIRST, or the mv NESTS and every step-4 diff is meaningless).
+  The v1.0.7 generation was deleted during the 2026-08-14 v2.1.2 rebuild;
+  the v1.0.6 generation was deleted before that.
 
   Note for step 2 generally: `mv project project_old` **nests** rather than
   replaces if `project_old/` already exists, which would put the new decompile
@@ -759,7 +778,12 @@ userdata_backup/  a backup of the game's user data (saves, settings, shader
 - **`tools/spawn_expand.py`** — rewrites a scene's 4 player-spawn markers into 8.
 - **`tools/lobby_expand.py`** — clones a lobby's 4 character preview slots into
   8 and extends the handler's exported arrays. `PARENT=...` overrides the node
-  path.
+  path. **Known drift (2026-08-14): its spread step also MOVES the shipped
+  Player2-4 slots**, which the shipped scene keeps at vanilla positions —
+  `lobby_scene.gd` snapshots the baked positions at load as its ≤4-player home
+  layout (rule 3), so after any run, restore Player2-4's origins to vanilla
+  (-2, 2, 6) by hand, or fix the tool first. The v2.1.2 rebuild did the hand
+  restore; see the session-log entry.
 - **`tools/localtest.sh`** — launches N instances locally over ENet (see
   Testing). `START=1` plays a minigame, `MINIGAME=<Identifier>` pins one,
   `FLOW=1` runs the **full normal session loop** instead of the fast path, and
@@ -799,8 +823,10 @@ mod needs **no Godot export templates and no editor round-trip**.
 
 ## Overlay manifest — every file in `mod/`, and what documents it
 
-**56 files: 40 `.gd`, 16 `.tscn`** (was 53 before vanilla-compat added three
-`.gd` on 2026-08-09). Regenerate with `find mod -type f | sort`.
+**55 files: 39 `.gd`, 16 `.tscn`** (was 56 until the v2.1.2 rebuild dropped
+`duck_hunt_local_handler.gd` — upstream deleted the roster-indexed `Layouts`
+its delta guarded, so the file went byte-identical to vanilla; see the
+2026-08-14 session-log entry). Regenerate with `find mod -type f | sort`.
 On a game update, every one of these must be re-derived from the *new* source —
 see step 5 of the update procedure. The "§" column is the section of **`MINIGAMES.md`** that explains the change.
 
@@ -826,7 +852,7 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `minigames/green_pea/*` (2) | 10 | runtime 8-seat layout by RPC |
 | `minigames/knife_at_the_office/*` (3) | 17 | search-target clamp, 8 hunt icons |
 | `minigames/spine_breaker/*` (2) | 16, 18 | spawn audit + roster-scaled kill pace |
-| `minigames/duck_hunt/*` (3) | 19 | runtime markers, magazine curve, animation fit, splitscreen, **`debug_skip_brief` reveal-skip repair (`can_aim` + overlay)** |
+| `minigames/duck_hunt/*` (2) | 19 | runtime markers, magazine curve, animation fit, **`debug_skip_brief` reveal-skip repair (`can_aim` + overlay)**. The old third file (`duck_hunt_local_handler.gd`, splitscreen crash guard) went byte-identical to vanilla in v2.1.2 and left the overlay |
 | `minigames/forklift_certified/*` (2) | 20 | runtime mid-edge delivery zones + markers, crate spawn region and target, blood-decal pool refill |
 | `minigames/burn_recycle/*` (2) | 21 | **two-room layout**, balanced rooms, per-room elimination, tie-corrected scoring |
 | `minigames/manufacture_gun/*` (1) | 22 | **runtime mid-edge spawns + workstations**, wall-desk turn + slide + **wall push (`MOD_WALL_DESK_PUSH`)**, `empty_desk_array` bounds guard, `spawn_limit` raise by property write, roster-scaled ingredients at **`MOD_ITEM_SPREAD` 1.10**, **ingredient projection raised by its own measured height (RPC, all peers)** |
@@ -1046,10 +1072,11 @@ python3 tools/pck.py extract "<path to new Machine Party.pck>" extracted
 roughly half the scenes. It needs a display; there is one on this machine.
 
 Sanity check: `.gd` count should equal the `.gdc` count, and `.tscn` should
-equal the number of `.scn` under `.godot/exported/`. That has been
-**368 scripts and 140 scenes** in every version so far — v1.0.6, v1.0.7 and
-v1.5.0 alike, and v1.5.0 added a whole game mode without changing either count,
-so equal counts are a check on the *decompile*, not evidence the patch was small.
+equal the number of `.scn` under `.godot/exported/`. That was
+**368 scripts and 140 scenes** from v1.0.6 through v1.5.0 (v1.5.0 added a
+whole game mode without changing either count), and became **371 and 141** at
+v2.1.2 — so equal counts are a check on the *decompile*, not evidence about
+the patch's size in either direction.
 
 ### 4. See what upstream actually changed
 ```bash
@@ -1117,8 +1144,10 @@ re-authored, and `spawn_targets.txt` records where they were **as of v1.5.0**,
 not where they are now. Treat it as a diff baseline: rescan, compare against the
 file, and **write the corrected paths back into `tools/spawn_targets.txt`** so
 it stays accurate for the next update. A stale entry shows up as
-`!! no Marker3D children under '<path>'` from the expander. (All 14 listed paths
-still resolved on the v1.5.0 rescan, so no correction was needed that update.)
+`!! no Marker3D children under '<path>'` from the expander. (All listed paths
+resolved unchanged on both the v1.5.0 and v2.1.2 rescans; the v2.1.2 rebuild
+commented out the `smoke_break` entry — its seats are hand-authored, §14, and
+the expander destroys them — so 13 entries are active.)
 
 Watch for new minigames too — anything added since will have four spawn
 markers and needs an entry here, or it will crash at five players. Note that
@@ -1178,7 +1207,7 @@ In code — these change behaviour, so they are the ones that break things:
     put it on the wire under the `mod8p` key, so it is also what distinguishes a
     modded peer from a vanilla one and from an older mod build.
   - `game_version` → their concatenation, the display string; currently
-    `v1.5.0-8P-v1.2`. A game update bumps only the game part — **carry the mod
+    `v2.1.2-8P-v1.2`. A game update bumps only the game part — **carry the mod
     release label across unchanged** unless the mod itself is being released anew.
 - `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
 - `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
@@ -1305,7 +1334,7 @@ cd ~/Documents/Claude/machine-party-8p/testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
-`v1.5.0-8P-v1.2` (shipped as mod release v1.2, 2026-08-13).
+`v2.1.2-8P-v1.2` (game v2.1.2 rebuild of mod release v1.2, 2026-08-14).
 
 ### Eight local clients
 
@@ -1381,7 +1410,8 @@ second machine. `tools/quasivanilla/` holds a 4-file overlay, `build_qv.py` and
 the built `qv.pck`; `testgame2/` (gitignored) is the game copy carrying it. The
 overlay adds **only** the harness entry points (`-localtest`, `-startgame`,
 window titling) — `globals.gd` is deliberately not overlaid, so the build is
-**wire-identical to stock v1.5.0**: it reports `v1.5.0`, stamps no `mod8p` key,
+**wire-identical to the stock game**: it reports vanilla's own version string
+(currently `v2.1.2`), stamps no `mod8p` key,
 and every `@rpc` set is exactly as shipped. Rebuild it with
 `python3 tools/quasivanilla/build_qv.py` after any game update.
 

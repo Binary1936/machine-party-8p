@@ -202,6 +202,12 @@ func zz_mod_build_rooms_rpc() -> void :
 @export var min_countdown_time: int = 10
 @export var spark_min_ratio: float = 0.01
 
+@export_category("Local Nodes")
+@export var local_root_node: Node3D
+@export var client_side_wall_mesh: Node3D
+@export var local_handler: BurnRecycleLocalHandler
+@export var local_spark_particles_size: Vector2 = Vector2(0.2, 0.4)
+
 @export_category("Nodes")
 @export var player_parent_node: Node3D
 @export var item_parent_node: Node3D
@@ -258,6 +264,15 @@ func _ready() -> void :
 		player_item_queues_cleared.connect(_on_player_item_queues_cleared)
 		elimination_finished.connect(_on_elimination_finished)
 
+	if GameManager.local_game:
+		await get_tree().create_timer(1.0).timeout
+		local_root_node.visible = true
+		local_handler.canvas_layer.visible = true
+		local_handler.local_after_post_processing_canvas.visible = true
+		minigame_ready.emit(1)
+
+		var particle_mesh: Mesh = spark_particles.get_draw_pass_mesh(0)
+		particle_mesh.size = local_spark_particles_size
 
 func _physics_process(delta: float) -> void :
 
@@ -409,6 +424,13 @@ func spawn_players():
 		player_character.item_launched.connect(_on_item_launched.bind(mod_room))
 
 		counter += 1
+
+	if GameManager.local_game:
+		for c in client_side_wall_mesh.get_children():
+			if c is MeshInstance3D:
+				c.layers = 0
+		local_handler.set_players(players.values())
+		local_handler.show_all_tags()
 
 func start_round_timer():
 
@@ -566,6 +588,9 @@ func eliminate_players():
 
 		for victim in mod_victims:
 			var victim_id: int = victim.player_presence.network_id
+			if GameManager.local_game:
+				if players.has(victim_id):
+					local_handler.hide_player_tag(players.get(victim_id))
 			if active_players.has(victim_id):
 				active_players[victim_id].set_eliminated_rpc.rpc()
 				remove_active_player_rpc.rpc(victim_id)

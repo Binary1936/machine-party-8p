@@ -54,14 +54,18 @@ var games_played_count: int = 0
 var total_games_count: int = 0
 
 var capture_input: bool = false
+var is_viewing_final_credits: bool = false
 
 
 var can_check_for_connect_requests = false
+
+signal game_session_ended()
 
 func _ready() -> void :
 
 	GameManager.can_input_switch = false
 	GameManager.local_game = true
+	GameManager.in_game = true
 
 	setup_scores()
 
@@ -86,6 +90,13 @@ func _ready() -> void :
 
 	state_machine.transition_to(&"SessionIntro")
 
+func _exit_tree() -> void :
+
+	MultiplayerInput.reload_defaults()
+	DebugTools.register_actions()
+
+	GameManager.can_input_switch = true
+
 func setup_scores():
 
 	for key in PlayerManager.player_presences.keys():
@@ -103,11 +114,27 @@ func generate_session_playlist():
 			for mlr in Globals.default_playlist:
 				Globals.session_playlist.append(mlr)
 
-		for game in Globals.session_playlist:
-			if not Globals.CustomMinigamesWhitelist.has(game.game_identifier):
-				continue
-			minigames_shuffled.append(game.game_identifier)
-			session_minigame_rounds[game.game_identifier] = max(game.total_rounds, 1)
+		if GameManager.arcade_game:
+
+			var arcade_games_count: int = 10
+			var all_allowed_minigame_identifiers = Globals.CustomMinigamesWhitelist.duplicate(true)
+			all_allowed_minigame_identifiers.shuffle()
+
+			for i in arcade_games_count:
+				var identifier = all_allowed_minigame_identifiers[i]
+				minigames_shuffled.append(identifier)
+				session_minigame_rounds[identifier] = randi_range(1, 2)
+
+		else:
+
+			for game in Globals.session_playlist:
+				if not Globals.CustomMinigamesWhitelist.has(game.game_identifier):
+					continue
+				minigames_shuffled.append(game.game_identifier)
+				session_minigame_rounds[game.game_identifier] = max(game.total_rounds, 1)
+
+			if GameManager.custom_shuffled:
+				minigames_shuffled.shuffle()
 
 	else:
 
@@ -140,27 +167,6 @@ func generate_session_playlist():
 		print("Generating session playlist with: ", Globals.MinigameIdentifier.keys()[game])
 
 	session_minigame_list = minigames_shuffled
-
-
-	session_minigame_list = [
-		Globals.MinigameIdentifier.TrainRace, 
-		Globals.MinigameIdentifier.DvdRoomba, 
-		Globals.MinigameIdentifier.ExplodingCollarRace, 
-		Globals.MinigameIdentifier.EscalatorPit, 
-		Globals.MinigameIdentifier.DiscoDodge, 
-
-		Globals.MinigameIdentifier.SmokeBreak, 
-		Globals.MinigameIdentifier.GreenPea, 
-		Globals.MinigameIdentifier.ForkliftCertified, 
-
-		Globals.MinigameIdentifier.ChiselGauntlet, 
-		Globals.MinigameIdentifier.DuckHunt, 
-	]
-
-	for mgi in session_minigame_list:
-		session_minigame_rounds[mgi] = 1
-
-
 
 func hide_all_screens():
 
@@ -292,10 +298,8 @@ func _on_minigame_pick_finished(minigame_index: int):
 	var player_count: int = PlayerManager.player_presences.size()
 
 	if not GameManager.custom_game:
-		if Globals.MinigameRoundsByPlayerCount.has(current_minigame_identifier):
-			total_rounds = Globals.MinigameRoundsByPlayerCount[current_minigame_identifier].get(
-				player_count, default_total_rounds
-			)
+		if current_minigame_identifier == Globals.MinigameIdentifier.DuckHunt:
+			total_rounds = 1
 
 	load_minigame(
 		session_next_minigame_identifier, 

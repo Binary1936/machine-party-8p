@@ -67,6 +67,7 @@ func _ready() -> void :
 
 	GameManager.local_game = false
 	GameManager.in_lobby = true
+	GameManager.custom_shuffled = Globals.settings.get("custom_shuffled", false)
 	Globals.all_minigames_finished = false
 	GameManager.game_in_progress = false
 

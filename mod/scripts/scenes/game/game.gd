@@ -306,6 +306,9 @@ func generate_session_playlist():
 				minigames_shuffled.append(game.game_identifier)
 				session_minigame_rounds[game.game_identifier] = max(game.total_rounds, 1)
 
+			if GameManager.custom_shuffled:
+				minigames_shuffled.shuffle()
+
 	else:
 
 		Globals.session_playlist.clear()
