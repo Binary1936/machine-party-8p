@@ -16,7 +16,118 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-14 (latest) — first real 8P-modded Steam session on v2.1.2: black-screen incident, issues #10 and #11
+### 2026-08-15 (latest) — Duck Hunt's silent rifle and the black-screen wedge share one cause: a peer dropping DURING a minigame load leaves vanilla's load gate stuck (issues #10, #12). Reproduced at 4 players, fixed at every roster size
+
+**Task:** playtest and bugfix last night's Duck Hunt issues, starting with an
+8-player run to see whether the sound bug (#12) presents. It did not — and
+the diagnosis that followed put #12 and #10 on the same root cause, which
+turned out to be vanilla code and reproducible at four players.
+
+**Run 1, unfixed build, 8 clients, `START=1 MINIGAME=DuckHunt`, maintainer at
+the hunter window (P2 — five `ACH_11` headshots):** every sound audible, all
+eight loaded (`[DUCK8] spawned ducks=7 hunters=1` on every peer), no client
+died. So the shot RPC works at the full roster over ENet — "roster-dependent
+by construction" is off the table, and one 8-player Duck Hunt load was clean
+against #11.
+
+**Diagnosis, from the code and the preserved session log:**
+
+- The hunter's fire speaker (and every rifle/duck speaker) sits on the
+  `MINIGAME_SFX` bus. Every minigame zeroes that bus at its end
+  (`set_minigame_sfx_linear_volume_rpc.rpc(0.0)`); the **only** place it is
+  restored is `Minigame.initialize()` (`minigame.gd:67`, `.rpc(1.0)`). A pinned
+  local Duck Hunt is the first minigame, so the bus starts at its default and
+  the harness cannot show the silence; in the real session Duck Hunt was game 5,
+  after Escalator Pit had zeroed it.
+- `initialize()` is reached only via `all_players_loaded()`, which vanilla
+  `Minigame.player_loaded()` calls when `players_loaded.size() ==
+  player_presences.size()` — evaluated **only when a `player_loaded` arrives**.
+  (`game.gd`'s own `minigame_players_loaded == network_players_loaded` gate is
+  dead code: `network_players_loaded` is never populated.)
+- One peer crashed *during* Duck Hunt's load (#11). Its presence was removed by
+  `_on_peer_disconnected` after the last live peer had reported in, so the
+  numbers matched but nobody re-asked. Duck Hunt's vanilla
+  `player_disconnected()` then ran `check_game_end()` 1 s later, which found no
+  ducks and no hunter and started the round itself via `Reset` →
+  `spawn_players()` — bypassing `initialize()`.
+- **The tell is in the maintainer's client log:** before every other minigame
+  the Game state machine goes `MinigamePick → MinigameStart → MinigamePlaying`
+  (`_on_minigame_ready` fires both that transition and `initialize()`); before
+  Duck Hunt it goes `MinigameEnd → MinigamePick` and then straight to
+  `duck_hunt: Empty → Reset → Round`. `MinigamePlaying.enter()` is the only
+  place `minigame_finished` gets a listener, so when the last turn reached
+  `Finished` nobody moved it to `MinigameEnd` — the black screen on every peer,
+  host included. The `Finished → Finished` cycling and `k_EResultNoConnection`
+  spam are the ghost peer's noise on top, not the wedge.
+- **The "ghost" was vanilla's designed wait:** mid-session joins are processed
+  only while the briefing screen is up (`can_check_for_connect_requests` is set
+  by `intermission_briefing_screen.gd`), so a rejoiner sits on the lobby scene
+  eating the host's broadcasts (the 814 node-not-found lines) until the next
+  briefing — which the wedge never reached.
+- `check_game_end`, `player_disconnected`, `_on_peer_disconnected` are
+  byte-identical to vanilla and `minigame.gd` is not in the overlay: **vanilla
+  at any roster size**; a bigger roster only makes a drop-during-load likelier.
+
+**Reproduction (run 3, unfixed build, 4 clients):** P4 `SIGKILL`ed the instant
+the host printed `[ROUNDS8] load minigame=DuckHunt` (recipe: Testing,
+"Simulating a peer crash during a minigame load"). Host: `[BRIEF8] players=3`
+(disconnect processed ~15 s later, after the other two had loaded), **no
+`Game: MinigameStart`/`MinigamePlaying`**, `duck_hunt: Empty → Reset → Round`;
+the maintainer played three hunter turns to `Play → Finished`; **`MinigameEnd`
+0 occurrences on any peer; black screen on all three windows, seen.** Same
+signature as the session log, at four players, on the vanilla path.
+
+**Fix (maintainer's decision: all roster sizes, the §19 precedent), no new
+`@rpc`, both files already in the overlay:**
+
+- `game.gd::_on_peer_disconnected` (host, before `minigame.player_disconnected`
+  is called): while the current minigame has not started
+  (`not minigame.is_all_player_loaded` — every one of the 20 minigame scripts
+  sets it in `all_players_loaded()` before emitting `minigame_ready`, verified),
+  erase the dead peer from `minigame.players_loaded` and, if
+  `players_loaded.size() >= player_presences.size()`, call
+  `all_players_loaded()`. Guarded with `is_instance_valid(minigame)` because
+  `load_minigame()` holds the previous, `queue_free`d instance for a second.
+  Ordering matters: run before Duck Hunt's handler so `spawn_players()`'s 1 s
+  timer is created ahead of `check_game_end()`'s.
+- `duck_hunt.gd::player_disconnected`: `if not is_all_player_loaded: return`
+  after `remove_player_rpc.rpc()` (the dead peer must still leave
+  `possible_hunters`) — before the first spawn there is nothing to end, and
+  the `Reset` side door would race the real start.
+
+**Verification:**
+
+| Run | Build | Scenario | Result |
+|---|---|---|---|
+| A | fixed | 4p, P4 killed at load, played to the end | `[BRIEF8] players=3` then `SessionIntro → MinigameStart → MinigamePlaying`, `duck_hunt: Empty → Round` (no `Reset`), three turns, `Play → Finished → Game: MinigamePlaying → MinigameEnd`, `[SCORE8] players=3` — on the host **and both clients**; score screen seen |
+| B | fixed | 8p, P8 killed at load | same healthy path on host and clients; `[DUCK8] markers roster=7 ducks_needed=6 markers=6 added=3` — the roster-scaled logic followed the shrunken roster |
+| C8, C4 | fixed | no kill | identical to run 1 / the pre-fix 4p control: `Empty → Round`, `ducks=7/3`, `magazine=18/10`, `bolt_speed=1.281/1.000`, spawned counts exact |
+| errors | all | filtered per Testing | only `Parameter "node" is null` (documented, both rosters) plus, in run A after the score screen, the documented teardown churn and the vanilla `update_playlist_state_rpc` arity line |
+| static | — | five checks + preflight | all pass; RPC count still 8; boot prints `v2.1.2-8P-v1.2` |
+
+**What this does NOT claim:** the audio half is established from the code
+path (the bus is restored by `initialize()` alone) and the log ordering, not by
+ear in a multi-minigame local run — a pinned run cannot go silent. Doing that
+needs an unpinned rotation (Duck Hunt 5th) with the kill at its load and a
+listener; offered, not done. **#11 (the crash itself) stays open** — cause
+unknown, one clean 8-player load. The kill-at-load helper is a scratch script;
+adding it to `tools/` awaits the maintainer's go (no unrequested code).
+
+**Two harness lessons.** `pkill -f "-localtest 4 join"` matched the *tool
+shell* that contained the pattern and killed the launcher, not the client —
+use `pgrep -f "x86_64 -localtest [4] join"` (the `[4]` cannot match its own
+command line) and `kill -9` the pid. And the `[DUCK8] spawned` audit fires at a
+fixed 6 s after `_ready`, so under a late start it prints `ducks=0 hunters=0`
+plus its mismatch warning — that is a **tell of a late start**, not a spawn
+bug (pitfall 32).
+
+Docs: pitfall 32 appended; §19 gains the third vanilla fix; manifest rows for
+`game.gd` and `duck_hunt/*`; Testing gains the kill-at-load recipe; "Current
+status" updated. Issues #10 and #12 commented with the diagnosis; #11 left
+open. Archived logs: scratchpad `run1-logs/`, `run3-logs/`, `runA-logs/`,
+`runB-logs/`, `runC8-logs/`, `runC4-logs/`.
+
+### 2026-08-14 — first real 8P-modded Steam session on v2.1.2: black-screen incident, issues #10 and #11
 
 The maintainer played a real 6-player Steam session (5-game custom playlist)
 the same evening as the rebuild — the first real multi-human session on the

@@ -24,7 +24,7 @@ are recorded there).
 | **"Overlay manifest"** | every file in `mod/`, mapped to the `MINIGAMES.md` section explaining it |
 | **"Update procedure"** | the eight steps for rebuilding against a new game version |
 | **"Testing — the validation recipe"** | the 8-client harness and the traps in it. Cited everywhere as *Testing* |
-| **`PITFALLS.md`** | the numbered failure modes (31 so far). Cited from code as *pitfall N* — stable, do not renumber |
+| **`PITFALLS.md`** | the numbered failure modes (32 so far). Cited from code as *pitfall N* — stable, do not renumber |
 | **"A rule to preserve"** | 1-4 stays vanilla, and the two accepted breaches |
 | **"Documentation policy"** | how this doc set stays lean — read before editing any of these files |
 | **"Version control"** | the GitHub repo, commit discipline, and the release flow |
@@ -336,6 +336,10 @@ repo is in git, `<old mod>` is just `git show <last-release-tag>:mod/$f`.
 - Duck Hunt (`DuckHunt`) - **uncapped 2026-08-02**. 7 duck spawn markers built
   at runtime above four players, magazine curve extended to 7 ducks, round
   pacing set so 8 players run 8 hunter turns not 16. See `MINIGAMES.md` §19.
+  **2026-08-15:** the vanilla disconnect-during-load wedge behind issues #10
+  and #12 (silent rifle, black screen at the end) is fixed at every roster size
+  — pitfall 32, §19, and the session-log entry. Issue #11 (the crash that
+  triggered it) remains open, cause unknown.
 - Forklift Certified (`ForkliftCertified`) - **uncapped 2026-08-04**. Four more
   delivery zones built at runtime at the yard's mid-edges (RPC, every peer),
   four more spawn markers (host-only), the crate sampler given the free centre
@@ -836,7 +840,7 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `modules/multiplayer/network_manager.gd` | 1 | `MAX_PLAYERS` 4→8; `-localtest` backend; `mod_all_peers_modded()` |
 | `modules/multiplayer/backends/steam_backend.gd`, `backends/enet_backend.gd` | — | **vanilla-compat handshake**: wire version + `mod8p` capability key, vanilla-peer accept, over-cap refusal and spectator demotion. See the 2026-08-09 session-log entry |
 | `scenes/local_game/script/local_game.gd` | — | couch mode's own playlist generator — the **unconditional** cutscene filter (no vanilla peers by definition); see "The first sanctioned exception" |
-| `scripts/scenes/game/game.gd` | 3, 19 | playlist filtering + fallback, **Arcade-branch cap filter + clamp (v1.5.0)**, **all-modded-only cutscene filter**, `-minigame` pin, round-count resolution, `[ROUNDS8] load` |
+| `scripts/scenes/game/game.gd` | 3, 19 | playlist filtering + fallback, **Arcade-branch cap filter + clamp (v1.5.0)**, **all-modded-only cutscene filter**, `-minigame` pin, round-count resolution, `[ROUNDS8] load`, **load-gate re-check on peer disconnect (pitfall 32, 2026-08-15)** |
 | `scripts/scenes/game/states/minigame_playing_state.gd` | 19 | the **replay gate** — second round-count site |
 | `scripts/components/character customization/customization_assigner.gd` | 4 | suit tinting |
 | `scenes/bootstrap/scripts/bootstrap.gd` | 8 | `-localtest`, `-fullflow` |
@@ -852,7 +856,7 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `minigames/green_pea/*` (2) | 10 | runtime 8-seat layout by RPC |
 | `minigames/knife_at_the_office/*` (3) | 17 | search-target clamp, 8 hunt icons |
 | `minigames/spine_breaker/*` (2) | 16, 18 | spawn audit + roster-scaled kill pace |
-| `minigames/duck_hunt/*` (2) | 19 | runtime markers, magazine curve, animation fit, **`debug_skip_brief` reveal-skip repair (`can_aim` + overlay)**. The old third file (`duck_hunt_local_handler.gd`, splitscreen crash guard) went byte-identical to vanilla in v2.1.2 and left the overlay |
+| `minigames/duck_hunt/*` (2) | 19 | runtime markers, magazine curve, animation fit, **`debug_skip_brief` reveal-skip repair (`can_aim` + overlay)**, **pre-start disconnect guard (pitfall 32)**. The old third file (`duck_hunt_local_handler.gd`, splitscreen crash guard) went byte-identical to vanilla in v2.1.2 and left the overlay |
 | `minigames/forklift_certified/*` (2) | 20 | runtime mid-edge delivery zones + markers, crate spawn region and target, blood-decal pool refill |
 | `minigames/burn_recycle/*` (2) | 21 | **two-room layout**, balanced rooms, per-room elimination, tie-corrected scoring |
 | `minigames/manufacture_gun/*` (1) | 22 | **runtime mid-edge spawns + workstations**, wall-desk turn + slide + **wall push (`MOD_WALL_DESK_PUSH`)**, `empty_desk_array` bounds guard, `spawn_limit` raise by property write, roster-scaled ingredients at **`MOD_ITEM_SPREAD` 1.10**, **ingredient projection raised by its own measured height (RPC, all peers)** |
@@ -1669,6 +1673,31 @@ This is the third time `START=1` has silently distorted a result (the round-coun
 constant and the role overlay being the first two), and the most severe — the
 other two gave wrong numbers, this one gives a wrong *verdict*.
 
+### Simulating a peer crash during a minigame load
+
+The trigger for pitfall 32 — and the only way to exercise the disconnect
+handlers on the load path — is to kill one client the instant the host starts
+loading a minigame, so its `player_loaded` never arrives and ENet notices only
+by timeout (~15 s locally), after the others have loaded. Arm the killer
+**before** launching; it waits for the host's load line:
+
+```bash
+( until grep -q "load minigame=DuckHunt" /tmp/mp-localtest/p1.log 2>/dev/null; do sleep 0.05; done
+  kill -9 $(pgrep -f "x86_64 -localtest [4] join") ) &
+START=1 MINIGAME=DuckHunt tools/localtest.sh 4 <game-dir> 900
+```
+
+**Do not write `pkill -f "-localtest 4 join"`** — the pattern is also on the
+command line of the shell running it, so it kills the launcher instead of the
+client (cost one run on 2026-08-15); the `[4]` regex cannot match its own text.
+Kill signature: the slot's log stops at the briefing (`[BRIEF8]`), the host's
+`[BRIEF8] players=` drops by one ~15 s later. Healthy signature after that:
+`Game: SessionIntro → MinigameStart → MinigamePlaying` then the minigame's
+`Empty → Round`; the broken one is `Empty → Reset` with no Game transition
+(pitfall 32). Killing a joiner leaves 3 (or 7) live peers, so expect
+roster-scaled traces to report the smaller roster. The 2026-08-15 session-log
+entry has the measured runs.
+
 ### What the local test still is not
 
 Unattended instances idle, and for some minigames idling is not a neutral
@@ -1720,7 +1749,7 @@ without it a scripted run dies on `EOFError` before touching anything.
 
 ## Pitfalls
 
-Moved to **`PITFALLS.md`** on 2026-08-14 — the numbered failure modes (1-31 so
+Moved to **`PITFALLS.md`** on 2026-08-14 — the numbered failure modes (1-32 so
 far) and the rules that avoid them, every one of which cost real time the
 first go. Cited from code and docs as *pitfall N*; the numbering is stable —
 never renumber. **Read it before changing code or running the tools.** New

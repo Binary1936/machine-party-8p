@@ -677,6 +677,16 @@ func player_disconnected(_network_id: int):
 
 	remove_player_rpc.rpc(_network_id)
 
+	# 8P MOD: before the game has started (is_all_player_loaded is set by
+	# all_players_loaded(), which initialize() follows) there is nothing to
+	# end. Vanilla's check_game_end() here would see no ducks and no hunter
+	# and start the game itself through Reset - bypassing initialize(), which
+	# is what left MINIGAME_SFX at zero and the session on a black screen at
+	# the end (issues #10, #12). game.gd re-runs the load gate on disconnect
+	# now, so it owns starting the game; a Reset here would race it.
+	if not is_all_player_loaded:
+		return
+
 	if multiplayer.is_server():
 		await get_tree().create_timer(1.0).timeout
 		check_game_end()

@@ -887,6 +887,35 @@ with the fix Duck Hunt cannot complete unattended — idle instances never shoot
 or finish. The full mechanism and the lesson live in `UPDATING.md`, Testing,
 under "`START=1` HANGS Duck Hunt permanently"; this is a pointer, not a copy.
 
+**Third vanilla bug fixed — 2026-08-15: a peer dropping during the load.**
+Pitfall 32 owns the mechanism (vanilla's load gate is re-evaluated only on
+arrivals; Duck Hunt's `player_disconnected()` → `check_game_end()` then starts
+the round via `Reset` with `initialize()` skipped — silent `MINIGAME_SFX` bus
+and a black screen at the end, issues #10 and #12). Two hunks, **applied at
+every roster size** by the maintainer's decision, same precedent as the two
+fixes above:
+
+- `game.gd::_on_peer_disconnected` (host): while the current minigame has not
+  started (`is_all_player_loaded` false — set by every minigame's
+  `all_players_loaded()` before it emits `minigame_ready`), erase the dead peer
+  from `minigame.players_loaded` and re-run the gate with `>=`, calling
+  `all_players_loaded()` when it passes. Placed **before**
+  `minigame.player_disconnected()` so `spawn_players()`'s 1 s timer is created
+  ahead of `check_game_end()`'s; `is_instance_valid(minigame)` because
+  `load_minigame()` holds the `queue_free`d previous instance for a second.
+  Generic — it repairs the gate for all 20 minigames, not only this one.
+- `duck_hunt.gd::player_disconnected`: `if not is_all_player_loaded: return`
+  after `remove_player_rpc.rpc()` (the dead peer still leaves
+  `possible_hunters`). Before the first spawn there is nothing to end, and the
+  `Reset` side door would otherwise race the real start into a double spawn.
+
+Verified 2026-08-15 with the kill-at-load recipe (Testing): at 4 the maintainer
+played a P4-killed run to `Play → Finished → Game: MinigamePlaying →
+MinigameEnd` and the score screen on all three peers; at 8 the same kill gave
+`SessionIntro → MinigameStart → MinigamePlaying`, `Empty → Round` and
+`markers roster=7 ducks_needed=6 added=3` on host and clients; no-kill controls
+at 4 and 8 unchanged. Evidence in the 2026-08-15 session-log entry.
+
 ### 20. Forklift Certified — `forklift_certified.gd`, `crate_manager.gd`
 
 Uncapped 2026-08-04. **Three separate blockers, only one of which was known.**

@@ -742,6 +742,23 @@ func _on_peer_disconnected(_network_id: int):
 		)
 		intermission_manager.screen_briefing.update_player_data_rpc.rpc(total_score_by_network_id)
 
+	# 8P MOD: a peer that drops while a minigame is LOADING must not leave the
+	# load gate stuck. Minigame.player_loaded() calls all_players_loaded() only
+	# when players_loaded.size() == player_presences.size(), and only when a
+	# player_loaded arrives - so once the last live peer has reported in and a
+	# dead peer's presence is then removed, nothing re-evaluates the gate and
+	# initialize() never runs: MINIGAME_SFX stays at the 0.0 the previous
+	# minigame set (no gunshot in Duck Hunt), and the Game state machine never
+	# enters MinigamePlaying, so minigame_finished has no listener and every
+	# peer black-screens at the minigame's end. Vanilla at any roster size,
+	# likelier with more peers (issues #10, #12; session-log 2026-08-15).
+	# Prune the dead peer from the loaded list and re-run the gate.
+	if multiplayer.is_server() and is_instance_valid(minigame) and not minigame.is_all_player_loaded:
+		minigame.players_loaded.erase(_network_id)
+		if PlayerManager.player_presences.size() > 0 \
+				and minigame.players_loaded.size() >= PlayerManager.player_presences.size():
+			minigame.all_players_loaded()
+
 	if minigame:
 		minigame.player_disconnected(_network_id)
 

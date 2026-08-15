@@ -336,5 +336,27 @@ recipe", and a dated *session-log entry* lives in `SESSION-LOG.md` (or
     Known false positives: `green_pea` / `smoke_break` seat meshes named
     `*_MOD3/4` — hand-authored `MeshInstance3D`s on a per-side numbering
     scheme, not expander output (§10, §14).
+32. **A peer that drops DURING a minigame load leaves vanilla's load gate
+    stuck, and Duck Hunt then starts itself through the wrong door.**
+    `Minigame.player_loaded()` fires `all_players_loaded()` → `initialize()`
+    only when `players_loaded.size() == player_presences.size()`, and only
+    when a `player_loaded` arrives; a disconnect shrinks the right-hand number
+    without re-asking. Duck Hunt's `player_disconnected()` → `check_game_end()`
+    then finds nothing spawned and transitions to `Reset`, whose state re-runs
+    `spawn_players()`. The round plays, but `initialize()` never ran: the
+    `MINIGAME_SFX` bus stays at the 0.0 the previous minigame set (no rifle,
+    no duck sounds — issue #12) and the Game state machine never enters
+    `MinigamePlaying`, whose `enter()` is the only listener for
+    `minigame_finished`, so `Finished` never becomes `MinigameEnd` and every
+    peer black-screens (issue #10). Vanilla at every roster size; fixed in the
+    mod on 2026-08-15 (§19). **The tell, in any log:** the minigame's own
+    `Empty → …` line arriving with no `Game: … to MinigameStart` /
+    `MinigamePlaying` before it, and `Empty → Reset` as the first Duck Hunt
+    transition. Under `-localtest` the `[DUCK8] spawned` audit (fixed 6 s after
+    `_ready`) prints `ducks=0 hunters=0` with its mismatch warning — a late
+    start, not a spawn failure. Read the **Game-level** state machine before
+    trusting a minigame-level trace: every Duck Hunt trace was green in a
+    session that had never left `MinigamePick`. Reproduce with the kill-at-load
+    recipe in Testing.
 
 ---
