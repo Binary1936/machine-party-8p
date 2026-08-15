@@ -16,7 +16,39 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-15 (latest) — Duck Hunt's silent rifle and the black-screen wedge share one cause: a peer dropping DURING a minigame load leaves vanilla's load gate stuck (issues #10, #12). Reproduced at 4 players, fixed at every roster size
+### 2026-08-15 (latest) — Shipped as mod release v1.3: the disconnect-during-load fix (issues #10, #12)
+
+**What ships:** the single fix from the entry below — `game.gd` re-runs the
+minigame load gate when a peer drops during a load, and `duck_hunt.gd` no
+longer starts a round through `Reset` before the game has begun (pitfall 32,
+§19). `MOD_SUFFIX` → `8P-v1.3`, so v1.2 and v1.3 peers refuse each other
+cleanly per pitfall 7; `MOD_NETWORK_GAME_VERSION` stays `v2.1.2` (no game
+update); display `v2.1.2-8P-v1.3` at every step-6 site (`version_strings.py`
+plus the prose sites: `README.md`, `CLAUDE.md`, `UPDATING.md` "Current
+status", step 6 and the boot-test line, `installer/README.txt`).
+
+Release integrity, all measured this day on the v1.3 strings:
+
+| | |
+|---|---|
+| Static checks + `%` pre-flight | all five pass |
+| Reproducible build | `dist` and deployed `testgame` pck both md5 `b3b6621803cad196c59ea5da949877ad`; engine `9bac4458…` |
+| Boot | `Running version: v2.1.2-8P-v1.3`, zero parse/script errors |
+| Handshake at 8 | all 8 boot `v2.1.2-8P-v1.3`, zero `VersionMismatch`/refusals, `[SEATS]` to `connected=8` |
+| Regression on the release build | P8 `SIGKILL`ed at Duck Hunt's load: `[BRIEF8] players=7 → SessionIntro → MinigameStart → MinigamePlaying → Empty → Round`, `markers roster=7 added=3`, host and clients; a no-kill 8p run took the normal path; only `Parameter "node" is null` |
+| Installer round-trip (clean v2.1.2 copy, `f5ea2339…`) | `NOT PATCHED` → install (**4206 files, 55 mod, 92 replaced**) → `PATCHED - all 55 mod files present` + `v2.1.2-8P-v1.3` → re-install **refused**, pck md5 unchanged → restored from the staged pristine copy, `f5ea2339…` again; no `.vanilla` created |
+| Zip | rebuilt per step 8: **59 entries**, extracted `mod/` `diff -rq` clean, four root files `cmp`-identical; md5 **`0b2ba1f85f1092dcfb6a330ce60046ad`**, 21,304,073 bytes |
+
+Two harness lessons folded into the Testing recipe: arm the kill-at-load
+watcher **after** clearing `/tmp/mp-localtest` (a stale `p1.log` from the
+previous run fired it before any client existed and silently turned one run
+into a no-kill control), and never `pkill -f` a pattern that is also on your
+own command line.
+
+Tagged `v1.3`, `gh release create` with the zip attached; issues #10 and #12
+closed as shipped, #11 (the crash itself) stays open.
+
+### 2026-08-15 — Duck Hunt's silent rifle and the black-screen wedge share one cause: a peer dropping DURING a minigame load leaves vanilla's load gate stuck (issues #10, #12). Reproduced at 4 players, fixed at every roster size
 
 **Task:** playtest and bugfix last night's Duck Hunt issues, starting with an
 8-player run to see whether the sound bug (#12) presents. It did not — and

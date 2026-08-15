@@ -357,10 +357,11 @@ included**. The Steam backend's lobby callbacks cannot run locally, so v1.1 ship
 2026-08-13:** a real Steam mixed session confirmed both join directions
 (modded host + vanilla joiner, vanilla host + modded joiner) — open item 3a is
 closed, with the 5th-join refusal and the mixed-rotation cutscene still
-resting on the local ENet evidence. **v1.2 (2026-08-13) is the current
-release, a full release**, carrying the four fixes since v1.1 (issues #6, #7,
-#8 and the station clone-list cleanup). Full local evidence in the 2026-08-09
-session-log entry.
+resting on the local ENet evidence. **v1.3 (2026-08-15) is the current
+release** — v1.2 (2026-08-13, a full release) carried the four fixes since
+v1.1 (issues #6, #7, #8 and the station clone-list cleanup); v1.3 adds the
+disconnect-during-load fix behind issues #10 and #12 (pitfall 32). Full local
+evidence in the 2026-08-09 session-log entry.
 
 **Every minigame in the rotation has now been played at 8** - all fifteen, since
 The Filter and Firearm Factory were uncapped on 2026-08-07. The
@@ -1211,7 +1212,7 @@ In code — these change behaviour, so they are the ones that break things:
     put it on the wire under the `mod8p` key, so it is also what distinguishes a
     modded peer from a vanilla one and from an older mod build.
   - `game_version` → their concatenation, the display string; currently
-    `v2.1.2-8P-v1.2`. A game update bumps only the game part — **carry the mod
+    `v2.1.2-8P-v1.3`. A game update bumps only the game part — **carry the mod
     release label across unchanged** unless the mod itself is being released anew.
 - `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
 - `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
@@ -1338,7 +1339,7 @@ cd ~/Documents/Claude/machine-party-8p/testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
-`v2.1.2-8P-v1.2` (game v2.1.2 rebuild of mod release v1.2, 2026-08-14).
+`v2.1.2-8P-v1.3` (mod release v1.3, 2026-08-15).
 
 ### Eight local clients
 
@@ -1682,14 +1683,19 @@ by timeout (~15 s locally), after the others have loaded. Arm the killer
 **before** launching; it waits for the host's load line:
 
 ```bash
+rm -rf /tmp/mp-localtest      # FIRST: a stale p1.log from the last run fires the trigger early
 ( until grep -q "load minigame=DuckHunt" /tmp/mp-localtest/p1.log 2>/dev/null; do sleep 0.05; done
   kill -9 $(pgrep -f "x86_64 -localtest [4] join") ) &
 START=1 MINIGAME=DuckHunt tools/localtest.sh 4 <game-dir> 900
 ```
 
-**Do not write `pkill -f "-localtest 4 join"`** — the pattern is also on the
+Two traps, each cost a run on 2026-08-15. The `rm -rf` must come first:
+`localtest.sh` clears the log directory itself, but the armed watcher races
+it, and a leftover `p1.log` that already contains the load line makes it fire
+before any client exists (the run then silently becomes a no-kill control).
+And **do not write `pkill -f "-localtest 4 join"`** — the pattern is also on the
 command line of the shell running it, so it kills the launcher instead of the
-client (cost one run on 2026-08-15); the `[4]` regex cannot match its own text.
+client; the `[4]` regex cannot match its own text.
 Kill signature: the slot's log stops at the briefing (`[BRIEF8]`), the host's
 `[BRIEF8] players=` drops by one ~15 s later. Healthy signature after that:
 `Game: SessionIntro → MinigameStart → MinigamePlaying` then the minigame's
