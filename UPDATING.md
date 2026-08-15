@@ -688,8 +688,21 @@ closed.** What remains:
    Finished` at zero players, six then unable to end the round), reproduced
    pre-fix on three and verified fixed with the new quit-at-load recipe
    (Testing; pitfall 33). Two of the fifteen (chisel, disco) were safe by
-   accident and carry the guard for uniformity. Issue #11 (the crash that
-   triggered #10/#12) remains open, cause unknown.
+   accident and carry the guard for uniformity. Shipped as **v1.4**. Two
+   things it does not claim: the quit path was exercised over ENet only — on
+   Steam it rests on the host-side `disconnect_peer` call being
+   backend-independent (issue #5's testers would settle it) — and nobody has
+   watched or heard a quit-at-load session, only read its logs. Issue #11 (the
+   crash that triggered #10/#12) remains open, cause unknown.
+8. **A roster that shrinks between load and spawn can leave a scene on the
+   wrong layout for one round.** Escalator Pit (`_enter_tree`) and Smoke Break
+   (`_ready`) choose the 5-8 layout from `player_presences.size()` when the
+   scene loads, while every other roster decision happens in `spawn_players()`.
+   A peer that drops during the load of a 5-player lobby leaves those two on
+   their expanded layout with four players for that round; every other roster
+   size, and every other minigame, follows the shrunken roster. Noticed while
+   reading the handlers for item 7, unobserved, unfixed — cosmetic and rare;
+   noted so nobody mistakes it for a spawn bug.
 
 Fully closed, with per-peer measurements: Duck Hunt (markers, magazine,
 animation timing, round pacing, spawn counts), Spine Breaker (pacing), Inside
