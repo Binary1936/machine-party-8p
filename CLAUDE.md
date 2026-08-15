@@ -75,4 +75,5 @@ changes, update both.
 
 This file is the anchor for a session started *inside* the repo. The
 maintainer starts sessions one level up, where a local, untracked `CLAUDE.md`
-and kickoff prompt carry the machine-specific pointers.
+carries the machine-specific pointers and the maintainer's own workflow
+(orchestration, delegation, review habits) layered on top of these rules.
