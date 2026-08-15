@@ -126,8 +126,8 @@ protects something specific:
 
 ## Paste this to start
 
-> I maintain an 8-player mod for the Steam game Machine Party, at
-> `~/Documents/Claude/machine-party-8p`. Read `UPDATING.md` in that folder
+> I maintain an 8-player mod for the Steam game Machine Party; the repo is
+> `machine-party-8p`, cloned wherever you keep it. Read `UPDATING.md` in that folder
 > first — it documents the current state, the toolchain, every change the mod
 > makes, and how to test with 8 local clients. The failure modes already hit
 > are in `PITFALLS.md`; read it before changing anything.
@@ -712,6 +712,14 @@ Job (search economy, hunt HUD), Stable Footing, and the score/briefing screens.
 
 Facts about *this machine* that are not in the code and cost time to rediscover.
 
+**Every command in this file is run from the repo root and uses repo-relative
+paths** (`testgame`, `testgame_new`, `tools/...`); the tools resolve their own
+location, so nothing here depends on where the repo is cloned — a clone path
+with a space in it works as long as the one absolute path you ever type,
+`install.py --game-dir` (pitfall 5 wants it literal and absolute), is quoted.
+Unquoted, `tools/localtest.sh` would read the first word of such a path as the
+game dir and the rest as the duration.
+
 **Screenshots.** The desktop is **Wayland** (`XDG_SESSION_TYPE=wayland`) with
 XWayland present, so `DISPLAY=:0` is set but the X root window is **empty** -
 `scrot` and ImageMagick `import` return a uniformly black image (1 unique
@@ -739,8 +747,9 @@ seats, crates and props. Its URL and re-sync caveat are in `NOTES-LOCAL.md`
 **Default to the fast path.** Use `START=1` for playtests; only use `FLOW=1`
 when the user asks or when the session loop itself is the thing under test.
 `FLOW=1` skips nothing, so a run takes far longer. (Also stored as a user
-memory, but memory is namespaced to `~/Documents/Claude` - a chat started
-*inside* this folder will not load it.)
+memory outside the repo, namespaced to the folder the maintainer starts
+sessions in - one level above this repo - so a chat started *inside* this
+folder will not load it.)
 
 **Pre-flight before every build**, because a bad format specifier in a minigame
 script is invisible until that minigame loads (see pitfall 16):
@@ -1281,13 +1290,11 @@ your own instructions here; nobody else will:
 - `UPDATING.md` — "The mod currently targets **v<old>**" near the top, the
   "The last update, and how it was verified" heading and its opening line, and
   the two pck MD5/size rows in "The facts"
-- `CLAUDE.md` — "Currently targets game **v<old>**"
 - `README.md` — the opening line and any other version reference
 - `MINIGAMES.md` — only if a section quotes a version-specific measurement
-- the `machine-party-8p-mod` memory entry under
-  `~/.claude/projects/-home-adam-Documents-Claude/memory/`, if this session can
-  see it (it is namespaced to `~/Documents/Claude`, so a chat started *inside*
-  the project folder will not load it)
+- the maintainer's `machine-party-8p-mod` memory entry outside the repo, if
+  this session can see it (it loads only for sessions started in the folder
+  one level above the repo, so a chat started *inside* the repo will not see it)
 
 Then rewrite "The last update, and how it was verified" for the patch you just
 measured, and add an entry at the top of `SESSION-LOG.md`. The old contents of
@@ -1298,7 +1305,7 @@ the worked example a future session copies is the freshest one.
 ### 7. Build and validate
 ```bash
 python3 tools/build.py
-MP_DEPLOY=~/Documents/Claude/machine-party-8p/testgame python3 tools/build.py
+MP_DEPLOY=testgame python3 tools/build.py
 ```
 Then the static checks — the same five CI runs, so a local pass here means a
 green push later:
@@ -1358,7 +1365,7 @@ right after `var args = Array(OS.get_cmdline_args())`:
 
 Build, deploy to `testgame/`, then:
 ```bash
-cd ~/Documents/Claude/machine-party-8p/testgame
+cd testgame
 timeout 240 stdbuf -o0 -e0 ./"Machine Party.x86_64" --headless -validate-scenes 2>&1 | grep VALIDATE
 ```
 Expect `failures=0`. **Remove the hook afterwards** and rebuild.
@@ -1378,7 +1385,7 @@ python3 tools/checks/preflight_format_specifiers.py
 
 Plain boot test (should run the full timeout with no script errors):
 ```bash
-cd ~/Documents/Claude/machine-party-8p/testgame
+cd testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
@@ -1389,7 +1396,7 @@ Should print `Running version: v<new>-8P-v<modrelease>` — currently
 The strongest functional test, and it needs nobody else:
 
 ```bash
-tools/localtest.sh 8 ~/Documents/Claude/machine-party-8p/testgame 45
+tools/localtest.sh 8 testgame 45
 ```
 
 Slot 1 hosts over ENet on 127.0.0.1:25565, slots 2-8 join; windows tile 4x2 and
@@ -1426,7 +1433,7 @@ and never exercise the intro cutscene, the briefing screen or the intermission
 picker. Easy to forget when reading a "clean" log.
 
 ```bash
-FLOW=1 tools/localtest.sh 8 ~/Documents/Claude/machine-party-8p/testgame 420
+FLOW=1 tools/localtest.sh 8 testgame 420
 ```
 
 `FLOW=1` passes `-fullflow`, which suppresses exactly those three skips, so each
@@ -1467,8 +1474,8 @@ and every `@rpc` set is exactly as shipped. Rebuild it with
 `VANILLA_DIR` instead of the mod build:
 
 ```bash
-VANILLA_DIR=~/Documents/Claude/machine-party-8p/testgame2 VANILLA_SLOTS="3 4" \
-  START=1 MINIGAME=BurnRecycle tools/localtest.sh 4 ~/Documents/Claude/machine-party-8p/testgame 120
+VANILLA_DIR=testgame2 VANILLA_SLOTS="3 4" \
+  START=1 MINIGAME=BurnRecycle tools/localtest.sh 4 testgame 120
 ```
 
 Three constraints, each of which will otherwise waste a run:
@@ -1537,7 +1544,7 @@ and kill any that are. Two related traps if you launch it as a background task:
 the wrapper's own command line **contains the string `localtest.sh`**, so a
 `pkill -f localtest.sh` cleanup kills the shell that is about to launch (exit 1
 before anything starts); and a backgrounded command does not inherit the project
-directory, so it needs `cd ~/Documents/Claude/machine-party-8p &&` or it
+directory, so it needs `cd <repo root> &&` or it
 exits 127.
 
 ### The debug lobby is a *custom* game — use `-original` for the real rotation
@@ -1813,7 +1820,7 @@ rendering remains unverifiable locally.
 
 Installer round-trip, on a **copy**, with literal absolute paths:
 ```bash
-python3 ~/Documents/Claude/machine-party-8p/installer/install.py --game-dir ~/Documents/Claude/machine-party-8p/testgame_new --verify
+python3 installer/install.py --game-dir "<absolute path to>/machine-party-8p/testgame_new" --verify
 ```
 Expect `NOT PATCHED` → install → `PATCHED` → a second install attempt
 **refused** (already-patched guard) → restore the pck from a pristine copy and
@@ -1993,19 +2000,19 @@ So:
 for s in tools/checks/*.py; do python3 "$s" || break; done
 
 # build + deploy to the throwaway copy
-MP_DEPLOY=~/Documents/Claude/machine-party-8p/testgame python3 tools/build.py
+MP_DEPLOY=testgame python3 tools/build.py
 
 # 8 clients, straight into one minigame, 7 minutes to inspect
 START=1 MINIGAME=GreenPea tools/localtest.sh 8 \
-  ~/Documents/Claude/machine-party-8p/testgame 420
+  testgame 420
 
 # full normal session loop at 8 - briefing/intermission NOT skipped
 FLOW=1 tools/localtest.sh 8 \
-  ~/Documents/Claude/machine-party-8p/testgame 420
+  testgame 420
 
 # same at 4, to confirm vanilla behaviour is untouched
 START=1 MINIGAME=GreenPea tools/localtest.sh 4 \
-  ~/Documents/Claude/machine-party-8p/testgame 200
+  testgame 200
 
 # what the traces said
 grep -h "\[SEATS8\]\|\[STATIONS\]\|\[SHOTGUN\]\|\[PLATFORM\]\|\[SCORE8\]" /tmp/mp-localtest/p*.log
@@ -2025,7 +2032,7 @@ grep -h "\[KATO8\] search" /tmp/mp-localtest/p*.log
 # what the REAL (non-custom) rotation is - the default debug lobby does NOT
 # exercise this branch, so -original is mandatory for anything playlist-related
 ARGS="-original" START=1 tools/localtest.sh 8 \
-  ~/Documents/Claude/machine-party-8p/testgame 45
+  testgame 45
 grep -h "\[ORIGINAL\]" /tmp/mp-localtest/p1.log        # confirms the branch
 grep -h "Generating session playlist with" /tmp/mp-localtest/p1.log
 

@@ -624,7 +624,7 @@ there - is unreachable in a localtest run.
 
 ```bash
 ARGS="-kato-hunt=8" START=1 MINIGAME=KnifeAtTheOffice tools/localtest.sh 8 \
-  ~/Documents/Claude/machine-party-8p/testgame 130
+  testgame 130
 ```
 
 ### 18. Spine Breaker kill pace — `spine_breaker.gd`
