@@ -16,7 +16,62 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-14 (latest) — installer: backup feature removed entirely (issue #9)
+### 2026-08-14 (latest) — first real 8P-modded Steam session on v2.1.2: black-screen incident, issues #10 and #11
+
+The maintainer played a real 6-player Steam session (5-game custom playlist)
+the same evening as the rebuild — the first real multi-human session on the
+v2.1.2 build. Four minigames played cleanly. The fifth and final one, Duck
+Hunt, surfaced two defects, diagnosed from six preserved logs (locations in
+`NOTES-LOCAL.md`; they carry player identifiers so they stay out of the repo):
+
+- **Issue #11 — a client hard-crashed loading Duck Hunt.** Their log ends
+  mid-write at the scene transition: no script error, no shutdown lines —
+  the pitfall-23 signature (a release-build OOB method call SIGSEGVs with a
+  clean log) or a driver one-off; undetermined. The mod's client-side load
+  path read clean on inspection. Reproduction queued: pinned 8-client Duck
+  Hunt on v2.1.2 (the v1.5.0-era pinned runs were crash-free, but Duck Hunt
+  has not been re-run pinned since the rebuild — the 2026-08-14 baseline
+  series drew ExplodingCollarRace and ChiselGauntlet only).
+- **Issue #10 — the crashed player rejoined mid-minigame and became a ghost**:
+  their relaunched client sat on the lobby scene while duck_hunt replication
+  streamed at it (814 node-not-found errors client-side). The session played
+  on correctly without them — 5 hunter turns for 5 remaining players, the
+  mod's turn-per-player pacing exact — and the final turn ended by the hunter
+  eliminating every duck (the first total-elimination ending ever observed at
+  >4 players). At `Finished`, the session-end transition wedged on the dead
+  ghost connection: `k_EResultNoConnection` send spam and `Finished →
+  Finished` cycling on every peer, **host included** — black screen for all
+  six. Nothing recoverable; everyone restarted.
+
+What the evidence does and does not say: the wedge is downstream of the
+ghost peer, not proven downstream of the total-elimination ending — that
+ending had simply never occurred before, and whether it wedges on its own is
+untested. The mid-minigame rejoin path is host-authoritative vanilla code
+(the mod overlays its edges in the backends), so vanilla-vs-mod attribution
+for both #10 halves is open. Also confirmed by the same logs, incidentally:
+the friend's pre-session update dance exercised three refusal paths for real
+(old-mod v1.0 refused, bare v2.1.2 refused into a 6-player lobby, current
+v1.2 accepted) — all behaved as designed.
+
+**Issue #12 — no gunshot audio for anyone in the same Duck Hunt round**,
+hunter included. Desk analysis exonerated every mod-touched surface (the
+mod's hunter delta has no audio code and zero delta residue; the shot RPC is
+vanilla `any_peer`/`call_local`; the speaker node, stream and bus are
+byte-identical across versions in a scene the mod does not overlay; the
+headshot volume-duck restores correctly). Remaining candidates need ears:
+vanilla v2.1.2 regression (the update shipped that day), something
+roster-dependent above 4, or never-played-at-5-8-and-nobody-listened. The
+two-minute solo-listen test that splits it is in the issue.
+
+Where to pick up: reproduce #11 with `START=1 MINIGAME=DuckHunt` at 8 on the
+current build; if clean, drive the hunter to a total-elimination win with a
+human at one window (FLOW=1) to test #10's ending half; the ghost-rejoin half
+needs a mid-minigame kill-and-rejoin of one harness client, which the
+harness does not currently script — by hand is fine. For #12, the
+maintainer's solo listen decides which side of the fence it is before any
+harness time is spent.
+
+### 2026-08-14 — installer: backup feature removed entirely (issue #9)
 
 Maintainer's decision, same session as the rebuild below: the game is a small
 download, so the `.pck.vanilla` backup wasn't worth its failure mode — after a
