@@ -361,11 +361,13 @@ included**. The Steam backend's lobby callbacks cannot run locally, so v1.1 ship
 2026-08-13:** a real Steam mixed session confirmed both join directions
 (modded host + vanilla joiner, vanilla host + modded joiner) — open item 3a is
 closed, with the 5th-join refusal and the mixed-rotation cutscene still
-resting on the local ENet evidence. **v1.3 (2026-08-15) is the current
+resting on the local ENet evidence. **v1.4 (2026-08-15) is the current
 release** — v1.2 (2026-08-13, a full release) carried the four fixes since
-v1.1 (issues #6, #7, #8 and the station clone-list cleanup); v1.3 adds the
-disconnect-during-load fix behind issues #10 and #12 (pitfall 32). Full local
-evidence in the 2026-08-09 session-log entry.
+v1.1 (issues #6, #7, #8 and the station clone-list cleanup); v1.3 (earlier on
+2026-08-15) added Duck Hunt's disconnect-during-load fix behind issues #10 and
+#12 (pitfall 32); v1.4 adds the pre-start disconnect guard to all fifteen
+minigames (issue #13, §23, pitfall 33). Full local evidence in the 2026-08-09
+session-log entry.
 
 **Every minigame in the rotation has now been played at 8** - all fifteen, since
 The Filter and Firearm Factory were uncapped on 2026-08-07. The
@@ -1234,7 +1236,7 @@ In code — these change behaviour, so they are the ones that break things:
     put it on the wire under the `mod8p` key, so it is also what distinguishes a
     modded peer from a vanilla one and from an older mod build.
   - `game_version` → their concatenation, the display string; currently
-    `v2.1.2-8P-v1.3`. A game update bumps only the game part — **carry the mod
+    `v2.1.2-8P-v1.4`. A game update bumps only the game part — **carry the mod
     release label across unchanged** unless the mod itself is being released anew.
 - `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
 - `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
@@ -1361,7 +1363,7 @@ cd ~/Documents/Claude/machine-party-8p/testgame
 timeout 25 stdbuf -o0 -e0 ./"Machine Party.x86_64" --windowed --resolution 960x540 2>&1 | grep -E "Running version|SCRIPT ERROR|Parse Error"
 ```
 Should print `Running version: v<new>-8P-v<modrelease>` — currently
-`v2.1.2-8P-v1.3` (mod release v1.3, 2026-08-15).
+`v2.1.2-8P-v1.4` (mod release v1.4, 2026-08-15).
 
 ### Eight local clients
 

@@ -12,11 +12,12 @@ diagnostic traces and the caps — is in **`MINIGAMES.md`**, cited as *§N*. Rea
 when you are touching a specific minigame, not before. `UPDATING.md`'s overlay
 manifest maps each file to its section.
 
-Currently targets game **v2.1.2** (Godot 4.5.2), mod release **v1.3**
-(2026-08-15: the disconnect-during-load fix behind issues #10/#12; v1.2 was
-the 2026-08-14 rebuild of the v1.5.0-based release) — vanilla-compat mode
-(added in v1.1) was confirmed in a real Steam mixed session on 2026-08-13 —
-with in-game version string `v2.1.2-8P-v1.3`. Before running anything, read
+Currently targets game **v2.1.2** (Godot 4.5.2), mod release **v1.4**
+(2026-08-15: pre-start disconnect guards in all fifteen minigames, issue #13;
+v1.3 earlier that day was Duck Hunt's disconnect-during-load fix behind
+issues #10/#12; v1.2 was the 2026-08-14 rebuild of the v1.5.0-based release)
+— vanilla-compat mode (added in v1.1) was confirmed in a real Steam mixed
+session on 2026-08-13 — with in-game version string `v2.1.2-8P-v1.4`. Before running anything, read
 **"Working environment"** in `UPDATING.md` (screenshots, missing tools, the
 build pre-flight) and **`SESSION-LOG.md`** for what changed most recently.
 

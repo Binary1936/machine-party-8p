@@ -16,7 +16,35 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-15 (latest) — Issue #13: all fifteen disconnect handlers audited for a drop DURING the load. A crash was already safe; a QUIT during the load finished an unstarted game in eleven minigames (six then unable to end the round). Guarded everywhere
+### 2026-08-15 (latest) — Shipped as mod release v1.4: the pre-start disconnect guard in all fifteen minigames (issue #13)
+
+**What ships:** the entry below — `if not is_all_player_loaded: return` in
+every minigame's `player_disconnected()`, `exploding_collar_race.gd` in the
+overlay (56 files), the two `.get()` hygiene hunks — plus the promoted
+quit-at-load tools. `MOD_SUFFIX` → `8P-v1.4`, so v1.3 and v1.4 peers refuse
+each other cleanly per pitfall 7; `MOD_NETWORK_GAME_VERSION` stays `v2.1.2`
+(no game update); display `v2.1.2-8P-v1.4` at every step-6 site
+(`version_strings.py` plus the prose: `README.md`, `CLAUDE.md`, `UPDATING.md`
+"Current status", step 6 and the boot-test line, `installer/README.txt`).
+
+Release integrity, all measured this day on the v1.4 strings:
+
+| | |
+|---|---|
+| Static checks + `%` pre-flight | all five pass |
+| Reproducible build | `dist` (twice) and deployed `testgame` pck md5 `54f960fca5f4300d4ff0fb3e3263e4f0`; engine `9bac4458…` unchanged |
+| Boot | `Running version: v2.1.2-8P-v1.4`, zero parse/script errors |
+| Handshake at 8 | all 8 boot `v2.1.2-8P-v1.4`, zero `VersionMismatch`/refusals, `[SEATS]` to `connected=8`, `[SCORE8] rows=8` on host and clients |
+| Regression on the release build, quit-at-load (`leave_slot_at_load.sh 4 3 DvdRoomba 5`) | P4 closed, `players=3` at +0.27 s, no `Empty → Finished`; after the 5 s resume `SessionIntro → MinigameStart → MinigamePlaying → Empty → Round → … → Play → Finished`, round 2 loaded at `players=3`; P2 same; P3 held (`players=3` throughout) |
+| Regression, kill-at-load (`kill_slot_at_load.sh 4 DvdRoomba`) | `players=3` after the timeout → `MinigameStart → MinigamePlaying → Empty → Round → Play → Finished` |
+| Errors across the three runs | only the leaver's normal exit-time RID-leak report and the documented families |
+| Installer round-trip (clean v2.1.2 copy, `f5ea2339…`, pristine pck staged first) | `NOT PATCHED` → install (**4205 files, 56 mod, 94 replaced**) → `PATCHED - all 56 mod files present` + `v2.1.2-8P-v1.4` → re-install **refused** (`already patched`), pck md5 unchanged → restored from the staged copy, `f5ea2339…`, 634,798,100 bytes; no `.vanilla` created |
+| Zip | rebuilt per step 8: **60 entries**, extracted `mod/` `diff -rq` clean, four root files `cmp`-identical; md5 **`c9d594aa4db778e38cbd4ea96bef76b7`**, 21,309,383 bytes |
+
+Tagged `v1.4`, `gh release create` with the zip attached; issue #13 closed as
+shipped, #11 (the original crash) stays open.
+
+### 2026-08-15 — Issue #13: all fifteen disconnect handlers audited for a drop DURING the load. A crash was already safe; a QUIT during the load finished an unstarted game in eleven minigames (six then unable to end the round). Guarded everywhere
 
 **Task:** open item 7 / issue #13 — do the other fourteen minigames break the
 lobby when a player disconnects mid-load, the way Duck Hunt did (pitfall 32)?
