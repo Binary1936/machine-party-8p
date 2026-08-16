@@ -309,7 +309,8 @@ repo is in git, `<old mod>` is just `git show <last-release-tag>:mod/$f`.
 - Minefield (`exploding_collar_race`) - full rounds played to completion.
 - Table Manners (`green_pea`) - 8 seats, 8 chairs, widened camera.
 - Chisel Gauntlet - 8 stations, 8 distinct facings, execution device sweeps all
-  eight, consoles/desks cloned for the added slots.
+  eight, consoles/desks cloned for the added slots; above four, every player
+  gets a head-on HUD view of the jumbotron during the memorise phase (§10).
 - Debris Platforms (`JunkPlatform`) - full round at 8, zero errors. All eight
   land on a deck; see below.
 - Stable Footing (`DiscoDodge`) - `[DISCO8] spawned=8` on host and all seven
@@ -906,7 +907,7 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `modules/multiplayer/backends/multiplayer_backend.gd` | 8 | window titles P1-P8 |
 | `minigames/intermission_new/components/intermission_score_screen.gd` | 11 | 8 rows; reverb pitch clamp |
 | `minigames/intermission_new/components/intermission_briefing_screen.gd` | 12 | 8 cards; `FLOW=1` auto-ready |
-| `minigames/chisel_gauntlet_multiplayer/*` (4) | 5, 10, 23 | 8 stations, facings, shotgun order, split-screen; the `.tscn` adds 4 identity spectate markers (pitfall 31) |
+| `minigames/chisel_gauntlet_multiplayer/*` (4) | 5, 10, 23 | 8 stations, facings, shotgun order, jumbotron HUD overlay above four, split-screen; the `.tscn` adds 4 identity spectate markers (pitfall 31) |
 | `minigames/escalator_pit/*` (3) | 13, 23 | 8 stair strips, hidden handrails |
 | `minigames/smoke_break/*` (4) | 14, 23 | 8 seats, crates, aim angles, 4 capped arrays |
 | `minigames/green_pea/*` (2) | 10, 23 | runtime 8-seat layout by RPC |

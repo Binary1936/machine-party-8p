@@ -16,7 +16,75 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-16 (latest) — Steam lobby at 5-8: the runtime preview spread stacked seats 2-4 on one chair; replaced by hand-placed lap seats for players 5-8, positioned live in the game (issue #14)
+### 2026-08-16 (latest) — Chisel: seats 5-8 read the jumbotron corner-on; every player in a 5-8 lobby now gets a head-on HUD view of it during the memorise phase
+
+**Report (playtesters via the maintainer):** the four added seats make the
+minigame harder — they see the jumbotron from an angle. **Measured** from the
+shipped `.tscn` and the player camera's `look at jumbotron` pose (7.51 u out,
+height 4.21, pitched up 21.1°, fov 18.9): the cardinal seats see one CRT
+head-on (7° obliquity, centred, ~70% of frame height); the diagonal seats see
+**two** CRTs at **53.6°**, split to the frame edges, nothing head-on. Same feed
+on all four screens, so it is purely a viewing-angle problem. Analysis script,
+its output and a plan-view SVG are preserved machine-locally (`NOTES-LOCAL.md`,
+2026-08-16 entry).
+
+**The maintainer's first instinct — clone the four CRTs at 45° like the
+stations — was costed and rejected.** Unlike the consoles, the CRTs form a
+near-continuous ring: a same-radius 45° clone is buried (face 0.96 u inside
+the pillar box, 0.88 u into each neighbour CRT, 0.24 u into the corner post),
+so it would need pushing ≥1.2 u outward (≥1.7 u to also clear the posts) and
+lowering ~0.4× that to stay framed in the zoomed camera; even then the corner
+post's tip ends inside the clone, its cable dangles in mid-air, and the
+lowered ring peeks into the top of the carve view. Numbers in the preserved
+script output.
+
+**Fix chosen (maintainer's decision: all eight above four, not only the
+diagonal seats): a HUD overlay.** The scene already contains a head-on render:
+`LocalMultiplayer/JumbotronViewport`, the couch-mode SubViewport whose Camera3D
+is parked at seat 1's jumbotron pose, rendering the shared world. `chisel_gauntlet.gd`
+now mirrors it full-screen — a runtime `CanvasLayer(1)` + `TextureRect`, 0.5 s
+fades — for as long as the local player's camera animation is
+`look at jumbotron*`, hooked via `player_spawn_node.child_entered_tree` →
+each player's `camera_animation_player.animation_started` and filtered to the
+local player by `player_presence.network_id` (vanilla's own test). Roster gate
+is a flag latched inside the existing `zz_mod_add_stations_rpc()` — the one
+call already made on every peer exactly when the roster exceeds four — so
+1-4 never runs it and no RPC was added (`rpc_prefix` still 8). No scene edit.
+Two things found only by looking, both silent in the logs:
+
+- **Lighting.** Online, the room is lit solely by each player's own `lights`
+  node at their seat (`chisel_gauntlet_player.gd`, local player only; the
+  scene-root `Lights` ship hidden), so the seat-1 render varied by seat and
+  went black off-cardinal — only the unshaded CRT face survived (maintainer's
+  screenshot). Now, while the overlay is up, `LocalMultiplayer` and its four
+  cardinal `Lights` (couch mode's lighting for this very viewport; the
+  hidden ancestor would otherwise keep them off) are shown and the local
+  seat light hidden, so every client renders the identical picture; on hide
+  the viewport is frozen (`UPDATE_DISABLED` keeps its last frame) and the
+  lights swapped back *before* the fade, so nothing pops.
+- **Seat 1's head.** The rig's hat sits ~4.8 u up and seat 1's third-person
+  model stands 0.77 u in front of that camera, so its head crossed the frame
+  bottom on every client but seat 1's own. Couch mode dodges it with
+  per-player cull layers; online now sets the overlay camera's `near` to 2.0
+  while shown (nothing else in view is nearer than the jumbotron at ~5.7 u),
+  restored on hide.
+
+| Check | Result |
+|---|---|
+| Static checks | all five pass on every build; `rpc_prefix` 8 mod RPCs (none added) |
+| 8-player pinned run (`START=1`, 130 s), final build md5 `a9239274…` | 0 `Parse Error`/`SCRIPT ERROR` on host and all 7 clients; `[STATIONS]` `found` ×10 per round + `cloned 10 single nodes, hid 2 props` on all 8 peers (2 rounds this run, 3 in the earlier two); `[SHOTGUN]` 0,4,2,6,1,5,3,7; full `RoundInstruction` cycle on clients |
+| 4-player parity | `player_count=4`, no found/cloned/hid lines on any peer; `[SHOTGUN]` 0,2,1,3 |
+| Error classes (pitfall-12 filter) | 8p vs 4p `comm -13` **empty** on the final build; run 2 showed the documented run-to-run `ERR_UNAUTHORIZED` despawn-churn line only |
+| Warnings sweep | no `push_warning`/light/viewport/camera/texture lines on any peer, any run |
+| Eyes | **maintainer, 2026-08-16, three looks on the tiled harness windows:** first build — overlay shows and clears but is unlit and differs per seat (screenshots); second — "the screens look good", one head poking into the frame; final build — **"Looks good."** |
+
+Not covered by any trace by design (maintainer declined one: everyone gets
+the overlay, easy to check by eye): the overlay's presence, lighting and
+framing rest on the looks above. Logs of all three run pairs are preserved
+machine-locally (`NOTES-LOCAL.md`). `MINIGAMES.md` §10's chisel bullet
+carries the mechanism; "Current status" the one-liner.
+
+### 2026-08-16 — Steam lobby at 5-8: the runtime preview spread stacked seats 2-4 on one chair; replaced by hand-placed lap seats for players 5-8, positioned live in the game (issue #14)
 
 **Report (maintainer, real 5-player Steam lobby, screenshot):** four
 characters piled on the left-hand chair, the fifth alone on the right; the

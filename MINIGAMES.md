@@ -246,6 +246,26 @@ code, and each is described in the pitfalls list below.
   135° slot's character stood inside (0.44u/0.89u) — and disables their own
   `StaticBody3D`s; 1-4 keeps the shipped dressing. Trace summary:
   `cloned 10 single nodes, hid 2 props`.
+
+  **Jumbotron HUD overlay (since 2026-08-16).** The four added seats face a
+  corner of the jumbotron and read its CRTs at 53.6° (cardinals: 7°,
+  head-on). Rather than clone screens (a 45° clone is buried in the pillar
+  box and its neighbours — see the session-log entry), every player in a
+  5-8 lobby gets a full-screen HUD of the couch-mode
+  `LocalMultiplayer/JumbotronViewport` — a SubViewport whose camera sits at
+  seat 1's jumbotron pose — for as long as the local player's camera
+  animation is `look at jumbotron*` (hooked on each player's
+  `camera_animation_player.animation_started` via
+  `player_spawn_node.child_entered_tree`; local player picked by
+  `player_presence.network_id`). Roster gate: a flag latched inside
+  `zz_mod_add_stations_rpc()`, so no new RPC and nothing at 1-4; the scene is
+  untouched. While shown: `LocalMultiplayer` + its four cardinal `Lights` are
+  made visible and the local seat light hidden (online, only the local
+  player's own seat light lights the room, which made the render vary by
+  seat and go black off-cardinal), and the overlay camera's `near` is set to
+  2.0 (seat 1's tall third-person rig stands 0.77 u in front of it and its
+  head breached the frame); on hide the viewport is frozen and both restored
+  *before* the 0.5 s fade. No trace by design — verified by eye.
 - `minigames/chisel_gauntlet_multiplayer/chisel_gauntlet.tscn` - four spectate
   markers (`Marker3D_MOD5`..`Marker3D4_MOD8`) added under
   `DeadLobby/SpectatePositions`, **transformless like the shipped four** -
