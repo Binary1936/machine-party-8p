@@ -19,8 +19,8 @@ players, and the lobby, briefing screen and score screen grow to match. The mod
 is an overlay of 56 files (40 `.gd`, 16 `.tscn`) applied to the shipped
 `Machine Party.pck`: one file is new, the rest replace shipped ones.
 
-This is mod release **v1.4**; in game it identifies itself as
-**`v2.1.2-8P-v1.4`** — game version, mod suffix, mod release.
+This is mod release **v1.5**; in game it identifies itself as
+**`v2.1.2-8P-v1.5`** — game version, mod suffix, mod release.
 
 ## Status
 
@@ -85,7 +85,7 @@ silently reverts the mod the same way, so re-run the installer after one.
 
 ### Verify
 
-`Globals.game_version` becomes `v2.1.2-8P-v1.4`, and that string is already wired to
+`Globals.game_version` becomes `v2.1.2-8P-v1.5`, and that string is already wired to
 the main menu's version label, so the corner of the menu is the fastest check.
 
 Without launching:
