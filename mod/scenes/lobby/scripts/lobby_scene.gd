@@ -38,13 +38,6 @@ var loading: bool = true
 const ModPlayerNameList = preload("res://modules/multiplayer_lobby/mod_player_name_list.gd")
 var mod_name_list: Node
 
-# 8-PLAYER MOD: the lobby ships four character previews spaced across the
-# camera's framing. Eight have to share that same span, which visibly bunches
-# them - so the wider layout is applied only once the lobby outgrows four, and
-# four players keep the vanilla spacing exactly.
-const MOD_VANILLA_SLOTS: int = 4
-var mod_preview_home: Array[Vector3] = []
-
 func _ready() -> void :
 
 	player_order_by_seat = make_seat_map()
@@ -53,12 +46,6 @@ func _ready() -> void :
 	# rather than floating over the loading and playlist screens.
 	mod_name_list = ModPlayerNameList.attach(
 		lobby_handler.root if lobby_handler else null, NetworkManager.MAX_PLAYERS)
-
-	# 8-PLAYER MOD: remember where the shipped preview slots sit, so a lobby of
-	# four can be restored to exactly the vanilla spacing.
-	if lobby_handler:
-		for i in min(MOD_VANILLA_SLOTS, lobby_handler.players.size()):
-			mod_preview_home.append(lobby_handler.players[i].position)
 
 	PropManager.reset()
 	EffectManager.reset()
@@ -247,38 +234,12 @@ func setup_network_signals():
 	NetworkManager.join_allowed.connect(_on_join_allowed)
 	NetworkManager.join_refused.connect(_on_join_refused)
 
-func mod_layout_previews() -> void:
-	"""Spread the previews only when there are more players than shipped slots."""
-	if lobby_handler == null or mod_preview_home.is_empty():
-		return
-
-	var occupied: int = 0
-	for network_id in player_order_by_seat.values():
-		if network_id >= 0:
-			occupied += 1
-
-	var slots: Array = lobby_handler.players
-	if occupied <= MOD_VANILLA_SLOTS:
-		for i in min(mod_preview_home.size(), slots.size()):
-			slots[i].position = mod_preview_home[i]
-		return
-
-	# Resample every slot across the span the shipped four occupied, so nobody
-	# drifts outside the lobby camera's framing.
-	var first: Vector3 = mod_preview_home[0]
-	var last: Vector3 = mod_preview_home[mod_preview_home.size() - 1]
-	for i in slots.size():
-		var t: float = float(i) / float(max(slots.size() - 1, 1))
-		slots[i].position = first.lerp(last, t)
-
 func update_player_list():
 
 	if not NetworkManager.active_backend:
 		return
 
 	lobby_handler.update_player_list(player_order_by_seat.values())
-
-	mod_layout_previews()
 
 	if mod_name_list:
 		mod_name_list.refresh(

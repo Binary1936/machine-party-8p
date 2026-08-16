@@ -16,7 +16,88 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-15 (latest) — Shipped as mod release v1.4: the pre-start disconnect guard in all fifteen minigames (issue #13)
+### 2026-08-16 (latest) — Steam lobby at 5-8: the runtime preview spread stacked seats 2-4 on one chair; replaced by hand-placed lap seats for players 5-8, positioned live in the game (issue #14)
+
+**Report (maintainer, real 5-player Steam lobby, screenshot):** four
+characters piled on the left-hand chair, the fifth alone on the right; the
+text roster (§7) fine. First observation of the Steam lobby above four —
+"never seen" in "Current status" until today.
+
+**Diagnosis (measured, not guessed).** `lobby_scene.gd`'s
+`mod_layout_previews()` treated the `Player1`-`Player4` node x positions
+(−6, −2, 2, 6) as a row of seats and, once a fifth player joined, resampled
+all eight slots across that span. But those nodes are an authoring row with
+identity bases: the seat itself — chair, depth, facing — is baked one level
+down in each `Armature_001` transform, which differs wildly per slot. Moving
+`PlayerN.position` is therefore a pure world translation on top of the baked
+seat: seats 2-4 slid 2.3 / 4.6 / 6.9 u left onto seat 1's chair, while the
+values written for slots 5-8 were identical to the `.tscn`'s baked ones (a
+no-op). Projecting each nametag `Label3D` through the lobby camera (fov 28.2°,
+1803×908 viewport) and comparing with the screenshot: mean residual **307 px**
+if the spread had not run, **30 px** if it had — the spread ran, and that was
+the whole defect. ≤4 was and is untouched (the restore branch), so rule 3
+was never breached. Why the harness never saw it: `-localtest` routes to the
+developers' debug lobby (`debug_lobby.tscn`, 4 preview slots, not overlaid);
+`lobby_scene.gd` only runs on the Steam path.
+
+**Fix — two files, both in the overlay already, no new code path:**
+
+- `lobby_scene.gd`: `MOD_VANILLA_SLOTS`, `mod_preview_home`, the `_ready()`
+  snapshot and `mod_layout_previews()` **deleted** (39 lines, deletions only).
+  The script no longer touches a preview transform. Seat map and roster stay.
+- `lobby_scene.tscn`: `Player5`-`Player8` re-authored as **lap seats** —
+  each keeps its host's `PlayerN` x (−6, −2, 2, 6) and gets its own
+  `Armature_001` + `player nametag` transform placing it on the lap of
+  `Player1`-`Player4` respectively (5→1, 6→2, 7→3, 8→4; all four in
+  `lobby_scene_pose_1`, the upright sit). Eleven lines changed vs HEAD;
+  `Player1`-`Player4` byte-identical to HEAD (line-set md5 `b7a682a2…` both
+  sides). At ≤4 the vanilla handler leaves slots 5-8 invisible and nothing
+  moves — rule 3 holds by construction, no restore branch needed. Room note:
+  only four chairs are upright *and* visible (`chair_001/002/003/007`;
+  eight of the thirteen chair meshes ship `visible = false`), so laps, not
+  more chairs.
+
+**How the transforms were obtained — and the bug in the aid that nearly
+shipped them turned.** Two offline models of the scene (a box-body page,
+then one drawing the `.tscn`'s own 34-bone saved poses through the exact
+node chain) each put the maintainer's placements somewhere else in the
+game. What worked: a **preview build** — `mod/` plus a patched
+`lobby_scene.gd` that forces all eight previews visible and adds a
+key-driven placement mode (select a sitter, auto-place it on its host's lap
+from the host's *live* bones, nudge/turn, print the exact `.tscn` lines to
+the log and clipboard). Hosting a Steam lobby alone, the maintainer placed
+all four in one round. But the first bake loaded with every sitter turned by
+twice its yaw (P6 facing 177° from its host): the printer wrote `basis.x`
+into the first three text slots, and **`Transform3D(...)` text is by rows
+while `Basis.x/.y/.z` are columns** — the printed basis was the transpose,
+i.e. the inverse yaw. The same transposition (reading `.tscn` bases as
+columns) is why both offline models had "forward" wrong for three of four
+seats — not, as first written, any mismatch between the played animation and
+the saved pose: the four `lobby_scene_pose_N.res` were parsed (35 tracks
+each: 34 bone rotations + the hips position, none on the `Armature_001`
+node), so a baked armature transform survives autoplay. Caught by
+round-trip: F9 on the freshly loaded scene printed the transpose of the
+baked line; after the printer fix, an untouched slot printed its baked line
+byte-identically (same-in-same-out). Promoted to **`tools/lobby_preview/`**
+(recipe: Testing, "Placing the lobby previews"). Pitfall 35 records it.
+
+**Evidence:**
+
+| Check | Result |
+|---|---|
+| Maintainer's eyes, preview build, all eight visible | placement accepted ("worked amazingly"); after the printer fix a fresh load showed the same placement ("looks like how I originally placed them"), and the shipped lines are the fixed printer's output after one small adjustment |
+| Print-aid round trip | untouched slot P6: F9 output on a fresh load == the baked `.tscn` line, byte for byte |
+| `Player1`-`Player4` node + armature lines vs HEAD | identical (md5 `b7a682a2…`) |
+| `lobby_scene.gd` diff | deletions only; `grep mod_layout_previews\|mod_preview_home\|MOD_VANILLA_SLOTS` → nothing (the same-named const in `manufacture_gun.gd` is unrelated and untouched) |
+| Five static checks | all OK; overlay still 56 files |
+| Clean build | `dist/Machine Party.pck` md5 `4b81a757…`, deployed to `testgame/` |
+| `-validate-scenes` | **not run** (it is a hand-added hook, see Testing); the preview build loaded the same `.tscn` and a strict superset of the `.gd` in the real binary without error |
+
+**Not claimed:** the eight-slot lobby with eight *real* peers (only forced
+visibility has been seen — the vanilla per-slot visibility path is unchanged
+code); how the four lap pairs read at Steam-name lengths; issue #5 stays open.
+
+### 2026-08-15 — Shipped as mod release v1.4: the pre-start disconnect guard in all fifteen minigames (issue #13)
 
 **What ships:** the entry below — `if not is_all_player_loaded: return` in
 every minigame's `player_disconnected()`, `exploding_collar_race.gd` in the

@@ -473,9 +473,12 @@ in the rotation supports 8 players.**
 recorded reason survived inspection.** Three of four stated reasons were wrong on
 examination - re-derive, never trust, any cap reason written here.
 
-**Never verified:** the Steam lobby's preview rendering (`-localtest` runs the
-debug lobby, so `lobby_scene.tscn`'s extra slots are validated as loading but
-never seen with 8 real players).
+**Seen at 5, not at 8:** the Steam lobby's preview rendering. A real 5-player
+lobby (2026-08-16) exposed the runtime spread stacking seats 2-4 on one chair
+(issue #14, fixed the same day: players 5-8 now sit on 1-4's laps, placed live
+in the game — session log). All eight seats have been looked at with every slot
+forced visible in the `tools/lobby_preview/` build; the per-slot visibility
+path with eight real joiners has not (`-localtest` runs the debug lobby).
 
 **Pre-existing vanilla bug, not worth fixing:**
 `scripts/scenes/game/states/minigame_end_state.gd:28` calls
@@ -806,7 +809,7 @@ mod_v107/    the v1.0.7 overlay, pre-git baseline (git has every later one)
   rename the previous generation first.
 tools/       pck.py, gdc.py, build.py, spawn_expand.py, lobby_expand.py,
              green_pea_chairs.py, spawn_targets.txt, localtest.sh,
-             kill_slot_at_load.sh, checks/, quasivanilla/, bin/
+             kill_slot_at_load.sh, checks/, quasivanilla/, lobby_preview/, bin/
 docs_old_2026-08-08/  snapshot of all five docs taken 2026-08-08 under
              Documentation policy rule 4, before the v1 release audit's doc
              restructure. The pre-restructure text, if a question needs it.
@@ -824,12 +827,18 @@ userdata_backup/  a backup of the game's user data (saves, settings, shader
 - **`tools/spawn_expand.py`** — rewrites a scene's 4 player-spawn markers into 8.
 - **`tools/lobby_expand.py`** — clones a lobby's 4 character preview slots into
   8 and extends the handler's exported arrays. `PARENT=...` overrides the node
-  path. **Known drift (2026-08-14): its spread step also MOVES the shipped
-  Player2-4 slots**, which the shipped scene keeps at vanilla positions —
-  `lobby_scene.gd` snapshots the baked positions at load as its ≤4-player home
-  layout (rule 3), so after any run, restore Player2-4's origins to vanilla
-  (-2, 2, 6) by hand, or fix the tool first. The v2.1.2 rebuild did the hand
-  restore; see the session-log entry.
+  path. **Do not re-run it on `lobby_scene.tscn`**: since 2026-08-16 the
+  scene's `Player5`-`Player8` carry hand-placed lap-seat transforms (§6) that
+  a run would overwrite, and its spread step also moves the shipped Player2-4
+  slots off their vanilla positions (rule 3). It remains the bootstrap for a
+  fresh scene after a game update that ships a new lobby; place the seats
+  afterwards with `tools/lobby_preview/`.
+- **`tools/lobby_preview/`** — `build_preview.py` builds the mod pck with a
+  live seat-placement mode patched into `lobby_scene.gd` (all eight previews
+  forced visible; keys to select, auto-place on the host's lap, nudge, turn,
+  and print the exact `.tscn` lines). Output to `testgame/` or the folder
+  given; never touches `mod/` or `dist/`. Recipe: Testing, "Placing the lobby
+  previews".
 - **`tools/kill_slot_at_load.sh`** — arms a watcher that `SIGKILL`s one
   localtest joiner the instant the host starts loading a minigame: the
   crash-during-load trigger for pitfall 32. Usage and traps under Testing,
@@ -891,7 +900,7 @@ see step 5 of the update procedure. The "§" column is the section of **`MINIGAM
 | `scripts/scenes/game/states/minigame_playing_state.gd` | 19 | the **replay gate** — second round-count site |
 | `scripts/components/character customization/customization_assigner.gd` | 4 | suit tinting |
 | `scenes/bootstrap/scripts/bootstrap.gd` | 8 | `-localtest`, `-fullflow` |
-| `scenes/lobby/lobby_scene.tscn`, `scenes/lobby/scripts/lobby_scene.gd` | 6 | 8 seats + 8 preview slots |
+| `scenes/lobby/lobby_scene.tscn`, `scenes/lobby/scripts/lobby_scene.gd` | 6 | 8 seats + 8 preview slots (5-8 hand-placed on 1-4's laps) |
 | `modules/multiplayer_lobby/multiplayer_menu.gd` | 6, 8 | debug-lobby seat map, window tiling, `-original` |
 | `modules/multiplayer_lobby/mod_player_name_list.gd` | 7 | **the only file the mod adds** |
 | `modules/multiplayer/backends/multiplayer_backend.gd` | 8 | window titles P1-P8 |
@@ -1027,9 +1036,13 @@ window, or check that a client log ran the code (`is_server=false`).
 
 Anything that repositions or rescales shipped geometry has to be conditional on
 the roster size, applied from script at runtime, with the **scene left as
-shipped**. Green Pea (`green_pea.gd`), the lobby previews (`lobby_scene.gd`) and
-Chisel's `shotgun_check_order` all follow this pattern - grep for
-`MOD_VANILLA_SEATS`, `MOD_VANILLA_SLOTS` and `MOD_CHECK_ORDER_8`.
+shipped**. Green Pea (`green_pea.gd`) and Chisel's `shotgun_check_order` follow
+this pattern - grep for `MOD_VANILLA_SEATS` and `MOD_CHECK_ORDER_8`. The lobby
+previews are the other legitimate shape: *added* nodes (`Player5`-`Player8`)
+that vanilla's own handler leaves invisible at ≤4, so the shipped four are
+never moved and no runtime layout code exists — the runtime spread that used to
+live in `lobby_scene.gd` (`MOD_VANILLA_SLOTS`) was removed on 2026-08-16 after
+it stacked seats 2-4 in a real lobby (issue #14).
 
 Where the map itself needs more furniture, prefer cloning at runtime over
 editing the scene. Chisel Gauntlet's consoles and desk colliders all sit at the
@@ -1809,8 +1822,40 @@ input, so a human can drive at most one; making all eight *play* needs either
 in-game bots or external input injection, neither of which exists. And the
 lobby is still the developers' debug lobby: `lobby_scene.gd` has 12 `Steam.`
 call sites and its join path is built on Steam lobby callbacks, so the real
-lobby cannot run over ENet. That is why the Steam lobby's 8-slot preview
-rendering remains unverifiable locally.
+lobby cannot run over ENet. That is why the Steam lobby's per-slot visibility
+with eight real joiners remains unverifiable locally — the *seats themselves*
+can be looked at alone, with the preview build below.
+
+### Placing the lobby previews (Steam lobby, one person)
+
+The Steam lobby renders a preview slot only when it is occupied, so its eight
+seats cannot be seen locally; and hand-deriving a seat from the text files is
+where a transposed basis hides (pitfall 35 — `.tscn` basis text is by rows,
+`Basis.x/.y/.z` are columns; two offline models were wrong that way before
+anyone noticed). Place seats in the running game instead, and round-trip the
+print before trusting it:
+
+```bash
+python3 tools/lobby_preview/build_preview.py          # -> testgame/Machine Party.pck (PREVIEW, not the mod)
+cd testgame && ./"Machine Party.x86_64"                # Steam running; host a lobby, alone is enough
+```
+
+All eight previews are forced visible (`P1`-`P8`) and a help line sits top
+right. **F5-F8** select the sitter (`Player5`-`Player8`); **F10** auto-places
+it on its host's lap from the host's *live* bones (hips 0.45 u along the
+thighs, 0.30 u up, knees turned to match); arrows move X/Z, PgUp/PgDn Y,
+Home/End turn about the sitter's own hips, Ins/Del lift the nametag, Shift
+for fine steps; **F11** resets the slot; **F9** prints the exact `.tscn`
+lines (`Armature_001` and `player nametag` per slot) to the log — between
+`[PV-EXPORT]` … `[/PV-EXPORT]` — and to the clipboard. Paste them over the
+matching lines in `mod/scenes/lobby/lobby_scene.tscn` verbatim (tidy `1.0`
+→ `1`, `0.89499998` → the scene's `0.895`), rebuild the preview, load it,
+and **press F9 before touching anything: an untouched slot must print its
+baked line byte for byte** (that round trip is what caught the transposed
+printer). Then rebuild and **restore `testgame/` from `dist/`** — the preview
+pck must never be mistaken for the mod build. The tool patches `mod/`'s `lobby_scene.gd` at build time on two
+asserted anchors, so a future rebuild that moves them fails loudly rather
+than silently producing a preview without the mode.
 
 Installer round-trip, on a **copy**, with literal absolute paths:
 ```bash

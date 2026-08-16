@@ -118,6 +118,19 @@ Note `counter += 1` sits *inside* the `connected_players.has(...)` check, so an
 instance that does not know a peer skips it silently. That masks the crash on
 clients and is why the bug is easy to miss.
 
+**Where players 5-8 sit (since 2026-08-16, issue #14): on the laps of 1-4.**
+The room has only four upright, visible chairs, each with a seat baked into
+its preview's `Armature_001` transform (the `PlayerN` nodes at x = −6, −2, 2,
+6 are an authoring row, not seats — a lesson that cost a real lobby, pitfall
+35). `Player5`-`Player8` therefore keep their host's `PlayerN` x and carry
+their own hand-placed `Armature_001` + `player nametag` transforms putting
+them on `Player1`-`Player4`'s laps respectively, all in `lobby_scene_pose_1`.
+The script never touches a preview transform: the vanilla handler leaves
+slots 5-8 invisible at ≤4, so rule 3 holds with no restore branch. To move a
+seat, do it in the running game with `tools/lobby_preview/` (Testing,
+"Placing the lobby previews") and paste the printed lines — never re-run
+`lobby_expand.py` on this scene, it would overwrite the seats.
+
 ### 7. Lobby roster (new file)
 `modules/multiplayer_lobby/mod_player_name_list.gd` is the only file the mod
 *adds* rather than replaces. It draws a text list of Steam names in the lobby's

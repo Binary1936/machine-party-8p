@@ -399,5 +399,28 @@ recipe", and a dated *session-log entry* lives in `SESSION-LOG.md` (or
     guard is a logic bug, not a crash. Parse errors and the core `ERR_FAIL_*`
     macros (`Parameter "node" is null`, `Invalid packet received`) do print
     in release — those are C++-side, not the VM's.
-
+35. **Godot's `Transform3D(...)` text lists the basis by ROWS; GDScript's
+    `Basis.x/.y/.z` are COLUMNS. Mixing them transposes the basis, and for a
+    yaw-only basis the transpose is the inverse yaw — a seat that loads facing
+    the wrong way, silently.** Cost a day on the Steam lobby (issue #14,
+    2026-08-16), twice over. Reading `.tscn` bases as columns in an offline
+    layout model made every "forward" arrow wrong for three of four seats and
+    the maintainer's placements land elsewhere in the game (three rounds
+    lost); then the in-game print aid wrote `basis.x` into the first three
+    text slots and the printed seats loaded turned by twice their yaw. Rules:
+    when hand-writing or printing a `Transform3D`, the first three numbers are
+    `(b.x.x, b.y.x, b.z.x)` — row 0 — not `basis.x`; and always **round-trip**
+    a print aid before trusting it (load the printed line, print again,
+    diff — same-in-same-out, which is how this was caught). Two smaller
+    lessons from the same day: `lobby_scene.tscn`'s `Player1`-`Player4`
+    nodes are an authoring row (x = −6, −2, 2, 6, identity bases) — the seat
+    lives one level down in `Armature_001`, so "spreading" the node positions
+    translated three bodies onto the fourth chair; and the four
+    `lobby_scene_pose_N` animations drive Skeleton3D bones only (35 tracks:
+    34 rotations + the hips position, none on the `Armature_001` node — read
+    from the `.res` per "Reading a property out of a shipped binary
+    resource"), so a baked armature transform survives the autoplay. Place
+    seated or posed things **in the running game** with a round-tripped print
+    aid (`tools/lobby_preview/`, Testing "Placing the lobby previews") and a
+    person looking; never sign placement off from a clean log.
 ---

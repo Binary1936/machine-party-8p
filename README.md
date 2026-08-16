@@ -123,7 +123,7 @@ reviewable as a normal diff. The build is byte-reproducible;
 | `scenes/local_game/script/local_game.gd` | Couch mode's own playlist generator gets the unconditional wheat-field-cutscene filter (a local session has no vanilla peers by definition). |
 | `autoloads/globals.gd` | Three added suit colours (orange, cyan, pink); per-minigame player caps and `supports_player_count()`; `game_version` tagged `-8P` for display while the wire reports vanilla's version string (vanilla-compat); `default_playlist` byte-identical to vanilla — the wheat-field cutscene is filtered at playlist generation instead, only when every peer runs the mod. |
 | `scripts/scenes/game/game.gd` | Playlist generation skips minigames that cannot seat the current lobby, with a fallback if that empties the list. Applied to **Arcade mode** too (new in v1.5.0), which vanilla builds without consulting the caps. |
-| `scenes/lobby/lobby_scene.tscn` + `lobby_scene.gd` | Seat map derived from `MAX_PLAYERS` instead of four hardcoded entries, and four more character preview slots (`Player5`-`Player8`) appended to the handler's exported arrays. Without the first, players 5-8 join and are never assigned a seat; without the second, `customization_assigners[seat]` was an out-of-bounds crash rather than a layout problem. |
+| `scenes/lobby/lobby_scene.tscn` + `lobby_scene.gd` | Seat map derived from `MAX_PLAYERS` instead of four hardcoded entries, and four more character preview slots (`Player5`-`Player8`) appended to the handler's exported arrays. Without the first, players 5-8 join and are never assigned a seat; without the second, `customization_assigners[seat]` was an out-of-bounds crash rather than a layout problem. The room has four chairs, so players 5-8 sit on the laps of players 1-4 — hand-placed seats, positioned in the running game; the script moves nothing. |
 | `modules/multiplayer_lobby/mod_player_name_list.gd` | **The mod's one new file.** A plain text roster of Steam names in the lobby corner. At eight players the seated characters are packed close enough that the floating nametags stop being readable. |
 | `scripts/components/.../customization_assigner.gd` | Renders the three added suits. Only five suit textures exist, so the added colours reuse a shipped texture with an `albedo_color` tint and keep the original shading; swapping in real textures later just means adding the files and dropping the tint entry. |
 | `minigames/intermission_new/.../intermission_score_screen.gd` | 8 rows. The board filled from a score-*sorted* list bounded by array size, so the four lowest-placed players were silently dropped — no crash. Also clamps a negative reverb pitch that only occurs once score totals are large enough. |
@@ -228,10 +228,12 @@ Ranked by how much they would actually bite.
   caps like the other branches, but that is verified by reading the code and
   confirming it loads — no local harness can reach the branch, since `-localtest`
   always enters through the debug lobby. Treat it as unproven.
-- **The Steam lobby rendering 8 previews has never been seen.** Structurally
-  unverifiable locally: `lobby_scene.gd`'s join path is built on Steam lobby
-  callbacks, so the real lobby cannot run over ENet. Needs a real 8-player Steam
-  session.
+- **The Steam lobby with 8 real peers has never been seen.** A 5-player lobby
+  was (it found the seating bug fixed on 2026-08-16), and all eight seats have
+  been looked at in a preview build with every slot forced visible — but the
+  per-slot visibility path with eight actual joiners has not. `lobby_scene.gd`'s
+  join path is built on Steam lobby callbacks, so the real lobby cannot run over
+  ENet; it needs a real 8-player Steam session.
 - **Smoke Break player-model clipping** on the left four seats. Cosmetic,
   accepted.
 - **Spawn-marker selection at 1-4** deviates from vanilla; see above.
