@@ -787,10 +787,12 @@ extracted/   pristine unpack of the shipped .pck (reference; regenerate on updat
 project/     full decompile via GDRE Tools — readable .gd / .tscn source
 mod/         the overlay: ONLY the 56 files that differ (see the manifest)
 dist/        built "Machine Party.pck" + machine-party-8p-mod.zip (release zip)
-installer/   install.py, install.sh, install.bat, README.txt - the installer
-              scripts, no mod copy inside; install.py falls back to the
-              repo-root mod/ when run from here. The release zip is built
-              from these four files plus mod/
+installer/   install.py, install.sh, WindowsInstall.bat, README.txt - the
+              installer scripts, no mod copy inside; install.py falls back to
+              the repo-root mod/ when run from here. Also holds the gitignored
+              python/ (Windows runtime, fetched by tools/fetch_embed_python.py
+              - see Toolchain). The release zip is built from those four
+              files plus mod/ plus python/ (step 8)
 testgame/    throwaway copy of the game install, for test runs
 testgame_new/ clean UNMODIFIED v2.1.2 copy - installer round-trip target
 project_old/ v1.5.0 decompile, kept as the diff baseline for step 4
@@ -867,6 +869,10 @@ userdata_backup/  a backup of the game's user data (saves, settings, shader
   fired on every install because of `mod_player_name_list.gd`, which trained
   users to ignore the one message meant to stop a bad patch. Keep it in sync
   with the overlay.
+- **`tools/fetch_embed_python.py`** — downloads the pinned-SHA256 Windows
+  embeddable CPython 3.13.1 into the gitignored `installer/python/`, bundled
+  into the release zip so Windows users need no Python install (step 8).
+  `--verify` checks an existing copy without downloading.
 
 ### The core trick
 
@@ -1323,23 +1329,30 @@ for s in tools/checks/*.py; do python3 "$s" || break; done
 Then run the validation recipe below.
 
 ### 8. Repackage the release zip
-`install.py`, `install.sh`, `install.bat` and `README.txt` live in `installer/`
-(no mod copy inside it — `install.py` falls back to the repo-root `mod/` when
-run from there). `dist/machine-party-8p-mod.zip` is built from those four
-`installer/` files plus `mod/`; the zip's internal structure is unchanged —
-the four files still land at the zip root, alongside `mod/`. There is no
-`zip` binary on this machine, so build it with Python from the project root:
+First, `python3 tools/fetch_embed_python.py` (Toolchain) to populate the
+gitignored `installer/python/`. `install.py`, `install.sh`,
+`WindowsInstall.bat` and `README.txt` live in `installer/` (no mod copy inside
+it — `install.py` falls back to the repo-root `mod/` when run from there).
+`dist/machine-party-8p-mod.zip` is built from those four `installer/` files
+plus `mod/` plus `installer/python/`; the four files land at the zip root,
+alongside `mod/` and `python/`. There is no `zip` binary on this
+machine, so build it with Python from the project root:
 
 ```bash
 python3 - <<'EOF'
 import os, zipfile
 with zipfile.ZipFile("dist/machine-party-8p-mod.zip", "w", zipfile.ZIP_DEFLATED) as z:
-    for f in ("install.sh", "README.txt", "install.py", "install.bat"):
+    for f in ("install.sh", "README.txt", "install.py", "WindowsInstall.bat"):
         z.write(os.path.join("installer", f), arcname=f)
     for root, dirs, files in os.walk("mod"):
         dirs.sort()
         for f in sorted(files):
             z.write(os.path.join(root, f))
+    for root, dirs, files in os.walk(os.path.join("installer", "python")):
+        dirs.sort()
+        for f in sorted(files):
+            full = os.path.join(root, f)
+            z.write(full, arcname=os.path.relpath(full, "installer"))
 EOF
 ```
 

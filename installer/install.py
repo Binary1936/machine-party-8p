@@ -198,6 +198,22 @@ def die(msg):
     sys.exit(1)
 
 
+def ask(prompt):
+    """input() that explains itself instead of raising EOFError.
+
+    Launched from a file manager there is no terminal attached, so the first
+    prompt reads EOF and the run used to end in a traceback nobody sees.
+    install.sh relaunches itself in a terminal to avoid that; this is what
+    happens when it cannot find one.
+    """
+    try:
+        return input(prompt)
+    except EOFError:
+        die("no terminal to read the answer from.\n"
+            "  Run the installer from a terminal instead:\n"
+            "    python3 install.py")
+
+
 def collect_overlay():
     if not os.path.isdir(OVERLAY):
         die(f"missing mod files - expected a 'mod' folder next to this script "
@@ -283,7 +299,7 @@ def offer_stale_backup_removal(game_dir, force=False):
         print("  Delete it? [y/N] y")
         reply = "y"
     else:
-        reply = input("  Delete it? [y/N] ").strip().lower()
+        reply = ask("  Delete it? [y/N] ").strip().lower()
     if reply == "y":
         os.remove(backup)
         print(f"  Deleted {BACKUP_NAME}")
@@ -333,7 +349,7 @@ def install(game_dir, force=False):
         print(f"  This usually means the game was updated and the mod "
               f"(built for {SUPPORTED_VERSION}) is out of date.")
         if not force:
-            reply = input("  Continue anyway? [y/N] ").strip().lower()
+            reply = ask("  Continue anyway? [y/N] ").strip().lower()
             if reply != "y":
                 print("  Aborted. Nothing was changed.")
                 return
@@ -449,7 +465,7 @@ def main():
             print("  Multiple installs found:")
             for i, d in enumerate(found, 1):
                 print(f"    {i}) {d}")
-            choice = input(f"  Which one? [1-{len(found)}] ").strip()
+            choice = ask(f"  Which one? [1-{len(found)}] ").strip()
             if not choice.isdigit() or not 1 <= int(choice) <= len(found):
                 die("invalid selection.")
             game_dir = found[int(choice) - 1]
@@ -468,7 +484,7 @@ def main():
         action = "Report the mod state in" if args.uninstall else "Install the mod to"
         origin = "auto-detected" if autodetected else "as given"
         print(f"\n  {action} ({origin}):\n    {os.path.abspath(game_dir)}")
-        if input("  Proceed? [y/N] ").strip().lower() != "y":
+        if ask("  Proceed? [y/N] ").strip().lower() != "y":
             print("  Aborted. Nothing was changed.")
             return
 

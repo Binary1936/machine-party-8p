@@ -20,13 +20,14 @@ modded friends should update together (e.g. v1.4 and v1.5 cannot connect).
 
 INSTALL
 -------
-You need Python 3 installed. Most Linux and macOS systems already have it.
-Windows: get it from https://python.org (tick "Add Python to PATH").
-
 The installer sits in the same folder as this file:
 
-  Windows      double-click install.bat
-  macOS/Linux  double-click install.sh, or run:  python3 install.py
+  Windows      double-click WindowsInstall.bat - no Python install needed,
+               the zip bundles its own runtime
+  macOS/Linux  double-click install.sh (it opens a terminal itself), or run:
+               python3 install.py
+
+Already have Python? On any platform, run  python3 install.py  directly.
 
 The installer finds your Steam copy automatically and patches your game files
 directly. It keeps no backup of its own. If you run it again on a game that is

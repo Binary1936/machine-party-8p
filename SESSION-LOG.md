@@ -16,7 +16,36 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-17 (latest) — Arcade and Custom playlist branches measured at 8 (no code change); three stale doc claims corrected
+### 2026-08-18 (latest) — Windows installer bundles its own Python runtime; installer no longer dies invisibly with no terminal attached
+
+`installer/install.bat` renamed to `WindowsInstall.bat` (`git mv`); it now
+prefers a Python runtime at `python\python.exe` bundled beside it, falling
+back to `py -3` with the old message — one file works from both a repo
+checkout and the release zip. New `tools/fetch_embed_python.py` downloads the
+Windows embeddable CPython 3.13.1 amd64 from python.org, verifies a pinned
+SHA-256, and extracts it to the gitignored `installer/python/` (21 MB,
+reproducible, not committed) — run before packaging a release (step 8). The
+release zip now ships that runtime, so Windows users need no Python install
+(zip ~21 MB → ~31 MB, 94 entries). `install.sh`, launched with no tty
+(double-clicked from a file manager), now re-execs itself inside a terminal
+emulator instead of the confirmation prompt reading EOF unseen, and its
+"Python 3 is required" message now points at the distro package manager
+instead of python.org. `install.py` gained an `ask()` helper wrapping
+`input()` that reports the missing terminal instead of raising `EOFError`,
+used by all four confirmation prompts. New pitfall 36.
+
+| Check | Result |
+|---|---|
+| Windows path, real release zip, `WindowsInstall.bat` under Windows CPython 3.13.1 | install and `--verify` succeed; pck md5 `c697a7de9842a2c29d1604c04a8653a2`, byte-identical to a Linux-built install from the same pristine `testgame_new` pck |
+| Zip integrity | extracted zip's `mod/` `diff -rq` clean against repo `mod/`; `install.sh` keeps mode 755 through the zip |
+| Linux, no tty, before the fix | `install.py` raised `EOFError` at `Proceed? [y/N]` — the traceback nobody sees |
+| Linux, no tty, after the fix | no terminal emulator found: prints the "no terminal" message, not a traceback; one found: re-execs into it (stub on PATH received `-e <install.sh path> --game-dir ...`); real tty: re-exec correctly skipped, install completes to the same md5 |
+| `tools/checks/*.py` | all five pass |
+
+python.org ships embeddable builds for Windows only (amd64/arm64/win32); Linux
+and macOS keep using the system `python3`.
+
+### 2026-08-17 — Arcade and Custom playlist branches measured at 8 (no code change); three stale doc claims corrected
 
 No mod change. Runs used a local-only harness aid (not in the repo) that forces
 `arcade_game` from the debug lobby plus a host-side playlist print; the raw logs

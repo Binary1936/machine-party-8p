@@ -423,4 +423,10 @@ recipe", and a dated *session-log entry* lives in `SESSION-LOG.md` (or
     seated or posed things **in the running game** with a round-tripped print
     aid (`tools/lobby_preview/`, Testing "Placing the lobby previews") and a
     person looking; never sign placement off from a clean log.
+36. **A file manager launches the installer with no terminal attached, so
+    `input()` reads EOF and the run dies in a traceback nobody sees** — a
+    double-click that appears to do nothing. `install.sh` now re-execs itself
+    inside a terminal emulator when stdin is not a tty; `install.py`'s `ask()`
+    reports the missing terminal instead of crashing when none is found. See
+    the 2026-08-18 session-log entry.
 ---

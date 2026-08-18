@@ -23,6 +23,9 @@ docs_old*/
 
 # --- Toolchain binaries: downloadable, see UPDATING.md (Toolchain) ---
 tools/bin/
+# Windows runtime bundled into the release zip, fetched by
+# tools/fetch_embed_python.py - reproducible, not committed.
+installer/python/
 
 # --- Python ---
 __pycache__/

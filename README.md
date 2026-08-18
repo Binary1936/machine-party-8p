@@ -50,28 +50,21 @@ Lobbies of 1-4 play as vanilla, with two deliberate exceptions — see
 
 ## Install
 
-The mod zip (~21 MB) is published on the project's Releases page. Extract it
-and double-click `install.bat` (Windows) or `install.sh` (macOS/Linux), or run
-`python3 install.py`. It auto-detects the Steam copy and patches
-`Machine Party.pck` in place; the executable and the native libraries beside
-it are untouched. **No backup is kept** — Steam's *Verify integrity of game
-files* re-downloads the original at any time, so the installer refuses to run
-on an already-patched copy rather than build the mod on top of itself (verify
-the game files first, then reinstall). Older installer versions kept a
-`Machine Party.pck.vanilla` backup; the current one offers to delete it, and
-never restores from it — after a game update that copy holds the wrong game
-version (issue #9).
-
-A clone or source download of the repository installs the same way, with no
-build step: run `python3 installer/install.py` (or the wrappers in
-`installer/`). The installer contains no copy of the mod — it reads the
-repo's `mod/` directly.
-
-It requires Python 3, preinstalled on most macOS/Linux systems but not on
-Windows.
+The mod zip (~31 MB, since it bundles a Windows Python runtime — no Python
+install needed on Windows) is published on the project's Releases page.
+Extract it and double-click `WindowsInstall.bat` (Windows) or `install.sh`
+(macOS/Linux), or run `python3 install.py` directly on any platform. It
+auto-detects the Steam copy and patches `Machine Party.pck` in place; the
+executable and the native libraries beside it are untouched. **No backup is
+kept** — Steam's *Verify integrity of game files* re-downloads the original at
+any time, so the installer refuses to run on an already-patched copy rather
+than build the mod on top of itself (verify the game files first, then
+reinstall). Older installer versions kept a `Machine Party.pck.vanilla`
+backup; the current one offers to delete it, and never restores from it —
+after a game update that copy holds the wrong game version (issue #9).
 
 The installer is preferred over handing out the built `.pck` for three reasons:
-it is ~21 MB instead of ~652 MB, it distributes only the mod's changes rather
+it is ~31 MB instead of ~652 MB, it distributes only the mod's changes rather
 than a full copy of the game's assets, and it patches each person's own platform
 build — so a Windows player is never running a `.pck` exported for Linux.
 
