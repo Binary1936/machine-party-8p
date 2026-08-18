@@ -420,10 +420,10 @@ mixed lobby plays it. It is still launchable via `-debug-tools`. See "The first
 sanctioned exception".
 
 **Always write the identifier next to the display name.** They overlap almost
-nowhere, and `MinigameReadableNames` (globals.gd:178) is the only authoritative
-map. This list previously said "Wrong Way" and "Stable Footing" were untested
-while both had in fact been worked on and verified - **Wrong Way is
-`EscalatorPit` and Stable Footing is `DiscoDodge`**. Full map:
+nowhere, and `MinigameReadableNames` (`autoloads/globals.gd`) is the only
+authoritative map. This list previously said "Wrong Way" and "Stable Footing"
+were untested while both had in fact been worked on and verified - **Wrong Way
+is `EscalatorPit` and Stable Footing is `DiscoDodge`**. Full map:
 
 | Display name | Identifier | | Display name | Identifier |
 |---|---|---|---|---|
@@ -485,7 +485,7 @@ forced visible in the `tools/lobby_preview/` build; the per-slot visibility
 path with eight real joiners has not (`-localtest` runs the debug lobby).
 
 **Pre-existing vanilla bug, not worth fixing:**
-`scripts/scenes/game/states/minigame_end_state.gd:28` calls
+`scripts/scenes/game/states/minigame_end_state.gd`'s `enter()` calls
 `update_playlist_state_rpc.rpc(owner.session_minigame_list)` with one argument
 against a three-parameter function, so every minigame end logs
 `Method expected 3 argument(s), but called with 1`. That file is **not** in
@@ -868,11 +868,18 @@ userdata_backup/  a backup of the game's user data (saves, settings, shader
   from the "nothing to displace" compatibility check — without it that warning
   fired on every install because of `mod_player_name_list.gd`, which trained
   users to ignore the one message meant to stop a bad patch. Keep it in sync
-  with the overlay.
+  with the overlay. `find_game()` checks the Windows registry only when the
+  ordinary paths find nothing — a deliberate choice to keep the installer's
+  trust surface small (see the 2026-08-18 session-log entry), not an accident
+  of control flow, so don't collapse the two passes into one.
+- **`tools/package_release.py`** — builds `dist/machine-party-8p-mod.zip` and
+  refuses to produce a broken one; the only packaging command (step 8).
 - **`tools/fetch_embed_python.py`** — downloads the pinned-SHA256 Windows
   embeddable CPython 3.13.1 into the gitignored `installer/python/`, bundled
-  into the release zip so Windows users need no Python install (step 8).
-  `--verify` checks an existing copy without downloading.
+  into the release zip so Windows users need no Python install.
+  `package_release.py` calls it when that directory is absent, so it rarely
+  needs running by hand; `--verify` checks an existing copy without
+  downloading.
 
 ### The core trick
 
@@ -1281,7 +1288,7 @@ In code — these change behaviour, so they are the ones that break things:
     `v2.1.2-8P-v1.5`. A game update bumps only the game part — **carry the mod
     release label across unchanged** unless the mod itself is being released anew.
 - `installer/install.py` → `SUPPORTED_VERSION = "v<new>"`
-- `installer/install.py` (~line 329) → the `--verify` message **hardcodes the
+- `installer/install.py` → `verify()`'s printed message **hardcodes the
   same display string**. It is the second place the label lives and it does not
   derive it, so it silently goes stale; keep the two in sync.
 - `installer/README.txt` (ships inside the zip at its root) → the "DID IT WORK?" example
@@ -1329,36 +1336,33 @@ for s in tools/checks/*.py; do python3 "$s" || break; done
 Then run the validation recipe below.
 
 ### 8. Repackage the release zip
-First, `python3 tools/fetch_embed_python.py` (Toolchain) to populate the
-gitignored `installer/python/`. `install.py`, `install.sh`,
-`WindowsInstall.bat` and `README.txt` live in `installer/` (no mod copy inside
-it — `install.py` falls back to the repo-root `mod/` when run from there).
-`dist/machine-party-8p-mod.zip` is built from those four `installer/` files
-plus `mod/` plus `installer/python/`; the four files land at the zip root,
-alongside `mod/` and `python/`. There is no `zip` binary on this
-machine, so build it with Python from the project root:
 
 ```bash
-python3 - <<'EOF'
-import os, zipfile
-with zipfile.ZipFile("dist/machine-party-8p-mod.zip", "w", zipfile.ZIP_DEFLATED) as z:
-    for f in ("install.sh", "README.txt", "install.py", "WindowsInstall.bat"):
-        z.write(os.path.join("installer", f), arcname=f)
-    for root, dirs, files in os.walk("mod"):
-        dirs.sort()
-        for f in sorted(files):
-            z.write(os.path.join(root, f))
-    for root, dirs, files in os.walk(os.path.join("installer", "python")):
-        dirs.sort()
-        for f in sorted(files):
-            full = os.path.join(root, f)
-            z.write(full, arcname=os.path.relpath(full, "installer"))
-EOF
+python3 tools/package_release.py
 ```
 
-After building, extract to a scratch directory and `diff -rq` the extracted
-`mod/` against `mod/` — it must be empty before the zip ships. Then commit,
-tag, and attach the zip to a GitHub Release per "Version control".
+Builds `dist/machine-party-8p-mod.zip` from the four `installer/` scripts
+(`install.py`, `install.sh`, `WindowsInstall.bat`, `README.txt` — no mod copy
+lives in `installer/`; `install.py` falls back to the repo-root `mod/` when
+run from there), plus `mod/` and the Windows runtime, which it fetches if
+absent (Toolchain). The four scripts land at the zip root, alongside `mod/`
+and `python/`.
+
+Building and checking are one command deliberately, because the worst failure
+is silent: `os.walk` over a missing `installer/python/` returns nothing
+without erroring, so packaging without the runtime yields a valid ~21 MB zip —
+the old release size, so it looks right — whose `WindowsInstall.bat` quietly
+falls back to `py -3` and sends Windows users back to installing Python. The
+script re-opens the finished zip and refuses one with no `python/`, with a
+`mod/` that differs byte-for-byte from the overlay, or with `install.sh`
+stripped of its exec bit. `--verify` re-checks an existing zip.
+
+Builds are reproducible: member timestamps and permissions are pinned, so the
+same tree always produces the same bytes regardless of when the runtime was
+fetched or what the umask is. The printed sha256 is therefore checkable — a
+rebuild reproduces the published asset's hash.
+
+Then commit, tag, and attach the zip to a GitHub Release per "Version control".
 
 ---
 
@@ -1572,12 +1576,12 @@ exits 127.
 
 **Found 2026-08-02, and it invalidates a class of playlist testing.**
 
-`multiplayer_menu.gd` sets `GameManager.custom_game = true` (vanilla behaviour,
-project line 38). Every `-localtest` session is therefore a **custom** game, and
-`generate_session_playlist()` takes its `CustomMinigamesWhitelist` branch - a
-*different* branch from the one a real Steam "Original" session uses. So until
-this was noticed, **the non-custom branch that every real game actually plays
-had never once run under `-localtest`.**
+`multiplayer_menu.gd` sets `GameManager.custom_game = true` in `_ready()`
+(vanilla behaviour). Every `-localtest` session is therefore a **custom**
+game, and `generate_session_playlist()` takes its `CustomMinigamesWhitelist`
+branch - a *different* branch from the one a real Steam "Original" session
+uses. So until this was noticed, **the non-custom branch that every real game
+actually plays had never once run under `-localtest`.**
 
 It is directly visible in the playlist print at 8 players — **a snapshot taken
 2026-08-02**, before the cutscene removal landed and before the last two
@@ -1648,16 +1652,16 @@ is always executed is not evidence.
 
 **Why it hangs, and it is not the overlay:**
 
-- `role_reveal_state.gd:78` is the **only** online caller of
+- `role_reveal_state.gd`'s `reveal_online()` is the **only** online caller of
   `hunter_player.set_can_aim_rpc.rpc(true)`, and `can_aim` defaults to `false`.
-  (The other `set_can_aim_rpc(true)`, at `hunter_player.gd:600`, is inside
-  `reveal_role()`, which only `reveal_local()` calls — the local-couch path this
-  mod does not use.)
+  (The other `set_can_aim_rpc(true)` is inside `reveal_role()`, which only
+  `reveal_local()` calls — the local-couch path this mod does not use.)
 - `round_state.gd` short-circuits `Round -> Countdown` whenever
   `Globals.debug_skip_brief` is set, skipping `RoleReveal` entirely.
 - So the hunter's `can_aim` stays false forever: mouse aim is ignored
-  (`hunter_player.gd:135`) and controller input returns early (line 216). **The
-  hunter cannot aim or fire.**
+  (the `can_aim` guard in `hunter_player.gd`'s `_input()`) and controller
+  input returns early in `process_controller()`. **The hunter cannot aim or
+  fire.**
 - `check_game_end()` returns early while `duck_players` is non-empty, ducks are
   only removed by kill/disconnect handlers, and **there is no turn timer**. No
   shot is ever fired, so no duck ever dies, so the round can never end.
