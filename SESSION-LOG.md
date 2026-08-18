@@ -16,7 +16,7 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-18 (latest) — Windows installer bundles its own Python runtime; installer no longer dies invisibly with no terminal attached
+### 2026-08-18 (latest) — Windows installer bundles its own Python runtime; installer no longer dies invisibly with no terminal attached; Steam auto-detection widened
 
 `installer/install.bat` renamed to `WindowsInstall.bat` (`git mv`); it now
 prefers a Python runtime at `python\python.exe` bundled beside it, falling
@@ -34,13 +34,30 @@ instead of python.org. `install.py` gained an `ask()` helper wrapping
 `input()` that reports the missing terminal instead of raising `EOFError`,
 used by all four confirmation prompts. New pitfall 36.
 
+Steam auto-detection also widened, same session. `windows_steam_dirs()` now
+also checks `%ProgramFiles(x86)%`/`%ProgramFiles%` (Program Files is not
+always on C:), and — only when the ordinary paths find nothing, and only on
+Windows — reads three read-only registry values (Steam's `SteamPath`/
+`InstallPath` under `HKCU` and two `HKLM` keys; nothing enumerated or
+written) to catch a Steam client installed somewhere else entirely: reading
+the registry to answer a question the plain paths already answer is more
+than a normal install needs to do, so it stays a last resort. Linux gained
+`~/.steam/root`, the client's own-install symlink. `steam_roots()` now
+de-duplicates by `realpath` and drops paths that don't exist, since the
+registry, Program Files, and `.steam/root` routinely name the same directory
+and each duplicate re-globbed a whole library tree. `find_game()` is now
+two-pass (`_scan_roots()` holds the old body): plain paths first, registry
+retried only on Windows when that came up empty.
+
 | Check | Result |
 |---|---|
 | Windows path, real release zip, `WindowsInstall.bat` under Windows CPython 3.13.1 | install and `--verify` succeed; pck md5 `c697a7de9842a2c29d1604c04a8653a2`, byte-identical to a Linux-built install from the same pristine `testgame_new` pck |
 | Zip integrity | extracted zip's `mod/` `diff -rq` clean against repo `mod/`; `install.sh` keeps mode 755 through the zip |
 | Linux, no tty, before the fix | `install.py` raised `EOFError` at `Proceed? [y/N]` — the traceback nobody sees |
 | Linux, no tty, after the fix | no terminal emulator found: prints the "no terminal" message, not a traceback; one found: re-execs into it (stub on PATH received `-e <install.sh path> --game-dir ...`); real tty: re-exec correctly skipped, install completes to the same md5 |
-| `tools/checks/*.py` | all five pass |
+| Windows, Steam client at a non-default location, game in a separate library | `steam_roots()` empty (registry untouched); `steam_roots(use_registry=True)` found both; `find_game()` located the game via the fallback. An ordinary Program Files install alongside it was found without touching the registry, so the fallback never ran. Negative control (registry value deleted, then restored) isolated it as the cause; an HKLM-only key (no HKCU) also resolved |
+| Linux | roots and the detected game unchanged; a stale `libraryfolders.vdf` entry naming a since-removed path now drops out at collection instead of being globbed |
+| `tools/checks/*.py` | all five pass; `--verify` on a patched copy still reports `PATCHED` |
 
 python.org ships embeddable builds for Windows only (amd64/arm64/win32); Linux
 and macOS keep using the system `python3`.

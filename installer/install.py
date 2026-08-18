@@ -147,22 +147,88 @@ def write_pck(out_path, sources, ver=(3, 4, 5, 1)):
 # Locating the game
 # --------------------------------------------------------------------------
 
-def steam_roots():
+def windows_steam_dirs(use_registry=False):
+    """Where the Steam *client* might live on Windows.
+
+    Finding the client is what unlocks everything else: a library on another
+    drive is only discoverable through the libraryfolders.vdf inside it. The
+    two hardcoded Program Files paths missed anyone who installed Steam
+    anywhere else - the installer then reported "could not find Machine Party"
+    while the game sat on D:, and the vdf naming that drive was never read.
+
+    `use_registry` reads three named Steam values (read-only, no enumeration,
+    nothing written) to find a client installed somewhere else entirely.
+    find_game() turns it on only after the ordinary paths have come up empty,
+    so a normal install never touches the registry at all - reading it to
+    answer a question the plain paths already answer is more than this needs
+    to do.
+    """
+    out = []
+    try:
+        import winreg
+    except ImportError:          # not Windows after all
+        winreg = None
+    if use_registry and winreg is not None:
+        for hive, key, value in (
+            (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam", "SteamPath"),
+            (winreg.HKEY_LOCAL_MACHINE,
+             r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+            (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Valve\Steam", "InstallPath"),
+        ):
+            try:
+                with winreg.OpenKey(hive, key) as k:
+                    path = winreg.QueryValueEx(k, value)[0]
+            except OSError:
+                continue
+            # SteamPath is often stored with forward slashes.
+            if path:
+                out.append(os.path.normpath(path))
+    # Program Files is not always on C:.
+    for env in ("ProgramFiles(x86)", "ProgramFiles"):
+        base = os.environ.get(env)
+        if base:
+            out.append(os.path.join(base, "Steam"))
+    out += [r"C:\Program Files (x86)\Steam", r"C:\Program Files\Steam"]
+    return out
+
+
+def steam_roots(use_registry=False):
     home = os.path.expanduser("~")
     sysname = platform.system()
     if sysname == "Windows":
-        cands = [r"C:\Program Files (x86)\Steam", r"C:\Program Files\Steam"]
+        cands = windows_steam_dirs(use_registry)
     elif sysname == "Darwin":
         cands = [os.path.join(home, "Library/Application Support/Steam")]
     else:
         cands = [os.path.join(home, ".local/share/Steam"),
                  os.path.join(home, ".steam/steam"),
+                 # symlink Steam keeps pointing at its own install, wherever
+                 # the user put it - the Linux answer to a non-default install
+                 os.path.join(home, ".steam/root"),
                  os.path.join(home, ".var/app/com.valvesoftware.Steam/data/Steam")]
     roots = []
+    seen = set()
+
+    def add(path):
+        """Keep the first spelling of each real directory.
+
+        Several candidates routinely name the same place - the registry and
+        Program Files, .steam/root resolving into .local/share, or a client
+        that also lists itself as library 0 - and each duplicate would glob a
+        whole library tree again.
+        """
+        if not os.path.isdir(path):
+            return False
+        key = os.path.normcase(os.path.realpath(path))
+        if key in seen:
+            return False
+        seen.add(key)
+        roots.append(path)
+        return True
+
     for c in cands:
-        if not os.path.isdir(c):
+        if not add(c):
             continue
-        roots.append(c)
         vdf = os.path.join(c, "steamapps", "libraryfolders.vdf")
         if os.path.isfile(vdf):
             try:
@@ -170,13 +236,13 @@ def steam_roots():
             except OSError:
                 continue
             for m in re.finditer(r'"path"\s+"([^"]+)"', text):
-                roots.append(m.group(1).replace("\\\\", os.sep))
+                add(m.group(1).replace("\\\\", os.sep))
     return roots
 
 
-def find_game():
+def _scan_roots(roots):
     hits = []
-    for root in steam_roots():
+    for root in roots:
         common = os.path.join(root, "steamapps", "common")
         if not os.path.isdir(common):
             continue
@@ -189,6 +255,20 @@ def find_game():
             seen.add(d)
             out.append(d)
     return out
+
+
+def find_game():
+    """Locate the game, asking the registry only when nothing else worked.
+
+    Windows keeps the authoritative answer in the registry, but the ordinary
+    paths answer it for almost everyone. So the registry is a last resort:
+    consulted only when the alternative is telling the user we could not find
+    their game. See windows_steam_dirs().
+    """
+    found = _scan_roots(steam_roots())
+    if not found and platform.system() == "Windows":
+        found = _scan_roots(steam_roots(use_registry=True))
+    return found
 
 
 # --------------------------------------------------------------------------
