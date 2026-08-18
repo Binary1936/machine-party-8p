@@ -78,13 +78,18 @@ playlist path that never consulted the caps, so at 5-8 players it could seat
    Vanilla assumes ≥ 10 candidates; once filtered that is not guaranteed, and
    `array[i]` past the end returns **null silently** in the release template
    (pitfall 23) — so the failure would be nulls in the playlist, not an error.
-   At 8 players 13 survive, so the clamp does not bind today; it exists so a
-   future cap change cannot turn into a silent one.
+   Nothing is filtered at any roster size today — `modded_minigame_player_cap`
+   holds only `ScavangerChairs`, in neither playlist — so all 15 survive and the
+   clamp does not bind (the earlier "13 at 8" predates the 2026-08-07 uncapping,
+   §21–22). It exists so a future cap change cannot turn into a silent one.
 
-**Unproven by running.** `GameManager.arcade_game` is set from the main menu's
-Arcade button, and `-localtest` always enters via the debug lobby, so no local
-harness reaches this branch. The file parses and loads (`-validate-scenes`), and
-the filter's inputs are measured, but the branch itself has never executed.
+**Run under the harness once, never by people.** `GameManager.arcade_game` is
+set only by the main menu's Arcade button and `-localtest` enters via the debug
+lobby, so the stock harness never reaches this branch. On 2026-08-17 a
+local-only harness aid (not in the repo) forced it: at 8 and at 4 the host built
+ten distinct whitelist entries, rounds 1–2, `lobby_size` = seated count, and
+sessions played through on every client with no errors (session log). A real
+Arcade session with 5–8 people is still untested — issue #4.
 
 Host-authoritative: the host builds the list and ships it via
 `update_playlist_state_rpc`, so clients need no equivalent check.
@@ -1216,7 +1221,7 @@ These exist because screenshots repeatedly proved unreliable. Prefer them.
 | `[ROOMBA8]` | `dvd_roomba.gd` | markers, spawned, live roombas, **`max_roombas`** (scene overrides the script), landing audit |
 | `[FORK8]` | `forklift_certified.gd`, `crate_manager.gd` | `zones` — the delivery zones built on each peer, with every centre; `crate_region` — the free centre cell derived from the zone colliders; `pairing` — the marker/zone pair each player was actually given (they share one index, so a list that grew out of step pairs a player with someone else's zone **silently**); `crates` — requested vs target vs sampler attempts vs points, and `region=vanilla` or `centre_cell`; `rebound` — exported node references re-pointed at each clone's own children (20/20; anything less means a clone is driving the template's border or counter); `plates` — faked bay plates built; `fit` — the side zones' z-shift and where their readouts landed; `spawned` — per peer, the forklifts, the zones and how many zones have an owner. `added=0 (vanilla)`, `region=vanilla` and `zones=4` at <= 4 players are the vanilla-parity gates |
 
-| `[FILTER8]` | `burn_recycle.gd` | `rooms` — per peer: `is_server`, `peer`, `rooms`, `subtrees=n/6` (a miss means room B was built incomplete), `belts`, `presses`, `indicators`, `timer_labels`; `eliminate` — `victims` this round, `alive_by_room=[r0=…, r1=…]`, `dead_total` and `contested`. `rooms=1` at <= 4 players is the vanilla-parity gate — room B is never built there |
+| `[FILTER8]` | `burn_recycle.gd` | `rooms` — per peer: `is_server`, `peer`, `rooms`, `subtrees=n/5` — **`4/5` is the complete result under v2.1.2**: `MOD_ROOM_SUBTREES` names five nodes and the shipped scene no longer has `burn recycle visuals blockout` (v1.5.0 did); judge room B by `belts`/`presses`/`indicators`/`timer_labels` — `belts`, `presses`, `indicators`, `timer_labels`; `eliminate` — `victims` this round, `alive_by_room=[r0=…, r1=…]`, `dead_total` and `contested`. `rooms=1` at <= 4 players is the vanilla-parity gate — room B is never built there |
 | `[GUN8]` | `manufacture_gun.gd` | `expand` — host-side, per round: `roster`, `spawns=8 (+4)`, `desks=8 (+4)`, `closest_spawn_pair`, `empty_desks`, and `added=` with every mod desk's **position and yaw**, which is the only way to check `MOD_WALL_DESK_PUSH` from a log; `items` — `markers`, `per_marker` and `total`; `preview raised` — the ingredient projection's measured own height and its resulting y span, printed **inside the RPC so all eight peers report it**. At <= 4 players the parity gates are that `expand` and `preview raised` **do not appear at all** and `items` reads `per_marker=1 total=26` |
 
 A count of **0** in any of these (`chairs=0`, `MISSING <path>`) means a lookup

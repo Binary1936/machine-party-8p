@@ -16,7 +16,29 @@ Section names cited bare — "Current status", "Open items", *Testing*, the
 Newest first. Each entry is what changed and what evidence backed it, so a new
 chat can judge how solid a claim is rather than re-deriving it.
 
-### 2026-08-16 (latest) — Shipped as mod release v1.5: the Steam lobby's lap seats for players 5-8 (issue #14) and Chisel's head-on jumbotron HUD for 5-8 lobbies
+### 2026-08-17 (latest) — Arcade and Custom playlist branches measured at 8 (no code change); three stale doc claims corrected
+
+No mod change. Runs used a local-only harness aid (not in the repo) that forces
+`arcade_game` from the debug lobby plus a host-side playlist print; the raw logs
+were not retained, the counts below are from the session's per-peer greps. All
+`tools/localtest.sh` against `testgame`, error-free after the standard filter:
+
+| Run | Result |
+|---|---|
+| Arcade, 8, `START=1`, 150 s | 10 distinct whitelist entries, rounds 1–2, `lobby_size=8`; ForkliftCertified + TrainRace played, `[TRAIN8]`=27 / `[SCORE8]`=3 on all 8 peers |
+| Arcade, 4, `START=1`, 120 s | 10 entries, `lobby_size=4`, `[SPINE8] factor=1.000` (rule 3 control) |
+| Arcade, 8, `FLOW=1 -kato-hunt=8`, 420 s | BurnRecycle, DvdRoomba, KnifeAtTheOffice played, 5 rounds; `[FILTER8]`/`[ROOMBA8]`/`[KATO8]` identical on all 7 clients; a `DvdRoomba:2` draw played 2 rounds |
+| Arcade + `MINIGAME=DuckHunt`, 8 | the pin composes with the branch; `ducks=7 hunters=1` on all peers |
+| Custom, 8 and 4, `START=1` | byte-identical 15-entry lists and rounds — roster-independent |
+
+Corrections: §3's "13 survive at 8" → 15, filter inert since 2026-08-07;
+`[FILTER8] subtrees=n/6` → `n/5`, `4/5` complete under v2.1.2; "Arcade has
+never been run" → run under the harness, not by people. Not shown by these
+runs: ManufactureGun (seated at 8 under Arcade, clock ran out before it
+played), Duck Hunt's 5–8 round relaxation under Arcade (both draws were
+1-round), hand-picked custom playlists. Issue #4 stays open.
+
+### 2026-08-16 — Shipped as mod release v1.5: the Steam lobby's lap seats for players 5-8 (issue #14) and Chisel's head-on jumbotron HUD for 5-8 lobbies
 
 **What ships:** the two entries below — `lobby_scene.tscn`'s hand-placed
 `Player5`-`Player8` seats with the runtime spread removed from

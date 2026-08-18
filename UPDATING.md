@@ -406,8 +406,10 @@ paragraph be read as closing that.
 counts and no intro/outro. It works under the mod, and the mod filters its
 playlist by the player caps the same way the other two branches are filtered; see
 `game.gd` and the 2026-08-05 session-log entry. At 1-4 players it is untouched
-vanilla. **It has never been run** — no local harness can reach it, because
-`-localtest` always enters through the debug lobby. Treat it as unproven.
+vanilla. The stock harness cannot reach it (`-localtest` enters through the
+debug lobby); it was run once, 2026-08-17, with a local-only harness aid not in
+the repo — ten entries, played through at 8 and at 4, no errors (§3, session
+log). Never run by people: issue #4.
 
 **Removed from the rotation on purpose:** the wheat-field cutscene
 (`CutsceneTest`) is dropped from the session playlist at any roster size - the
@@ -599,16 +601,13 @@ closed.** What remains:
      per peer at 4 and at 8) and present on 4.5.1 too, so it is neither new nor
      player-count-specific — ordinary despawn churn. No filter entry needed; see
      the session-log entry for why adding one would cost more than it saves.
-   - **Arcade mode has never actually been run.** The mod's filter on it is
-     verified by reading, not by playing: `GameManager.arcade_game` is set by the
-     main menu's Arcade button, and `-localtest` always enters through the debug
-     lobby, so no local harness reaches that branch. The filter's *inputs* are
-     verified (13 minigames survive the cap filter at 8, so the clamp to 10 does
-     not bind), and the file parses and loads. That 13 was measured 2026-08-05
-     with two caps still in place; since 2026-08-07 nothing reachable is capped,
-     so the filtered whitelist at 8 is simply the whole whitelist and the clamp
-     still does not bind. Exercising the branch itself would need either a real
-     Steam session or a test flag that does not exist yet.
+   - **Arcade mode has never been run by people** (issue #4). The branch itself
+     was exercised once under the harness on 2026-08-17 via a local-only aid not
+     in the repo (§3, session log): ten whitelist entries at 8 and at 4, played
+     through, no errors. Nothing reachable is capped since 2026-08-07, so all 15
+     whitelist entries survive the filter and the clamp to 10 does not bind.
+     Still open: a Steam Arcade session at 5–8, and the hand-picked
+     custom-playlist path (the harness always plays the default playlist).
 
 1. **Nobody has ever *played* an 8-player session.** The harness runs eight
    unattended instances, so scoring, elimination order and win conditions at 8

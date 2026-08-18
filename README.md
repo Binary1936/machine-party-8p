@@ -224,10 +224,10 @@ Ranked by how much they would actually bite.
   each pair begins interpenetrating and shoves apart on frame 1. Visible as a
   brief shove at spawn. Open — raising the offset moves players in fourteen
   already-verified scenes, so it wants a decision rather than a drive-by change.
-- **Arcade mode has never been run.** The mod filters its playlist by the player
-  caps like the other branches, but that is verified by reading the code and
-  confirming it loads — no local harness can reach the branch, since `-localtest`
-  always enters through the debug lobby. Treat it as unproven.
+- **Arcade mode has never been played by people.** The code path was exercised
+  once under the local test harness (2026-08-17, at 8 and at 4 players, ten
+  minigames, no errors) via a local-only aid not in this repo — but no Steam
+  Arcade session with 5–8 people has happened. Testers wanted: issue #4.
 - **The Steam lobby with 8 real peers has never been seen.** A 5-player lobby
   was (it found the seating bug fixed on 2026-08-16), and all eight seats have
   been looked at in a preview build with every slot forced visible — but the
