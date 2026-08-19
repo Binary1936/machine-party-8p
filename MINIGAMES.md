@@ -19,8 +19,8 @@ Cross-file conventions: **pitfall N** always means `PITFALLS.md`;
 
 ## What the mod changes
 
-Forty scripts and sixteen scenes (56 files). Re-apply all of these to
-the new version.
+56 files today; the authoritative count and file list is the overlay manifest
+in `UPDATING.md` (CI checks it). Re-apply all of these to the new version.
 
 ### 1. `modules/multiplayer/network_manager.gd`
 ```gdscript
@@ -33,13 +33,13 @@ into `Steam.createLobby`, and both backends gate joins on `MAX_PLAYERS`.
 free-fly observer camera, which joins once the real seats are full.
 
 ### 2. `autoloads/globals.gd`
-- `game_version` → `"v1.5.0-8P-v1.1"`, i.e. game version + `-8P` + the mod's
-  release label (**bump the base version on update; keep the mod release
-  label**). Shown on the main menu via `main_menu.gd`. Since vanilla-compat it is
-  the **display** string only: `MOD_NETWORK_GAME_VERSION` (vanilla's exact
-  version) and `MOD_SUFFIX` are what the handshake puts on the wire. See
-  `UPDATING.md` step 6 — all three have to be bumped, and a stale
-  `MOD_NETWORK_GAME_VERSION` silently refuses every vanilla peer.
+- `game_version` = game version + `-8P-` + the mod release label (**bump the
+  base version on update; keep the mod release label**). Shown on the main menu
+  via `main_menu.gd`. Since vanilla-compat it is the **display** string only:
+  `MOD_NETWORK_GAME_VERSION` (vanilla's exact version) and `MOD_SUFFIX` are what
+  the handshake puts on the wire. See `UPDATING.md` step 6 — all three have to be
+  bumped, and a stale `MOD_NETWORK_GAME_VERSION` silently refuses every vanilla
+  peer.
 - `CustomizationColors` enum + `suit_colors` array gain `Orange, Cyan, Pink`.
 - New `modded_suit_tints` — maps each new colour to a shipped base texture plus
   an `albedo_color` tint. There are only five suit *textures*; the three added
@@ -60,28 +60,27 @@ free-fly observer camera, which joins once the real seats are full.
   exclude demoted debug spectators, which do sit in `connected_players`: until
   2026-08-13 it was a plain `.size()`, so a 9th connection (8 players plus a
   demoted spectator) pushed `lobby_size` past every cap and emptied the
-  playlist, fallback included — a silent session dead-end (issue #6; see the
-  session-log entry for the reproduction).
+  playlist, fallback included — a silent session dead-end (issue #6;
+  reproduction in the archived 2026-08-13 session-log entry).
 - Fallback: if filtering empties the playlist, rebuild from `default_playlist`
   with the same rule, so a custom playlist of only-capped games cannot dead-end.
 
 **Arcade (game v1.5.0).** Upstream added a third branch that ignores
 `session_playlist` entirely and takes ten entries straight off
-`Globals.CustomMinigamesWhitelist` (15 long) after a `shuffle()`. It is the one
+`Globals.CustomMinigamesWhitelist` (15 long) after a `shuffle()` — the one
 playlist path that never consulted the caps, so at 5-8 players it could seat
 `ManufactureGun` or `BurnRecycle`. Two changes:
 
-1. Build the candidate list by filtering the whitelist through
-   `supports_player_count()` before shuffling. At 1-4 every cap is 4, so nothing
-   is removed and Arcade is bit-for-bit vanilla there (rule 3).
+1. Filter the whitelist through `supports_player_count()` before shuffling. At
+   1-4 every cap is 4, so nothing is removed and Arcade is bit-for-bit vanilla
+   there (rule 3).
 2. Clamp the shipped literal `10` with `mini()` against the filtered size.
    Vanilla assumes ≥ 10 candidates; once filtered that is not guaranteed, and
    `array[i]` past the end returns **null silently** in the release template
    (pitfall 23) — so the failure would be nulls in the playlist, not an error.
-   Nothing is filtered at any roster size today — `modded_minigame_player_cap`
-   holds only `ScavangerChairs`, in neither playlist — so all 15 survive and the
-   clamp does not bind (the earlier "13 at 8" predates the 2026-08-07 uncapping,
-   §21–22). It exists so a future cap change cannot turn into a silent one.
+   Nothing is filtered at any roster size today (`modded_minigame_player_cap`
+   holds only `ScavangerChairs`, in neither playlist), so all 15 survive and the
+   clamp does not bind. It exists so a future cap change cannot turn silent.
 
 **Run under the harness once, never by people.** `GameManager.arcade_game` is
 set only by the main menu's Arcade button and `-localtest` enters via the debug
@@ -160,16 +159,12 @@ default (non-custom) playlist branch is exercised — see "The debug lobby is a
 Every minigame ships exactly **four** evenly spaced spawn markers and the spawn
 code does `spawn_positions[counter]`, so player 5 is an out-of-bounds crash.
 
-**This description was wrong until 2026-08-04 and said the opposite of what the
-tool does.** It claimed `spawn_expand.py` "resamples eight markers across the
-same span the original four covered — never extending outward", with only the
-first and last preserved. That is the tool's *abandoned* first design, and its
-own docstring says why it went: the four markers are collinear in only 4 of the
-15 scenes — the rest are facing rows, rings, arcs and scattered stations, off a
-straight line by up to 26 world units — so resampling laid players along
-diagonals through the level.
-
-What it actually does:
+Resampling eight markers across the span the original four covered was the
+tool's *abandoned* first design, and its docstring says why it went: the four
+markers are collinear in only 4 of the 15 scenes — the rest are facing rows,
+rings, arcs and scattered stations, off a straight line by up to 26 world units
+— so resampling laid players along diagonals through the level. What it actually
+does:
 
 - **The four originals are left byte-identical**, positions included. Verified by
   diffing vanilla against the overlay: `disco_dodge` keeps `(-2,0,-2) (2,0,-2)
@@ -191,41 +186,25 @@ These were all found by actually playing the game at 8 players, not by reading
 code, and each is described in the pitfalls list below.
 
 - `minigames/disco_dodge/disco_dodge.tscn` - `MultiplayerSpawner.spawn_limit`
-  4 -> 8 on `Networked/PlayerSpawner`. **This was documented here but missing
-  from the overlay until 2026-08-01** - the v1.0.7 rebuild's scene audit caught
-  it. `manufacture_gun.tscn` also has `spawn_limit = 4` and is left alone - that
-  minigame is capped at four players anyway.
-
-  **The claimed evidence for this one does not reproduce - re-measured
-  2026-08-02.** This entry used to say a control run proved it: that at
-  `spawn_limit = 4` an 8-player session logged
-  `Node not found: .../DiscoDodgePlayer{3,4,5,6,7}/MultiplayerSynchronizer` and
-  client logs roughly quadrupled. A fresh matched pair of 90s 8-player runs,
-  differing *only* in that value, shows no such thing:
+  4 -> 8 on `Networked/PlayerSpawner`, kept as **defence-in-depth, not a proven
+  fix**. A matched pair of 90s 8-player runs differing *only* in that value
+  (deployed pck grepped to confirm the control really carried 4):
 
   | | log lines | ERROR lines | missing-synchroniser | `[DISCO8] spawned` |
   |---|---|---|---|---|
   | `spawn_limit = 8` | 847 | 212 | 0 | **8** |
   | `spawn_limit = 4` | 845 | 211 | 0 | **8** |
 
-  All eight players spawn and replicate to every client at the cap, and no
-  spawn-limit message appears anywhere. The deployed pck was confirmed to
-  contain `spawn_limit = 4` during the control (grepped out of the built
-  `.pck`), so the test was real.
-
-  **The raise to 8 is kept regardless** - Godot documents `spawn_limit` as a cap
-  on spawns, matching it to the player count is correct on its face, and
-  reverting on one negative result would be reckless. What changed is the
-  confidence: this is now defence-in-depth, not a proven fix. The earlier
-  conclusion was drawn from a jump in client log volume and looks confounded by
-  another variable in that session - the same session also fixed `blood_trail.gd`,
-  which fired ~380 errors per round. A plausible mechanism for the null result is
-  that `spawn_limit` governs explicit `spawn()` calls rather than the
-  auto-replication of children added under `spawn_path` (which is how
-  `spawn_players()` here works), but that is a hypothesis, not a measurement.
-
-  Stable Footing is now verified the right way instead: `[DISCO8] spawned=8`
-  with all eight nodes named, on the host and all seven clients.
+  All eight spawn and replicate at the cap either way. The earlier "proof" — a
+  jump in client log volume — was confounded by the `blood_trail.gd` fix in the
+  same session. Hypothesis for the null result: `spawn_limit` governs explicit
+  `spawn()` calls, not the auto-replication of children added under `spawn_path`
+  (how `spawn_players()` works here) — unmeasured. Godot documents it as a cap
+  on spawns, so matching it to the player count stays. Stable Footing is
+  verified the right way instead: `[DISCO8] spawned=8` with all eight nodes
+  named, on the host and all seven clients. (`manufacture_gun.tscn` also ships
+  `spawn_limit = 4`; Firearm Factory was uncapped 2026-08-07 and raises it at
+  runtime by property write, so that scene stays out of the overlay — §22.)
 - `minigames/exploding_collar_race/.../blood_trail.gd` - guards an empty
   `Curve3D`; fired ~380 errors per round at eight players.
 - `minigames/green_pea/scripts/green_pea.gd` - **runtime** eight-seat layout
@@ -246,8 +225,8 @@ code, and each is described in the pitfalls list below.
   `StaticBody3D`s out of `Colliders`' six children. The other two (the room's
   concave collision mesh + WorldBoundary, and the centre CSG pillar) must never
   be cloned: until 2026-08-13 a clone-the-whole-container loop duplicated the
-  room's collider rotated 45° every 5-8 player round (see that session-log
-  entry). The same RPC hides `MOD_HIDE_PROPS` — the two corner barrels the
+  room's collider rotated 45° every 5-8 player round (archived 2026-08-13
+  session-log entry). The same RPC hides `MOD_HIDE_PROPS` — the two corner barrels the
   135° slot's character stood inside (0.44u/0.89u) — and disables their own
   `StaticBody3D`s; 1-4 keeps the shipped dressing. Trace summary:
   `cloned 10 single nodes, hid 2 props`.
@@ -255,8 +234,8 @@ code, and each is described in the pitfalls list below.
   **Jumbotron HUD overlay (since 2026-08-16).** The four added seats face a
   corner of the jumbotron and read its CRTs at 53.6° (cardinals: 7°,
   head-on). Rather than clone screens (a 45° clone is buried in the pillar
-  box and its neighbours — see the session-log entry), every player in a
-  5-8 lobby gets a full-screen HUD of the couch-mode
+  box and its neighbours — archived 2026-08-16 session-log entry), every
+  player in a 5-8 lobby gets a full-screen HUD of the couch-mode
   `LocalMultiplayer/JumbotronViewport` — a SubViewport whose camera sits at
   seat 1's jumbotron pose — for as long as the local player's camera
   animation is `look at jumbotron*` (hooked on each player's
@@ -264,12 +243,12 @@ code, and each is described in the pitfalls list below.
   `player_spawn_node.child_entered_tree`; local player picked by
   `player_presence.network_id`). Roster gate: a flag latched inside
   `zz_mod_add_stations_rpc()`, so no new RPC and nothing at 1-4; the scene is
-  untouched. While shown: `LocalMultiplayer` + its four cardinal `Lights` are
+  untouched. While shown, `LocalMultiplayer` + its four cardinal `Lights` are
   made visible and the local seat light hidden (online, only the local
   player's own seat light lights the room, which made the render vary by
   seat and go black off-cardinal), and the overlay camera's `near` is set to
-  2.0 (seat 1's tall third-person rig stands 0.77 u in front of it and its
-  head breached the frame); on hide the viewport is frozen and both restored
+  2.0 (seat 1's tall third-person rig stands 0.77 u in front of it, head
+  breaching the frame); on hide the viewport is frozen and both restored
   *before* the 0.5 s fade. No trace by design — verified by eye.
 - `minigames/chisel_gauntlet_multiplayer/chisel_gauntlet.tscn` - four spectate
   markers (`Marker3D_MOD5`..`Marker3D4_MOD8`) added under
@@ -277,18 +256,17 @@ code, and each is described in the pitfalls list below.
   vanilla stacks every spectate camera at the parent's origin, and
   `spawn_players()` does `spectate_positions[counter]`, so a 5-8 roster needs
   indices 4-7 to exist (indexing past the end is pitfall 23's silent-null
-  case). This path
-  never shuffles, so 1-4 always lands on the shipped markers. Until 2026-08-13
-  the overlay carried seven clones wearing a Label3D's transform instead -
-  players 5-8 spectated from knee height at the screen plane; see pitfall 31
-  and the session-log entry.
+  case). This path never shuffles, so 1-4 always lands on the shipped markers.
+  Until 2026-08-13 the overlay carried seven clones wearing a Label3D's
+  transform instead - players 5-8 spectated from knee height at the screen
+  plane; see pitfall 31 and the archived 2026-08-13 session-log entry.
 - `minigames/chisel_gauntlet_multiplayer/states/round_eliminate.gd` - `[SHOTGUN]`
   trace of the execution sweep under `-localtest`.
 
 ### 11. `minigames/intermission_new/components/intermission_score_screen.gd`
 
-The end-of-minigame score screen showed only **four** players at eight. It did
-not crash: `reset_user_containers()` fills from a score-*sorted* list bounded by
+The end-of-minigame score screen showed only **four** players at eight, without
+crashing: `reset_user_containers()` fills from a score-*sorted* list bounded by
 `user_container_array.size()`, so the four lowest-placed players were silently
 dropped off the bottom of the board. Worth remembering as a category - a
 too-small array that is *filled from a sorted list* loses data quietly, where
@@ -296,9 +274,9 @@ one that is *indexed* by player crashes loudly.
 
 Three things had to line up:
 
-- `rank_y_positions` was a **`const`** with four entries. It is now a `var`
-  recomputed per round. That matters because the array has a reader outside this
-  file: `user_container_order_manager.switch_places()` indexes it by
+- `rank_y_positions` was a **`const`** with four entries, now a `var` recomputed
+  per round. That matters because the array has a reader outside this file:
+  `user_container_order_manager.switch_places()` indexes it by
   `user_rank_value - 1` during the rank-swap animation, so ranks 5-8 would have
   gone out of bounds there even after the board itself was widened. Making it a
   `var` fixes all four readers without touching that file.
@@ -308,14 +286,14 @@ Three things had to line up:
   `get_parent().get_children()` in `_ready()`, which would sweep up the spare
   rows. It is re-pinned to the active set every round.
 
-**Also fixed here (2026-08-01, second session): a negative reverb pitch.**
-`lerp_total_score()` floors `speaker_score_click.pitch_scale` at 0.1, then
-`set_final_label()` sets the reverb speaker to `that - 0.2`, i.e. **-0.1**, and
-Godot rejects it with `Condition "p_pitch_scale <= 0.0" is true`. Reaching the
-floor takes ~380 decrements of the score countdown, which only happens once the
-totals are large enough - so it fired once per peer at eight players and never
-at four. Vanilla code; found by the 4-vs-8 error-class diff, not by the mod
-breaking anything. Now `maxf(..., 0.1)`, which is identity at <= 4.
+**Also fixed here: a negative reverb pitch.** `lerp_total_score()` floors
+`speaker_score_click.pitch_scale` at 0.1, then `set_final_label()` sets the
+reverb speaker to `that - 0.2`, i.e. **-0.1**, and Godot rejects it with
+`Condition "p_pitch_scale <= 0.0" is true`. Reaching the floor takes ~380
+decrements of the score countdown, which only happens once the totals are large
+enough - so it fired once per peer at eight players and never at four. Vanilla
+code; found by the 4-vs-8 error-class diff, not by the mod breaking anything.
+Now `maxf(..., 0.1)`, which is identity at <= 4.
 
 Vanilla is preserved by `MOD_VANILLA_RANK_Y`: at <= 4 players the y array, the
 row scale (1.0) and the container set are restored to exactly the shipped
@@ -338,9 +316,8 @@ already replicated.
 
 The pre-minigame player cards, same four-row cap as section 11 but with more
 state that has to grow together. Its `rank_y_positions` was already a `var`
-(2D pixel offsets `[0, 19, 38, 57]`, four readers in this file).
-
-What made it harder than the score screen:
+(2D pixel offsets `[0, 19, 38, 57]`, four readers in this file). What made it
+harder than the score screen:
 
 - `sort_user_containers_by_score()` **assigns** `score_container_nodes[i]` by
   index rather than appending, so leaving that array at four while the card list
@@ -359,8 +336,8 @@ The two invite buttons live in different coordinate spaces from the card - the
 interact button is in the un-scaled screen overlay - so the card-y to
 button-offset ratio is **learned from the shipped four** rather than hardcoded,
 the way `green_pea_chairs.py` learns its marker->chair offset. That earned its
-keep: the overlay buttons turned out not to be evenly spaced
-(`act_ratio=2.1754`, not the 2.53 the first two nodes suggest).
+keep: the overlay buttons are not evenly spaced (`act_ratio=2.1754`, not the
+2.53 the first two nodes suggest).
 
 Rows cannot be extended downward here: `ready button parent` sits at
 `offset_top` 149.5 in the same column and the four shipped rows already reach
@@ -395,11 +372,9 @@ rather than assumed.
 
 `MOD_STEP_LIFT` and `MOD_PLAYER_LIFT` are both **0.0**: stairs and players sit
 exactly where vanilla puts them, and only the *count* and lateral spacing are
-modded. They were briefly 0.95 / 0.65 to lift steps that looked embedded in the
-floor - but that appearance was caused by the handrail assembly crowding the
-lanes, and once it was hidden the shipped heights read correctly. Compensating
-for the wrong thing is easy here; check what is actually crowding the lane
-before adding an offset.
+modded. Steps that look embedded in the floor are the handrail assembly
+crowding the lane, not a height problem - check what is crowding a lane before
+adding an offset.
 
 If they are re-tuned, both are applied as **node** offsets, never
 per-instance: `stair_handler` rewrites every instance each frame as
@@ -415,26 +390,23 @@ the marker and the whole path travels with it.
 | `Plane_003` | the long diagonal handrails | players clip them at the 3.2 strip pitch |
 | `Cylinder`,`Cylinder2`,`Cylinder3` | 0.89 x 1.76 posts on the trough boundaries | same |
 
-**`Plane_003` was found by testing, not by reading the scene, and an earlier
-note in this file claimed the opposite.** The wrong theory was that the rails
-were baked into `base platform` - it reports `surfaces=1` (single material
-`paint rusted1`), so that would have made them unremovable without the GLB.
-Hiding `base platform` disproved it in one run: the floor vanished and the
-rails stayed. `Plane_003` is easy to miss because it is rotated 90 degrees
-about Z, so its 22.9-unit extent runs *across* the lanes and its position
-`(-9.6, 6.4, -11.4)` reads as a single left-hand prop rather than something
-spanning the whole run. **When a mesh must be identified, toggle it and look -
-name and listed position both mislead here.** `_mod_dump_all_meshes()` prints
-every mesh with world position and size under `-localtest` for exactly this.
+**When a mesh must be identified, toggle it and look - name and listed position
+both mislead here.** `Plane_003` is rotated 90 degrees about Z, so its
+22.9-unit extent runs *across* the lanes and its position `(-9.6, 6.4, -11.4)`
+reads as a single left-hand prop rather than something spanning the whole run;
+and the theory that the rails were baked into `base platform` (`surfaces=1`,
+single material `paint rusted1`, hence unremovable without the GLB) died in one
+run - hiding it made the floor vanish and left the rails. `_mod_dump_all_meshes()`
+prints every mesh with world position and size under `-localtest` for this.
 
 `MOD_FLOOR_DROP` (0.75) sinks `base platform` slightly below its shipped
-`y = -0.81` so the stairs read as resting on it. It is deliberately a **plain
-eyeballed offset**. Deriving it does not work: an attempt to align the floor's
-AABB top to the lowest point of the lane curve produced `y = -23`, because the
-lane curve is a **closed loop** whose minimum is the return run passing ~21
-units *under* the escalator, and because `base platform` is a 15.5-tall
-structure whose AABB top (11.3) is the top of the housing, not a walking
-surface. Neither quantity means "the bottom of the stairs".
+`y = -0.81` so the stairs read as resting on it, and it is deliberately a
+**plain eyeballed offset**. Deriving it does not work: aligning the floor's AABB
+top to the lowest point of the lane curve produced `y = -23`, because the lane
+curve is a **closed loop** whose minimum is the return run passing ~21 units
+*under* the escalator, and `base platform` is a 15.5-tall structure whose AABB
+top (11.3) is the top of the housing. Neither quantity means "the bottom of the
+stairs".
 
 The **input arrow** is a `Sprite3D` at local `(0, 16.74, -13.84)` on the
 player - far up and back, so it renders near the CRT bank, not over the
@@ -454,8 +426,8 @@ the scene and `PlayerManager.player_presences` is replicated.
 escalator housings and the pit floor are baked into one mesh
 (`base platform`, `ArrayMesh_go7oh`), so lanes at the shipped 6.4 pitch would
 span +/-22.4 against a platform ending near +/-13 and the outer ones would hang
-off the level. That needs the GLB re-authored. Both strips stay inside an
-existing trough for exactly this reason.
+off the level. That needs the GLB re-authored, and is why both strips stay
+inside an existing trough.
 
 ### 14. Smoke Break — `smoke_break.gd`, `smoke_break_trolley.gd`,
 ### `smoke_break_player_anim_handler.gd`, `smoke_break.tscn`
@@ -484,10 +456,10 @@ its own bit of scenery, so wrapping would paint blood on the wrong seat.
 **Seat layout.** Seats 0-3 are pinned - they are what a 1-4 player game uses.
 The four added seats sit two beyond the ends of the bench arc and two in the
 widest internal gaps, and each end seat gets a `crate1_003` clone to sit on.
-Those clones live in the scene but ship `visible = false`; `_mod_reveal_extra_seating()`
-shows them only above four players, the same pattern green_pea uses. Verified:
-at 4 players the `[SMOKE8] seating` line is absent entirely, so the crates stay
-hidden and the scene is vanilla.
+Those clones live in the scene but ship `visible = false`;
+`_mod_reveal_extra_seating()` shows them only above four players, the same
+pattern green_pea uses. Verified: at 4 players the `[SMOKE8] seating` line is
+absent entirely, so the crates stay hidden and the scene is vanilla.
 
 **Aim angles are static, not computed.** `rot_by_seat_index_array` is scene data.
 The four added angles were derived by interpolating position and angle *together*
@@ -500,8 +472,8 @@ its angle must be re-derived** - they are coupled.
 four. Seats 1 and 2 are pinned 2.19 apart, so anything placed between them lands
 at 1.094 either side. The right side is *tighter* (1.003) and does not clip - the
 difference is facing, not distance: the left seats turn 45-60 deg inward so arms
-swing along the bench. The lever is facing, not spacing. Pushing the seat out of
-that gap instead puts it past the camera's +19.5 deg frame edge (see below).
+swing along the bench. **The lever is facing, not spacing.** Pushing the seat out
+of that gap instead puts it past the camera's +19.5 deg frame edge (below).
 
 **Camera frame is the binding constraint.** fov is 22.5 vertical, so at 16:9 the
 horizontal half-angle is **19.5 deg**. MOD5 already sits at 16.40. A seat pushed
@@ -512,16 +484,26 @@ new seat against this before trusting a screenshot.
 
 Diagnostic only - the `[PLATFORM]` trace. No gameplay change at any roster size.
 
+**Debris Platforms layout notes (verified 2026-08-01).** The four shipped
+markers sit exactly on the four Platform centres, and a platform deck is a
+`CylinderShape3D` of radius **6.0**. `spawn_expand.py` clones each marker 1.2u
+along its local X, so an added slot shares a deck with an original: worst
+measured landing **1.56u** from a centre, well inside the radius. Two players
+per deck is the resulting layout - fine because scoring is last-man-standing, so
+nothing assumes one player per platform. `spawn_players()` indexes
+`player_spawn_position_node.get_child(i)` rather than a parallel array, and
+neither `MultiplayerSpawner` in the scene sets `spawn_limit`, so pitfalls 11 and
+13 both come out clean here. Camera facing is derived from `position.z < 0`,
+which the clones inherit: the 8-player split is 4/4, as vanilla is 2/2.
+
 ### 16. `train_race.gd`, `spine_breaker.gd`, `dvd_roomba.gd`
 
 `[TRAIN8]`, `[SPINE8]`, `[ROOMBA8]`. **`train_race.gd` and `dvd_roomba.gd` are
-diagnostic only** - no gameplay change at any roster size. `spine_breaker.gd`
-was too until 2026-08-02, when its kill pace was scaled to the roster; that part
-is **section 18**, and this section covers only its spawn audit.
-
-None of the three needed a *capacity* fix - nothing beyond the expanded spawn
-markers - and it is worth recording *why*, so a future session does not go
-looking for a cap that is not there:
+diagnostic only** - no gameplay change at any roster size; `spine_breaker.gd`
+was too until 2026-08-02, when its kill pace was scaled to the roster (**section
+18**). This section covers only the spawn audit. None of the three needed a
+*capacity* fix - nothing beyond the expanded spawn markers - and *why* is worth
+recording, so a future session does not go looking for a cap that is not there:
 
 | Minigame | Why it already scales |
 |---|---|
@@ -530,42 +512,30 @@ looking for a cap that is not there:
 | Lethal Rebound | roombas spawn on a timer up to `max_roomba_count`; nothing is per-player |
 
 Not needing a capacity fix is not the same as playing *well* at eight - Spine
-Breaker scaled correctly and still ran 2.5x too long. Section 18 is that
-distinction.
+Breaker scaled correctly and still ran 2.5x too long, which is section 18.
 
 Each trace carries a **landing audit**: 6s after the scene is ready, on every
 peer, each player's distance to its nearest spawn marker with an
-`OK`/`DISPLACED`/`FELL_THROUGH`/`DEAD_OR_HIDDEN` verdict. This exists because
+`OK`/`DISPLACED`/`FELL_THROUGH`/`DEAD_OR_HIDDEN` verdict. It exists because
 `spawn_expand.py` puts the added markers **1.2u outboard** of the shipped ones
 (Lethal Rebound's MOD6 lands at x=6.2 against a shipped extreme of 5.0), so a
 clone inside a wall is a live risk that produces no error - physics just shoves
-the player clear. Measured worst case across all four on **v1.0.7**: **0.57u**.
-Nothing was displaced.
-
-Re-measured on v1.5.0 / Godot 4.5.2 (2026-08-05): still clean — **192/192 `OK`
+the player clear. Worst case across all four on **v1.0.7**: **0.57u**, nothing
+displaced. Re-measured on v1.5.0 / Godot 4.5.2 (2026-08-05): **192/192 `OK`
 across eight peers, worst 0.49u**.
 
-**And that clean result is the point of this note, because Tunnel Hazard is
-visibly broken at eight players anyway.** A screenshot from the user on
-2026-08-05 shows the eight spawns as four shoulder-to-shoulder *pairs*, with the
-top-right player standing inside the right-hand wall. The audit reports `OK` for
-every one of them, correctly: it measures each player's distance to its
-**nearest marker**, and each player is on its marker. What is wrong is where
-`spawn_expand.py` put the marker — 1.2u outboard along the shipped marker's local
-X, which in a corridor this narrow is into the wall and half inside a neighbour.
-
-**So the landing audit validates the spawn *mechanism*, not the level design.**
-It answers "did the player end up where the mod told it to?" and cannot answer
-"was that a sensible place?". `DISPLACED` fires when physics *rejects* a
-placement; a placement physics happily accepts, flush inside a wall the player
-never has to leave, produces no verdict at all. Same shape as the `@export`
-`duplicate()` bug in `forklift_certified` — every measurement clean, the thing
-itself visibly wrong, and a person spotted it in one look.
+**That clean result is the point, because Tunnel Hazard was visibly broken at
+eight anyway** — a 2026-08-05 screenshot showed four shoulder-to-shoulder *pairs*
+with the top-right player inside the right-hand wall, while the audit correctly
+reported `OK` for every one: each player *was* on its marker. **The landing audit
+validates the spawn *mechanism*, not the level design.** `DISPLACED` fires when
+physics *rejects* a placement; one physics happily accepts, flush inside a wall
+the player never has to leave, produces no verdict at all.
 
 **Fixed 2026-08-05** by `spawn_expand.py`'s `inward` mode (opt-in, third field in
 `spawn_targets.txt`). The expander had been generating both `±offset` candidates
 all along but ranking them by `(source-usage, step)` alone, so the two signs tied
-and the stable sort always chose `+`. `inward` breaks the tie toward the centroid
+and the stable sort always chose `+`; `inward` breaks the tie toward the centroid
 of the shipped markers:
 
 | clone | before | after |
@@ -574,17 +544,12 @@ of the shipped markers:
 | `Marker3D4_MOD8` | x=+5.311 (in wall) | **x=+2.911** |
 | `Marker3D_MOD5` / `Marker3D3_MOD7` | x=−2.750 / −2.770 | unchanged |
 
-Worst physics push-out fell 0.49u → 0.20u. The verdicts were `192/192 OK` both
-before and after, so **the audit neither found this nor confirms the fix** — it
-is a screenshot-verified change, and that is the honest label on it.
-
-**Two things still open, both level-agnostic.** Markers are placed `OFFSET`=1.2u
-apart, but every measured pair settles **1.58-1.60u** apart after the first
-physics frame — so a character is ~1.6u wide, 1.2 guarantees interpenetration at
-spawn, and `MIN_CLEARANCE`=1.0 is under-set for the same reason. That applies to
-all fifteen expanded scenes, not just this one. And the other narrow levels have
-never been checked by eye for the wall case; they only ever reported `OK`, which
-is now known to mean nothing here.
+Worst physics push-out fell 0.49u → 0.20u. Verdicts were `192/192 OK` both before
+and after, so **the audit neither found this nor confirms the fix** — a
+screenshot-verified change, and that is the honest label. The other narrow levels
+have never been checked by eye for the wall case either. Still open and
+level-agnostic: `OFFSET`=1.2u against a ~1.6u-wide character, so every expanded
+pair starts interpenetrating — Open item 0 in `UPDATING.md` owns that.
 
 `DEAD_OR_HIDDEN` is keyed off `visible`, which `kill_rpc()` clears on every
 peer. Without it the audit reported a bogus `DISPLACED` whenever it landed
@@ -646,8 +611,8 @@ a no-op at four players or fewer, so a 1-4 game has the shipped four nodes and
 nothing else. Verified `needed=7 icons=7` on the host **and all seven clients**,
 and absent entirely at four players.
 
-**Read the correction in the session log before trusting any severity claim
-about this one.** It was first written up as a hard break and it is not.
+**Severity: the HUD undercount is cosmetic** — the round is unaffected, only
+the survivor icons are. The search-target clamp above is the real bug.
 
 **Two `-localtest` test aids**, both inert in a shipped build:
 
@@ -667,10 +632,9 @@ ARGS="-kato-hunt=8" START=1 MINIGAME=KnifeAtTheOffice tools/localtest.sh 8 \
 
 ### 18. Spine Breaker kill pace — `spine_breaker.gd`
 
-**The mod's first gameplay *tuning* change.** Everything else in this file is a
-capacity fix - making eight players fit where four did. This one deliberately
-alters how the minigame plays above four players, at the user's request
-(2026-08-02).
+**The mod's first gameplay *tuning* change** (2026-08-02, on request).
+Everything else in this file is a capacity fix - making eight players fit where
+four did. This one deliberately alters how the minigame plays above four.
 
 The problem is arithmetic, not feel. The per-kill cycle is fixed:
 
@@ -689,14 +653,13 @@ wall-clock with per-round overhead.
    `attached_state.gd` reads `timed_out = owner.activation_timer.is_stopped()`
    on entry - so once the fuse burns out mid-chase, the *next* attach kills
    instantly. `activation_duration` is therefore a hard cap on
-   time-from-arming-to-death, which is what makes the cycle predictable enough
-   to scale at all.
+   time-from-arming-to-death, which is what makes the cycle scalable at all.
 2. **Travel happens inside the fuse window.** `choose_new_target()` transitions
    the device to `Follow` and calls `start_timer()` on the same frame, so
    **raising the spider's chase speed would not shorten a round** - it would
-   only mean it spends more of the fuse attached. `new_target_speed`,
-   `default_speed` and the `speed_increase_*` ramp are left alone deliberately.
-   Speeding up the spider is not a pacing lever; this is the trap to avoid.
+   only spend more of the fuse attached. `new_target_speed`, `default_speed` and
+   the `speed_increase_*` ramp are left alone deliberately: speeding up the
+   spider is not a pacing lever, and that is the trap to avoid.
 
 **The scaling.** `factor = MOD_VANILLA_KILLS / (roster - 1)`, clamped to 1.0,
 applied to the fuse and the dead time:
@@ -724,8 +687,8 @@ distinction is visible: `roster=4 active=2 factor=1.000`.
 `spine_breaker_device.tscn`, then to **20.0** by the `Device` instance in
 `spine_breaker.tscn`. `_ready()` snapshots the live value into
 `_mod_vanilla_fuse` before anything mutates it, and `choose_new_target()`
-assigns `_mod_vanilla_fuse * factor`. Multiplying the *current* value instead
-would compound on every kill; hardcoding 20.0 would silently ignore a developer
+assigns `_mod_vanilla_fuse * factor`. Multiplying the *current* value would
+compound on every kill; hardcoding 20.0 would silently ignore a developer
 retuning that scene value on a future update. Same learn-from-shipped-data
 pattern as `green_pea_chairs.py` and the briefing screen's button ratios.
 The trace prints `vanilla_fuse=` so a bad capture is visible immediately.
@@ -747,8 +710,8 @@ the same 3 round advances.
 **The 1.0s kill sequence is deliberately untouched.** It lives in
 `spine_breaker_player.gd`'s `break_spine_rpc`, whose two `create_timer` waits
 run independently on *every* peer - shortening it host-side would desync the
-corpse drop. It is also the only part of the chain that would need a new
-overlay file.
+corpse drop, and it is the only part of the chain that would need a new overlay
+file.
 
 **Measured, 280s at 8 players:** 11 kills / 2 rounds before -> **21 kills / 3
 rounds** after, i.e. three complete 7-elimination rounds. Per-round wall clock
@@ -756,9 +719,9 @@ rounds** after, i.e. three complete 7-elimination rounds. Per-round wall clock
 per-round overhead - countdown, fades, briefing, end-of-round waits - which no
 amount of pace tuning removes.)
 
-### 19. Duck Hunt — `duck_hunt.gd`, `hunter_player.gd`, `duck_hunt_local_handler.gd`, `globals.gd`
+### 19. Duck Hunt — `duck_hunt.gd`, `hunter_player.gd`, `globals.gd`
 
-Uncapped 2026-08-02 at the user's request. **The cap rested on a wrong premise.**
+Uncapped 2026-08-02 on request. **The cap rested on a wrong premise.**
 The mode is **1 hunter + (N-1) ducks**, not "3 duck slots + 1 hunter": the hunter
 is popped from a shuffled `possible_hunters` pool and every remaining player is a
 duck, so the duck count always scaled by itself. Ducks are human-controlled
@@ -776,7 +739,7 @@ never fires.
 `.tscn`. That gating matters more here than elsewhere: the marker list is
 `shuffle()`d, so baking extras into the scene would let a 4-player game seat
 ducks on modded positions, which is exactly the deviation documented under
-"Spawn markers are visible to 1-4 player games too". Creating them only above
+"The second sanctioned exception" in `UPDATING.md`. Creating them only above
 four means Duck Hunt **sidesteps that deviation entirely** — at 1-4 the shipped
 three are the only markers that exist. Host-only suffices because clients never
 see a marker, only the position it resolves to via `teleport_rpc`.
@@ -820,10 +783,13 @@ bigger roster: `remove_player_rpc` decremented `duck_player_count` when the
 magazine size), and `_on_player_died` dereferenced `hunter_player.player_presence`
 unguarded after the same path had nulled it.
 
-**`duck_hunt_local_handler.gd`'s `Layouts` dict** gained keys 5-8 (3x2, 4x2).
-`set_players()` indexes it and `duck_hunt.gd` calls that **unconditionally** at
-the end of `spawn_players()` — not only in couch mode — so a missing key errored
-even online.
+**`duck_hunt_local_handler.gd` is no longer in the overlay.** Its delta added
+keys 5-8 to a roster-indexed `Layouts` dict that `duck_hunt.gd` reached
+**unconditionally** at the end of `spawn_players()` — not only in couch mode —
+so a missing key errored even online. Upstream v2.1.2 deleted that dict for a
+roster-independent two-pane `setup()`, the re-derived file came out
+byte-identical to vanilla, and it left the overlay on 2026-08-14. Do not re-add
+it.
 
 **Verified:** at 8 players `markers=7 added=4` all inside the gate,
 `ducks=7 magazine=18 cycle=0.45` on the host **and clients**, reached `Play`,
@@ -903,13 +869,13 @@ Measured with the `[ROUNDS8]` trace, all four cases:
 **This measurement cannot be taken under `START=1`.** See "`START=1` hardcodes
 Duck Hunt's round count" in Testing — the shortcut path passes a literal 3.
 
-**Duck-node count — verified 2026-08-03.** `[DUCK8] spawned` now reports, per
-peer, the duck nodes that actually exist plus the hunter, named, with an
+**Duck-node count — verified 2026-08-03.** `[DUCK8] spawned` reports, per peer,
+the duck nodes that actually exist plus the hunter, named, with an
 `expected_ducks` cross-check that `push_warning`s on any mismatch. Measured
 `ducks=7 hunters=1` on the host **and all seven clients** at eight players, and
-`ducks=3 hunters=1` on all four at four. That replaces the earlier position,
-where seven ducks rested on a visual check and the automated evidence was
-absence-of-errors — the proxy this file warns against everywhere else.
+`ducks=3 hunters=1` on all four at four — replacing an earlier position where
+seven ducks rested on a visual check and the automated evidence was
+absence-of-errors, the proxy this file warns against everywhere else.
 
 **The `debug_skip_brief` reveal-skip repair — 2026-08-05.** Under `START=1`
 (`Globals.debug_skip_brief`) the skipped `RoleReveal` state was the **only**
@@ -952,9 +918,9 @@ played a P4-killed run to `Play → Finished → Game: MinigamePlaying →
 MinigameEnd` and the score screen on all three peers; at 8 the same kill gave
 `SessionIntro → MinigameStart → MinigamePlaying`, `Empty → Round` and
 `markers roster=7 ducks_needed=6 added=3` on host and clients; no-kill controls
-at 4 and 8 unchanged. Evidence in the 2026-08-15 session-log entry. **The
-same guard went into the other fourteen handlers later that day** — a peer that
-*quits* during a load reaches them pre-spawn (§23, pitfall 33).
+at 4 and 8 unchanged. Evidence in the archived 2026-08-15 session-log entry.
+**The same guard went into the other fourteen handlers later that day** — a peer
+that *quits* during a load reaches them pre-spawn (§23, pitfall 33).
 
 ### 20. Forklift Certified — `forklift_certified.gd`, `crate_manager.gd`
 
@@ -973,9 +939,9 @@ four, so a 1-4 game runs the shipped code on the shipped scene.
 | Free channel between the zone columns | 16.66 wide |
 | Free band between the zone rows | 18.29 deep |
 
-So the four zones sit at the corners of a 3x3 grid with the middle row and
-column empty. The four added zones go at the **mid-edges**, making a ring with a
-free centre cell. Positions are the midpoints of the shipped grid, not literals.
+The four zones sit at the corners of a 3x3 grid with the middle row and column
+empty, so the added four go at the **mid-edges**, making a ring with a free
+centre cell. Positions are the midpoints of the shipped grid, not literals.
 
 **Blocker 1 - the index (known).** `spawn_players()` builds `shuffled_indicies`
 from `player_spawn_positions_node.get_child_count()` and uses it to index *both*
@@ -983,21 +949,20 @@ the markers and `delivery_areas`. Pitfall 13 exactly: at player 5 it runs off a
 4-entry array and the host's spawn loop aborts before any state transition, so
 the minigame loads to a black screen with the ambience looping.
 
-Zones and markers must therefore grow **together and in the same order**, and
-they are built differently on purpose:
+Zones and markers must therefore grow **together and in the same order**, built
+differently on purpose:
 
 - **Zones go out as `zz_mod_add_delivery_areas_rpc()`** (`authority`, `call_local`,
   `reliable`). They sit outside any `MultiplayerSpawner` and the game drives them
-  with `set_owner_rpc` / `update_counter_rpc` / `set_indicator_light_rpc`, all of
-  which resolve **by node path** - a host-local clone is an RPC into thin air on
-  seven clients. Reliable RPCs are ordered, so the `set_owner_rpc` calls
+  with `set_owner_rpc` / `update_counter_rpc` / `set_indicator_light_rpc`, all
+  resolving **by node path** - a host-local clone is an RPC into thin air on seven
+  clients. Reliable RPCs are ordered, so the `set_owner_rpc` calls
   `spawn_players()` sends immediately afterwards land with the nodes already
   built. Same guarantee `zz_mod_add_stations_rpc()` leans on in Chisel.
 - **Markers are host-only.** `setup_rpc()` carries the resolved position and
-  rotation, so clients never need one — and keeping them off clients keeps them
-  out of the shuffled marker list a 1-4 game walks. Forklift sidesteps the
-  "spawn markers are visible to 1-4 player games too" deviation entirely, the
-  same way Duck Hunt does.
+  rotation, so clients never need one — which also keeps them out of the shuffled
+  marker list a 1-4 game walks. Forklift sidesteps the "The second sanctioned
+  exception" deviation (`UPDATING.md`) entirely, as Duck Hunt does.
 
 **Two things about `duplicate()` here, both silent if missed.**
 
@@ -1010,13 +975,12 @@ they are built differently on purpose:
 2. Every `@export` node reference must be **rebound to the clone's own
    children** before `add_child()`, or the clone drives the template's border,
    counter, light and speaker. Missed on the first pass; nothing measurable was
-   wrong and only a screenshot caught it. Own heading: "An `@export` node
-   reference survives `duplicate()` pointing at the ORIGINAL".
+   wrong and only a screenshot caught it. Pitfall 37.
 
 The server's `delivery_areas` array is built in `_ready()` from the children that
-existed then, so the clones are appended to it by hand and their
-`crate_number_changed` wired (guarded with `is_connected`). A zone missing from
-that array never lights up and never grants its achievement.
+existed then, so clones are appended by hand and their `crate_number_changed`
+wired (guarded with `is_connected`). A zone missing from that array never lights
+up and never grants its achievement.
 
 **Blocker 2 - `spawn_crates()` never terminates above five players.** It loops
 
@@ -1059,21 +1023,21 @@ in numbers.
 **Blocker 3 - the blood decal pool, vanilla, reachable only by a 5th
 elimination.** `spawn_blood_rpc()` does
 `blood_decals_environment_parent.get_child(0)` and moves that decal out of the
-parent **permanently**. The scene ships **four**. Four players can only ever
+parent **permanently**. The scene ships **four**, and four players can only
 produce three eliminations, so vanilla never empties it; eight produce seven.
-The fifth ran `get_child(0)` against an empty node, which returned null and
-aborted the caller *mid-loop* — so `remove_zero_scoring_players()` never
-finished, `round_finished()` never reached `check_game_end()`, and **the round
-hung on every peer**, with one engine ERROR and nothing else in the log. One
-client segfaulted. The pool now refills by duplicating a decal already on the
-floor, which keeps all seven visible; at <= 4 players the branch is unreachable,
-so parity holds by construction rather than by an `if`.
+The fifth ran `get_child(0)` against an empty node, returning null and aborting
+the caller *mid-loop* — `remove_zero_scoring_players()` never finished,
+`round_finished()` never reached `check_game_end()`, and **the round hung on
+every peer** with one engine ERROR and nothing else in the log; one client
+segfaulted. The pool now refills by duplicating a decal already on the floor,
+keeping all seven visible; at <= 4 players the branch is unreachable, so parity
+holds by construction rather than by an `if`.
 
 **Fitting the added zones' art — all of it found by looking, none by a trace.**
-The zone plates are positioned for a bay that is **recessed into the floor art**,
-and the mid-edges have no bay. Every one of these was invisible to the logs
-because the recess is art only: the single collider in the level is the flat CSG
-box, so as far as the game is concerned the floor is level everywhere.
+The zone plates are positioned for a bay **recessed into the floor art**, and
+the mid-edges have no bay. All of this was invisible to the logs because the
+recess is art only: the level's single collider is the flat CSG box, so as far
+as the game is concerned the floor is level everywhere.
 
 | Symptom on screen | Cause | Fix |
 |---|---|---|
@@ -1084,23 +1048,22 @@ box, so as far as the game is concerned the floor is level everywhere.
 | No grey grid plate inside the square | the bay plate is painted into `main floor_001`, not a node under the zone | faked - see below |
 | Side readouts in the wrong place | cloned from a far-row template, so they pointed along z where neither direction is free | moved into the margin against the side wall, a quarter turn so the 4.6u housing fits a ~4.3u margin |
 
-**Faking the bay plate.** Workarounds checked and rejected first, because the
-obvious ones look right and are not: the zone's own `SpotLight3D.light_projector`
-is `knife_at_the_office/light_01.png`, a generic cookie, **not** the bay art;
-`main floor_001` has no per-bay child, so there is nothing to clone; a `Decal`
-would blend better but the blood pool already spawns up to eight and its
-size/orientation is a second unknown; shipping a texture in the mod is
+**Faking the bay plate.** The obvious workarounds look right and are not: the
+zone's own `SpotLight3D.light_projector` is `knife_at_the_office/light_01.png`,
+a generic cookie, **not** the bay art; `main floor_001` has no per-bay child to
+clone; a `Decal` would blend better but the blood pool already spawns up to
+eight, so its size/orientation is a second unknown; shipping a texture is
 unnecessary. What works: the shipped atlas `...fc area indicator8 marked8.png`
-contains the plate as a clean sub-rect - the framed grid with corner brackets and
-the "DESIGNATED LOAD AREA" legend - so a `PlaneMesh` with `uv1_offset` /
-`uv1_scale` set to that box reproduces it in the exact tone of the original.
-Nearest-filtered to match the shipped border material, inset to 86% so the red
-shows as a frame. **The sanctioned deviation:** the faked plate sits *on* the
-floor where the shipped ones are recessed *into* it.
+carries the plate as a clean sub-rect - framed grid, corner brackets,
+"DESIGNATED LOAD AREA" legend - so a `PlaneMesh` with `uv1_offset` / `uv1_scale`
+set to that box reproduces it in the original's exact tone. Nearest-filtered to
+match the shipped border material, inset to 86% so the red shows as a frame.
+**The sanctioned deviation:** the faked plate sits *on* the floor where the
+shipped ones are recessed *into* it.
 
-Note the numbers above are derived at runtime, not hardcoded, and they visibly
-track each other: shrinking the plate by 10% pulled the required side-zone shift
-from 1.87 down to 1.19 without anything else being touched.
+All these numbers are derived at runtime and visibly track each other: shrinking
+the plate by 10% pulled the required side-zone shift from 1.87 to 1.19 with
+nothing else touched.
 
 **Verified.** At 8: `zones=8 added=4 rebound=20/20 plates=4/4` on the host **and
 all seven clients**; `players=8 zones=8 owned=8` with eight distinct owner ids,
@@ -1114,45 +1077,30 @@ all of the art work: `added=0 (vanilla)`, `region=vanilla`, `target=8`, **no
 **Reading the 4-vs-8 error diff here needs a control that actually dies.** Two
 classes appear at 8 and not at 4 — `Attempt to disconnect a nonexistent
 connection ... tree_exited` and `The multiplayer instance isn't currently
-active`. Both fire at the score-screen transition and name global autoloads plus
-the shared `MineExplosion`/`BloodMist` pool, one BloodMist per elimination, so
-they scale with **deaths**. Stable Footing is a useless control (idle players
-never die) and Spine Breaker never reached a score screen inside the window.
+active` — both at the score-screen transition, naming global autoloads and the
+shared `MineExplosion`/`BloodMist` pool (one BloodMist per elimination), so they
+scale with **deaths**. Stable Footing is useless as a control (idle players never
+die) and Spine Breaker never reached a score screen inside the window.
 **Minefield at 8 — long since signed off — produces more of both (82 and 112 per
 peer) than Forklift (41 and 112).** Pre-existing teardown churn.
 
-**Human-verified.** Unlike every other minigame in this file, Forklift's
-8-player layout was driven by a person, not just measured: the user played it
-across several sessions, which is what turned up the buried plates, the red
-clipping into the score boxes, the oversized squares and the readout positions -
-none of which any trace could see. The remaining unknowns are the *game*
-questions below, not the layout.
-
-**Installer round-trip re-verified 2026-08-04** with the two added files, against
-the clean v1.0.7 copy: `NOT PATCHED` -> install (`50 from the mod, 82 originals
-replaced`, no spurious "game updated" warning, so the `ADDED_FILES` exemption is
-still right - both new files are replacements) -> `PATCHED - all 50 mod files
-present` -> `--uninstall` -> MD5 back to `01e9d9140a01745dc4236c50c9837bcd`,
-byte-identical. `dist/machine-party-8p-mod.zip` repackaged.
+**Human-verified.** Forklift's 8-player layout was driven by a person playing it
+across several sessions, not just measured — that is what turned up the buried
+plates, the red clipping into the score boxes, the oversized squares and the
+readout positions, none of which any trace could see.
 
 **One benign 8-only line, left alone.** `Playback can only happen when a node is
-inside the scene tree`, once per session, **host only**, at the instant the
-minigame is freed and the next loads. Zero at four players, and zero before the
-`@export` rebind - that change took the distinct zone speakers from four (all
-clones shared the shipped ones) to eight, so the indicator update that runs as
-crates are freed during teardown now has twice as many chances to reach a node
-past its `tree_exited`. Host-only is what identifies it: every other audio call
-here is `call_local` and would print on all eight peers, while
-`crate_number_changed` is connected inside `if multiplayer.is_server()`, making
+inside the scene tree`, once per session, **host only**, as the minigame is freed
+and the next loads. Host-only is what identifies it: every other audio call here
+is `call_local` and would print on all eight peers, while `crate_number_changed`
+is connected inside `if multiplayer.is_server()`, making
 `_on_crate_numbers_changed` -> `set_indicator_light_rpc()` ->
-`speaker_mechanism.play()` the only server-only audio path. That is an inference
-from the pattern, not a probe. Inaudible either way -
-`set_minigame_sfx_linear_volume_rpc(0.0)` has muted the bus two seconds earlier.
-Same family as the `data.tree` line below. Silencing it properly would mean
-adding `forklift_certified_delivery_area.gd` as a **51st overlay file**, to be
-re-derived on every game update, for one log line - declined. A guard in
-`_on_crate_numbers_changed` (already in the overlay) would be free but is a
-silent no-op if the inferred caller is wrong.
+`speaker_mechanism.play()` the only server-only audio path (an inference from the
+pattern, not a probe). Inaudible either way —
+`set_minigame_sfx_linear_volume_rpc(0.0)` muted the bus two seconds earlier.
+Silencing it properly would mean adding `forklift_certified_delivery_area.gd` as
+a **51st overlay file** to be re-derived on every game update, for one log
+line — declined.
 
 **Re-check these three on a game update — the rest of this section derives
 itself.** Floor height, zone footprints, the readout gap, plate sizes and the
@@ -1169,28 +1117,22 @@ Also `forklift_certified.tscn` overrides `spawn_radius = 4.0` on the crate
 manager, so the script default is dead - re-read it from the *scene*, not the
 script, the same trap as `[ROOMBA8]`'s `max_roombas`.
 
-**Crossing another player's zone is a non-issue — do not "fix" it.** The mid-edge
-layout nearly closes the ring: the gaps between an added zone and its corner
-neighbours are ~1.1u and a forklift is 3.0 wide, so reaching a corner zone often
-means driving *across* someone else's. This was raised during design as the main
-cost of the eight-zone layout, on the assumption that a carried crate would
-register in every zone it passed over. **It cannot.** `set_forked_rpc(true, ...)`
-in `forklift_certified_crate.gd` teleports the crate to `Vector3.DOWN * 50.0`,
-clears its collision layers 1 and 9, and hides it — the forklift displays an
-attached stand-in. A DropArea's `collision_mask` is `256`, i.e. layer 9 alone, so
-a forked crate is out of the world *and* out of the layer the zones watch. Only a
+**Crossing another player's zone is a non-issue — do not "fix" it.** The gaps
+between an added zone and its corner neighbours are ~1.1u against a 3.0-wide
+forklift, so reaching a corner zone often means driving *across* someone else's.
+A carried crate cannot register: `set_forked_rpc(true, ...)` in
+`forklift_certified_crate.gd` teleports the crate to `Vector3.DOWN * 50.0`,
+clears its collision layers 1 and 9 and hides it (the forklift shows an attached
+stand-in), and a DropArea's `collision_mask` is `256` — layer 9 alone. Only a
 crate actually set down counts, and the score is the set sitting in the area at
-round end. Confirmed in play by the user, then in the code.
+round end. Confirmed in play, then in the code.
 
 **Not addressed, and parked:** whether 10 crates split eight ways is a good
 *game*. `remove_zero_scoring_players()` eliminates everyone holding nothing at
-round end, so round one culls hard. That is vanilla's shape at a bigger roster
-rather than a regression — at four players it already eliminates everyone below
-the top score every round. **Tabled 2026-08-04 as untestable here:** the harness
-runs seven idle instances, so crate contention only means anything with an
-organic group of eight, which is the same structural gap as open item 1. If it
-ever does want tuning, the lever is the crate count, and raising it means
-enlarging the centre cell, which means smaller zones.
+round end, so round one culls hard — vanilla's shape at a bigger roster, not a
+regression. **Tabled 2026-08-04 as untestable here** (idle instances create no
+crate contention; same structural gap as open item 1); the lever would be the
+crate count, which means a bigger centre cell and smaller zones.
 
 ### Diagnostic traces (all gated behind `-localtest`)
 
@@ -1236,15 +1178,11 @@ looking at.
 ### Minigames deliberately NOT scaled — a historical record
 
 **Nothing in the rotation is capped any more.** `modded_minigame_player_cap`
-holds exactly one entry, **Scavenger Chairs**, and that one is unreachable: it
-is in neither `default_playlist` nor `CustomMinigamesWhitelist`, so the cap
-never fires. Its reason still stands on paper — musical chairs, `4 -
-players.size()` goes negative at five or more, and the chairs are props rather
-than seats bound to spawn markers — but nothing has re-derived it, because
-nothing can reach it to try.
-
-The table is kept as the record of **every entry it ever held and what became of
-each**, because the fates are the point:
+holds exactly one entry, **Scavenger Chairs**, and it is unreachable — in
+neither `default_playlist` nor `CustomMinigamesWhitelist`, so the cap never
+fires. Its reason stands on paper only (musical chairs; `4 - players.size()`
+goes negative at five or more; the chairs are props, not seats bound to spawn
+markers), because nothing can reach it to re-derive it.
 
 | Minigame | The reason recorded here | What became of it |
 |---|---|---|
@@ -1254,32 +1192,15 @@ each**, because the fates are the point:
 | Burn Recycle | 4 player nodes hard-instanced into the scene, not spawned at markers | **Uncapped 2026-08-07 — the one recorded reason that survived inspection.** It is true, and the two-room split is how it was worked around rather than refuted. §21 |
 | Scavenger Chairs | musical chairs; `4 - players.size()` goes negative; chairs are props | **Still capped**, and unreachable — in neither playlist |
 
-**Four entries left this table and three of their stated reasons were wrong on
-examination; nothing in the table caught any of them.** The two worth reading in
-full, because they show the two different ways a reason can be wrong:
+**A cap reason is a judgement nobody re-tests, because a capped minigame never
+runs and so never contradicts itself.** Three of the four recorded reasons were
+wrong on measurement, and Forklift's measurement also turned up two failure
+modes the static reading had never suggested. Re-derive an entry before trusting
+it, and prefer a pinned run to a reading.
 
-**Duck Hunt**'s entry read "asymmetric: 3 duck slots + 1 hunter; magazine size
-derived from duck count". The mode is 1 hunter + (N-1) **ducks**, so the duck
-count already scaled by itself, and the "3" was only the spawn-marker count. It
-runs at 8 — see section 19.
-
-**Forklift Certified**'s read "4 DropAreas tile the whole yard, assigned per
-player by index". The second half was right and is exactly the blocker; the first
-half was not. The four zones cover **24%** of a 53.6 x 58.6 floor, all of which
-is drivable, and four more fit at the mid-edges. It runs at 8 — see section 20.
-
-The lesson generalises: **this table records a judgement, and a wrong judgement
-here is invisible**, because a capped minigame is never run and so never
-contradicts itself. Every one of these corrections came from measuring the
-scene, and in Forklift's case the measurement also turned up two failure modes — a
-non-terminating sampler loop and a hang on an exhausted decal pool — that the
-static reading behind the cap had never suggested. Re-derive an entry before
-trusting it, and prefer a pinned run to a reading.
-
-Note: in v1.0.6 **Scavenger Chairs was already absent from both
-`default_playlist` and `CustomMinigamesWhitelist`** (as were Shape Cutter,
-Memorize Path, Cutscene Game 02), so its cap was belt-and-braces. Re-check that
-after an update — the developers may have enabled it.
+Scavenger Chairs, Shape Cutter, Memorize Path and Cutscene Game 02 have been
+absent from both playlists since v1.0.6 — re-check after an update, the
+developers may have enabled one.
 
 
 ### 21. The Filter — `burn_recycle.gd`, `burn_recycle_player.gd`
@@ -1307,19 +1228,18 @@ consoles interpenetrated. Only a screenshot showed it.
 Two rooms keeps every station at the shipped 90-degree spacing, so nothing clips,
 **and the four authored camera clips stay exact** — within a room every other
 player is still 90 or 180 degrees away. The 45-degree version had to snap seven
-relative directions onto four clips, which no amount of care would have fixed:
-the clips are authored animations and the mod ships no `.res`.
-
-It also costs no new replication surface. There is still **one** script, one
-`StateMachine`, one `MinigameOverlay` and one `MultiplayerSpawner`; the rooms
-cannot drift apart because they share a timer.
+relative directions onto four clips, which no care would have fixed: the clips
+are authored animations and the mod ships no `.res`. It also costs no new
+replication surface — still **one** script, one `StateMachine`, one
+`MinigameOverlay` and one `MultiplayerSpawner`, and the rooms cannot drift apart
+because they share a timer.
 
 **The lighting is free.** All six OmniLights, the incinerator and the main wall
 live under `clientside visuals parent`, which vanilla already *rotates* to face
 the local player's seat. It is per-viewer, not per-room — so room B needs no
-lighting of its own, the assembly just has to be moved to whichever room the
-local client sits in. That is done in `setup_clientside_visuals()`, which runs in
-the `camera.current = true` branch, i.e. exactly once, for the local player.
+lighting of its own, the assembly just moves to whichever room the local client
+sits in. That is done in `setup_clientside_visuals()`, which runs in the
+`camera.current = true` branch, i.e. exactly once, for the local player.
 
 #### Balanced rooms, and the seat/station distinction
 
@@ -1367,20 +1287,19 @@ incinerator spark-ramp tail — at >4 that tail has to reach every peer so each 
 ramps *its* room's incinerator — so its gate branches: >4 dispatches as before,
 ≤4 runs vanilla's original tail verbatim, host-side. That second branch **closes
 an undocumented 1-4 parity deviation**: the pre-gate code ramped `spark_ratio` on
-every peer where vanilla ramps host-only. See the 2026-08-09 session-log entry in
-`UPDATING.md`, and pitfall 30 for why the RPCs are named `zz_`.
+every peer where vanilla ramps host-only. See the archived 2026-08-09
+session-log entry, and pitfall 30 for why the RPCs are named `zz_`.
 
 #### Three traps this minigame produced
 
 1. **`player spawn parent` holds four instances of the PLAYER SCENE** as editor
-   placeholders. Duplicating it into room B created four full character rigs,
-   each starting `SkeletonIK3D` and running the absolute-path manager handoff
-   while detached — 256 errors a run, plus four bodies standing in room B. It is
-   never referenced by `spawn_players()`. First written off as pre-existing churn
-   on the arithmetic and on a grep for `type="Skeleton3D"` returning zero; the
-   grep **cannot see inside instanced sub-scenes**. Controls settled it —
-   DiscoDodge@8, ExplodingCollarRace@8 and BurnRecycle@4 all gave 0/0 while
-   BurnRecycle@8 gave 128/128.
+   placeholders, never referenced by `spawn_players()`. Duplicating it into room
+   B created four full character rigs, each starting `SkeletonIK3D` and running
+   the absolute-path manager handoff while detached — 256 errors a run, plus four
+   bodies standing in room B. First written off as pre-existing churn on a grep
+   for `type="Skeleton3D"` returning zero; the grep **cannot see inside instanced
+   sub-scenes**. Controls settled it — DiscoDodge@8, ExplodingCollarRace@8 and
+   BurnRecycle@4 all gave 0/0 while BurnRecycle@8 gave 128/128.
 2. **`zz_mod_set_room_rpc` as `@rpc("authority")` was rejected silently.**
    `set_player_presence()` hands each player node's authority to that player's
    own peer, so the host is not the authority for anyone else's node. The offset
@@ -1412,10 +1331,9 @@ update can be checked off rather than reconstructed from the prose below:
 | `_mod_raise_item_preview()` / `_mod_preview_mover()` / `zz_mod_raise_item_preview_rpc()` | raise the ingredient projection clear of `MOD8`'s desk, on every peer |
 | plus | the `remove_empty_workstation_rpc` bounds guard, and the roster-scaled item count in `spawn_items()` |
 
-**`manufacture_gun.tscn` is deliberately NOT in the overlay** — every change here is
-made at runtime behind the roster gate, including the `spawn_limit` raise, which is
-why 1-4 is untouched by construction and why this minigame costs exactly one file
-to re-derive.
+**`manufacture_gun.tscn` is deliberately NOT in the overlay** — every change here
+is made at runtime behind the roster gate, including the `spawn_limit` raise, so
+1-4 is untouched by construction and this minigame costs one file to re-derive.
 
 **Uncapped 2026-08-07 — the last capped minigame.** Four blockers, of which only
 the first is ever observed because it masks the rest:
@@ -1433,30 +1351,26 @@ the first is ever observed because it masks the rest:
 
 Unlike THE FILTER this arena has room — shipped workstations sit **15.1u** apart
 on an 18.6 × 16.5 rectangle — so it expands in place rather than splitting into
-rooms, which would also have halved the opponent pool in what is a PvP arena.
-Markers are built at **runtime, host-only, gated on roster > 4**, so 1-4 seats on
-the shipped four only and the overlay gains exactly **one** file.
+rooms, which would also have halved the opponent pool in a PvP arena. Markers are
+built at **runtime, host-only, gated on roster > 4**, so 1-4 seats on the shipped
+four only.
 
 #### The wall-desk turn, and the rule that looked principled and was backwards
 
 Two of the four added mid-edge desks land against a wall with their approach side
 pointing into it. **Which two is decided by the interact box, not by proximity.**
 `InteractArea` is `BoxShape3D(2, 5, 3.6)`: the side a player approaches from runs
-along the desk's **local Z**, the 3.6-deep axis. At the shipped yaw of ~0 that is
-world Z, so the desks needing a turn are those whose offset from the arena centre
-is **Z-dominated**.
+along the desk's **local Z**, the 3.6-deep axis, which at the shipped yaw of ~0 is
+world Z — so the desks needing a turn are those whose offset from the arena
+centre is **Z-dominated**. The first attempt tested **X**-dominance, reasoning
+about which wall was nearest rather than which way the box ran, and selected the
+exact complement: it turned the two desks that were already correct. Pitfall 29.
 
-The first attempt tested **X**-dominance — reasoning only about which wall was
-nearest, never about which way the box ran. It selected the exact complement:
-turning the two desks that were already correct and leaving the two broken ones
-alone. **Proximity to a wall says nothing on its own; what matters is the
-approach axis relative to it.**
-
-It was also invisible from the logs and nearly invisible in a screenshot, because
+It was invisible from the logs and nearly invisible in a screenshot, because
 **the camera is not axis-aligned**: it sits at `(-17.9, 11.9, 0)` looking along
-`+X` with its right axis on world `+Z`, so on screen **right = +Z and up = +X**.
-The desks turned in world ±X appear at *top- and bottom-centre*. Any discussion
-of "the left one" is meaningless until that mapping is stated.
+`+X` with its right axis on world `+Z`, so on screen **right = +Z and up = +X**
+(pitfall 28) and the desks turned in world ±X appear at *top- and bottom-centre*.
+Any discussion of "the left one" is meaningless until that mapping is stated.
 
 Turned desks then slide `MOD_WALL_DESK_SLIDE` (3.8u) along their wall in opposite
 directions, `-sign(off.z)` on X, preserving the level's 180-degree rotational
@@ -1472,11 +1386,9 @@ symmetry, and finally push `MOD_WALL_DESK_PUSH` (2.05u) straight out at the wall
 
 #### The wall push, and where the wall actually is (2026-08-08)
 
-Sliding alone left each turned desk on the line the shipped corner desks occupy,
-which is **2.80u** (`MOD5`) and **2.71u** (`MOD7`) of bare floor short of the wall
-behind it — a desk marooned in the room rather than installed against it. That was
-the "wants moving closer to the wall" open item. It is one constant, and the
-constant is measured:
+Sliding alone left each turned desk on the line the shipped corner desks occupy —
+**2.80u** (`MOD5`) and **2.71u** (`MOD7`) of bare floor short of the wall behind
+it, marooned in the room rather than installed against it. One constant, measured:
 
 | | |
 |---|---|
@@ -1485,10 +1397,10 @@ constant is measured:
 | target margin | **0.73u**, which is what shipped `Marker3D2` leaves against the −X wall |
 | ⇒ push | **2.05u**, giving 0.75u (MOD5) and 0.66u (MOD7) |
 
-The two desks differ slightly on every row because each inherits its yaw from its
-own nearest shipped marker, and the shipped four sit at yaws of +3.54° to +5.08°
-rather than at 0. **Do not expect the pair to be symmetric** — the level's props
-are not either.
+The two desks differ on every row because each inherits its yaw from its own
+nearest shipped marker, and the shipped four sit at yaws of +3.54° to +5.08°
+rather than 0. **Do not expect the pair to be symmetric** — the level's props are
+not either.
 
 Recover the wall position after a re-author by pulling
 `ConcavePolygonShape3D_70a5h` out of `manufacture_gun.tscn`, offsetting by its
@@ -1499,8 +1411,7 @@ triangles, so vertices exist at only four x positions and the bins between them
 read as empty floor.
 
 **2.05 is set by the +Z side, not by the wall.** MOD7 is boxed in on three sides,
-and the two neighbours are only visible if you test rotated rectangles rather than
-AABBs:
+and the two neighbours are only visible if you test rotated rectangles, not AABBs:
 
 | MOD7 clearance at push 2.05 | | at push 2.40 |
 |---|---|---|
@@ -1512,13 +1423,12 @@ The crate is the reason. Its **AABB** is x[−9.96, −3.68] z[9.65, 15.77], whi
 looks like it overlaps MOD7's x span and forbids the push outright. It is rotated
 ~50°, so its true inner edge runs from (−6.10, 9.64) to (−3.68, 12.56) and only
 crosses into the room (z < 11.99) at **x < −4.15** — clear of MOD7's desk, whose
-nearest corner is x = −4.00. An AABB test here gives the wrong answer in the
-conservative direction, which is how you end up believing a placement is
-impossible.
+nearest corner is x = −4.00. An AABB test here is wrong in the conservative
+direction, which is how you end up believing a placement is impossible.
 
-Nothing constrains this from the camera: the ±Z walls are themselves in frame
-(half-width at the desks' depth is 17.9u at 16:9 and 13.5u even at 4:3, against a
-wall at 11.99), so a desk against the wall is in frame by construction.
+The camera constrains nothing: the ±Z walls are themselves in frame (half-width
+at the desks' depth is 17.9u at 16:9 and 13.5u even at 4:3, against a wall at
+11.99), so a desk against the wall is in frame by construction.
 
 #### The interact volumes are generous — the desk is reachable from all four sides
 
@@ -1532,35 +1442,28 @@ overturning it. Detection is Area3D↔Area3D on layer 256, `area_entered`:
 | player body | `CapsuleShape3D` r=0.7 |
 
 The desk's interact box is *inset* from its own solid collider (2 vs 2.4, 3.6 vs
-3.8), so a player can never stand inside it — the overlap always comes from the
-forward-projected cylinder. Working it through: pressed against the 3.8-deep face
-the player's centre sits 2.6u out and the cylinder's near surface reaches 0.6u,
-against a box half-depth of 1.8 (overlap 1.2u); pressed against the 2.4-wide face
-the centre sits 1.9u out and the cylinder reaches −0.1u against a half-width of
-1.0. **Both sides work, with margin.**
-
-So the approach axis decides how a desk *reads* and how much floor a player has,
-not whether the interaction fires at all. Pitfall 29's rule — encode the property
-you mean, not a proxy — still holds, and the turn is still right; but the sentence
-"the side a player approaches from runs along the desk's local Z" describes the
-authored intent, not a hard constraint. Nothing here was observed in play; it is
-scene geometry plus the two shapes above.
+3.8), so the overlap always comes from the forward-projected cylinder, and the
+desk is **reachable from all four sides with margin**. So the approach axis
+decides how a desk *reads* and how much floor a player has, not whether the
+interaction fires — "the side a player approaches from runs along the desk's
+local Z" is the authored intent, not a hard constraint, and pitfall 29's rule
+still holds. This is scene geometry plus the two shapes above; nothing here was
+observed in play.
 
 #### Ingredients scale with the roster
 
 `spawn_items()` spawns exactly one item per shipped marker — a fixed **26** at any
 roster. These are the components the guns are assembled from, so eight players
 competing over a four-player supply halves everyone's share. Now 1 per marker at
-1-4 and 2 at 5-8 (26 → 52), keeping ingredients-per-player constant.
-
-Copy 0 sits exactly where vanilla puts it, so 1-4 is unchanged. Extras are nudged
+1-4 and 2 at 5-8 (26 → 52), keeping ingredients-per-player constant. Copy 0 sits
+exactly where vanilla puts it, so 1-4 is unchanged. Extras are nudged
 `MOD_ITEM_SPREAD` sideways rather than stacked: a `ManufactureGunItem` is a plain
 **Node3D with no physics**, so two at an identical position would intersect and
 never settle apart.
 
 **`MOD_ITEM_SPREAD` was 0.45 and that was too small — raised to 1.10 on
-2026-08-08** after the user reported the ingredients clipping into each other. The
-five variations' footprints, off `manufacture_gun_item.tscn`:
+2026-08-08** after a report of ingredients clipping into each other. The five
+variations' footprints, off `manufacture_gun_item.tscn`:
 
 | variation | footprint (w × h × d) |
 |---|---|
@@ -1577,25 +1480,25 @@ comes from. The worst case — two flat discs — still touches; separating that
 
 **Checked against the surfaces the markers actually sit on**, since the risk of a
 bigger nudge is a copy sliding off a table. Of the 26 markers, **11 are on the
-floor** (unbounded), 2 are on the +Z trolley, and 13 are on desks at y ≈ 2.02; ten
-of those 13 have ≥ 1.10u of desk left in the offset direction. The three that do
-not are `part_011` (0.39u), `part_012` (0.75u) and `part_004` (0.93u) — and
-`part_011` is a marker where the **shipped** item already overhangs, a 1.614-wide
-disc centred 0.39u from the edge hanging 0.42u past it in vanilla.
+floor** (unbounded), 2 on the +Z trolley, and 13 on desks at y ≈ 2.02; ten of
+those 13 have ≥ 1.10u of desk left in the offset direction. The three that do not
+are `part_011` (0.39u), `part_012` (0.75u) and `part_004` (0.93u) — and
+`part_011`'s **shipped** item already overhangs, a 1.614-wide disc centred 0.39u
+from the edge hanging 0.42u past it in vanilla.
 
-**The offset stays in world space, and that is deliberate.** Using the marker's own
-local X — what `spawn_expand.py` does — is wrong here: **25 of the 26 item markers
-are rotated**, and `part_001`'s basis has its Y column on world −Z, i.e. it is laid
-on its side, so a local-X nudge would bury a copy under the table. That is
-pitfall 17 exactly. `spawn_items()` discards marker rotation anyway and spawns
-every item axis-aligned, so a world-space nudge is also the consistent choice.
+**The offset stays in world space, deliberately.** Using the marker's own local X
+— what `spawn_expand.py` does — is wrong here: **25 of the 26 item markers are
+rotated**, and `part_001`'s basis has its Y column on world −Z, i.e. it is laid on
+its side, so a local-X nudge would bury a copy under the table (pitfall 17).
+`spawn_items()` discards marker rotation anyway and spawns every item
+axis-aligned, so world space is also the consistent choice.
 
 #### The ingredient projection is raised at 5-8 players
 
 The five-slot recipe hologram — the "ingredient display bar" along the bottom of
 the screen — is **one node in the level** (`Interactive/ItemSequencePreview/Visual`,
-reached by the `item_sequence_preview_node_parent` export), not a per-player HUD.
-`MOD8`'s added desk lands on top of it:
+reached by the `item_sequence_preview_node_parent` export), not a per-player HUD,
+and `MOD8`'s added desk lands on top of it:
 
 | | x | z | y |
 |---|---|---|---|
@@ -1603,19 +1506,17 @@ reached by the `item_sequence_preview_node_parent` export), not a per-player HUD
 | `MOD8` desk | −8.60 … −5.97 | −2.00 … 1.94 | 0 … 2.14 |
 
 They overlap on all three axes, so the desk buries the **middle three of the five
-slots** and the item holograms show through it. Moving the desk was ruled out by
-the user — it would change the balance of the arena — so the projection goes up
-instead, by exactly its own height: **1.8741u**, measured at runtime, landing it at
-y 2.495 … 4.369, clear of the desk's 2.14 top.
-
-Three things about how that is done:
+slots** and the item holograms show through it. Moving the desk was ruled out —
+it would change the balance of the arena — so the projection goes up instead, by
+exactly its own height: **1.8741u**, measured at runtime, landing it at y 2.495 …
+4.369, clear of the desk's 2.14 top. Three things about how:
 
 - **The height is measured, not baked.** `_mod_subtree_mesh_y_extent()` walks the
   subtree and unions `mesh.get_aabb()` (local space) through each node's
   `global_transform`. It does **not** use `get_transformed_aabb()`, which returns
   null in the release template and aborts the calling function with no error line
-  at all — pitfall 18. The runtime figure, 1.8741, agrees with the static
-  computation off the `.tscn` to 0.0013u.
+  at all — pitfall 18. The runtime figure agrees with the static computation off
+  the `.tscn` to 0.0013u.
 - **The node that moves is the *parent* of the exported one.** Each of the five
   `recipe item parentN` children carries an `anim_spin recipe item`
   AnimationPlayer whose tracks are `.:position` and `.:rotation` on itself, so
@@ -1626,39 +1527,32 @@ Three things about how that is done:
   trace lives *inside* the RPC for the same reason: verified `1.8741` on the host
   **and all seven clients**, exactly one `is_server=true`.
 
-The raised projection stays inside the **y range** of the authored recipe zone —
-the `Recipe` collider box is x[−10.17,−6.17] y[0,4.50] z[−4.5,4.5], and 4.369 is
-still under its 4.50 ceiling — and it moves *toward* screen centre, since screen-up
-is the camera's Y basis, so it cannot fall off the bottom edge.
+The `Recipe` collider box is x[−10.17,−6.17] y[0,4.50] z[−4.5,4.5], so 4.369 is
+still under its ceiling, and the move is *toward* screen centre (screen-up is the
+camera's Y basis). **The projection is not fully contained by that box and never
+was** — it spans z[−4.63, 5.12], so its two end slots stick out at both ends in
+vanilla too. It is a player barrier, not a bound on the hologram; do not use it as
+one. At 1-4 players none of this runs — `MOD8` does not exist, so nothing covers
+the projection. **Confirmed by eye at 8 players on 2026-08-08** and kept as
+written: raise by the measured height exactly, no added clearance.
 
-**It is not fully contained by that box, and never was:** the projection spans
-z[−4.63, 5.12] against the box's z[−4.5, 4.5], so its two end slots stick out past
-it at both ends in vanilla too. The box is a player barrier, not a bound on the
-hologram — do not use it as one when checking a future change. At 1-4 players it does not run at all: `MOD8` does not exist there, so
-nothing covers the projection.
-
-**Confirmed by eye at 8 players on 2026-08-08** and kept as written — raise by the
-measured height exactly, no added clearance.
-
-**One thin number to know about:** a workstation's `gun assembly main parent` sits
-at local y = 2.469, and the raised projection's underside is y = 2.495. On `MOD8`
-specifically — the desk directly beneath it — that is a **0.026u** gap. It was not
-a problem in the playtest, but if either number moves, this is the first thing to
-re-check, and the fix would be to raise by the height plus a small clearance rather
-than by the height alone.
+**One thin number:** a workstation's `gun assembly main parent` sits at local
+y = 2.469 against the raised projection's underside at y = 2.495 — on `MOD8`, the
+desk directly beneath it, a **0.026u** gap. Not a problem in the playtest, but if
+either number moves this is the first thing to re-check, and the fix would be to
+raise by the height plus a small clearance.
 
 ### 23. Pre-start disconnect guard — every rotation minigame's `player_disconnected()`
 
 **Added 2026-08-15, all roster sizes, the §19 precedent (issue #13).** The
-mechanism is pitfall 32's, reached through a different door: a peer that
-disconnects DURING a minigame load while another peer is still loading. The
-host processes the disconnect before the load gate can pass, so
-`player_disconnected()` runs against an unspawned game — every per-player
-container empty, `is_all_player_loaded` false, the state machine still in
-`Empty`. Pitfall 33 explains why that ordering is a **quit** (Alt-F4, pause
-menu — noticed by the host immediately) rather than a crash (ENet timeout,
-noticed after everyone has loaded), and why the kill-at-load recipe alone
-never showed it.
+mechanism is pitfall 32's through a different door: a peer disconnects DURING a
+minigame load while another peer is still loading, so the host processes the
+disconnect before the load gate can pass and `player_disconnected()` runs
+against an unspawned game — every per-player container empty,
+`is_all_player_loaded` false, the state machine still in `Empty`. Pitfall 33
+explains why that ordering is a **quit** (Alt-F4, pause menu — noticed by the
+host immediately) rather than a crash (ENet timeout, noticed after everyone has
+loaded), and why the kill-at-load recipe alone never showed it.
 
 What each vanilla handler did at zero players, from the pre-spawn read of all
 fifteen (verbatim extraction reviewed 2026-08-15):
@@ -1679,8 +1573,8 @@ burn_recycle, dvd_roomba, green_pea, junk_platform, spine_breaker and
 train_race, so `check_game_end()` returns forever and the round cannot end.
 Reproduced pre-fix on DvdRoomba (`Empty → Finished`, then `Finished → Round →
 Play` and no round end in 150 s where the healthy run cycles three rounds),
-KnifeAtTheOffice and BurnRecycle (one elimination, then nothing) — the
-2026-08-15 session-log entry has the runs.
+KnifeAtTheOffice and BurnRecycle (one elimination, then nothing) — runs in the
+archived 2026-08-15 session-log entry.
 
 **The fix, one hunk per handler:** `if not is_all_player_loaded: return` as
 the first thing the handler does after its `is_server` check (Duck Hunt keeps
@@ -1700,13 +1594,12 @@ guard for uniformity.
 
 Two hygiene hunks alongside: `manufacture_gun.gd` and `smoke_break.gd` now
 `.get()` the per-player dictionary instead of indexing it, because a peer that
-dropped during the load was never spawned there even once the game has
-started. In the shipped release build the vanilla index was a silent null
-(pitfall 34), so these change nothing observable there; a debug build would
-have errored.
+dropped during the load was never spawned there even once the game has started.
+In the shipped release build the vanilla index was a silent null (pitfall 34),
+so these change nothing observable there; a debug build would have errored.
 
 Verified 2026-08-15 with the quit-at-load recipe (Testing) on the fixed build
 across the eleven affected minigames and smoke_break — leaver noticed within
 ~0.7 s, no `Empty → Finished`, then the healthy start on host and clients —
 plus kill-at-load regressions on the two `.get()` files and no-kill controls
-at 4 and 8; evidence tables in the second 2026-08-15 session-log entry.
+at 4 and 8; evidence tables in the second archived 2026-08-15 session-log entry.

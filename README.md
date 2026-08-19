@@ -176,8 +176,9 @@ result.
 
 **A lobby of 1-4 is pixel-identical to vanilla.** That is a design constraint of
 the mod, not an accident: every layout change is applied at runtime and only
-above four players, the shipped spawn markers are never moved, and the lobby
-restores the shipped preview positions whenever it holds four or fewer.
+above four players, the shipped spawn markers are never moved, and the lobby's
+four shipped preview seats are never touched (players 5-8 have their own seats,
+which the vanilla handler leaves invisible at four or fewer).
 
 There are exactly two sanctioned breaches, both signed off deliberately:
 
