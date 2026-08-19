@@ -44,7 +44,8 @@ const MOD_FELL_THROUGH_Y: float = - 3.0
 #     fuse (activation_duration) + kill animation (1.0s) + dead time (3.0s)
 #
 # and eight players need seven kills where four need three. Both terms scaled
-# here are host-only, so no RPC is involved (see "Client safety" below).
+# here are host-only, so no RPC is involved (MINIGAMES.md section 18, "No
+# RPC, and none is wanted").
 #
 # Two mechanics facts this design rests on, neither of them obvious:
 #

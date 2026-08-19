@@ -52,7 +52,7 @@ don't delete). Word counts: `UPDATING.md` 18,498 → 13,017 (−30 %),
 |---|---|
 | `tools/checks/*.py` | all five pass (`56 files: 40 .gd, 16 .tscn` claim intact) |
 | Cross-reference sweep (fresh-context agent): every quoted section name, `pitfall N` (≤ 38), `§N` (≤ 23) and open-item number cited from the six docs, both `CLAUDE.md`s, `tools/` and `mod/**/*.gd` | resolves; 18 spot-checked facts from the old text all found at their new homes |
-| Known remaining stale pointers, left alone (code comments, out of scope for a docs pass) | `mod/autoloads/globals.gd:349` ("the Duck Hunt section in UPDATING.md" → §19), `mod/minigames/knife_at_the_office/components/countdown_handler/countdown_handler.gd:34` ("the pitfalls list in UPDATING.md" → `PITFALLS.md`), `mod/minigames/spine_breaker/scripts/spine_breaker.gd:47` ("Client safety" heading that does not exist) |
+| Three stale pointers in code comments, fixed in a follow-up commit the same day (comment-only; rebuilt and deployed, checks pass, no behaviour change) | `mod/autoloads/globals.gd:349` → §19, `mod/minigames/knife_at_the_office/components/countdown_handler/countdown_handler.gd:34` → pitfall 23, `mod/minigames/spine_breaker/scripts/spine_breaker.gd:47` → §18 "No RPC, and none is wanted" |
 
 ### 2026-08-18 — Windows installer bundles its own Python runtime; installer no longer dies invisibly with no terminal attached; Steam auto-detection widened
 

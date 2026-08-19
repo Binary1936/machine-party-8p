@@ -346,7 +346,7 @@ const modded_suit_tints: Dictionary = {
 # slots + 1 hunter". That description was wrong and is why it stayed capped: the
 # mode is 1 hunter + (N-1) DUCKS, popped from a shuffled pool, so the duck count
 # already scales by itself. The "3" was only the spawn-marker count. It now
-# scales - see the Duck Hunt section in UPDATING.md.
+# scales - see MINIGAMES.md section 19.
 #
 # ForkliftCertified was listed here until 2026-08-04, with the reason "four
 # DropAreas ... between them tile the whole 32x32 yard ... There is no room to

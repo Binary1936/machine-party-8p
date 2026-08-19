@@ -31,7 +31,7 @@ signal expired()
 # silent no-op that does not even abort the function. So the vanilla loop just
 # quietly does nothing past index 3 - no error, no crash, no log line. (A
 # *method* call on that same null is different: it segfaults the process. See
-# the pitfalls list in UPDATING.md.) A control run with this file removed from
+# pitfall 23 in PITFALLS.md.) A control run with this file removed from
 # the overlay confirmed it: identical timings, zero errors, four icons.
 #
 # The icons are bare TextureRects in an HBoxContainer with nothing but a
